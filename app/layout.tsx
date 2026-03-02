@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
+import { AOSInit } from "@/components/AOSInit"; // <-- IMPORT HERE
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -24,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={poppins.className}>
+        <AOSInit /> {/* <-- ADD INSIDE BODY */}
         {children}
       </body>
     </html>

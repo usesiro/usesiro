@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image"; // <--- Added this back
+import Image from "next/image";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 
 export default function Navbar() {
@@ -13,26 +13,29 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
           
-          {/* Logo Section - RESTORED TO IMAGE */}
+          {/* Logo Section */}
           <div className="flex-shrink-0 flex items-center">
             <Link href="/">
               <Image 
                 src="/logo.svg" 
                 alt="Siro Logo" 
-                width={100} 
-                height={40} 
-                className="object-contain h-8 w-auto" 
+                width={80} 
+                height={34} 
+                className="object-contain" 
               />
             </Link>
           </div>
 
-          {/* Desktop Menu */}
+          {/* Desktop Menu - ADDED PRICING */}
           <div className="hidden md:flex space-x-8 items-center">
             <Link href="/" className="text-gray-600 hover:text-primary font-medium transition">
               Home
             </Link>
             <Link href="/#features" className="text-gray-600 hover:text-primary font-medium transition">
               Features
+            </Link>
+            <Link href="/pricing" className="text-gray-600 hover:text-primary font-medium transition">
+              Pricing
             </Link>
             <Link href="/about" className="text-gray-600 hover:text-primary font-medium transition">
               About Us
@@ -46,7 +49,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center">
             <Link 
               href="/login" 
-              className="bg-primary text-white px-6 py-2.5 rounded-lg font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30"
+              className="bg-primary text-white px-6 py-2.5 rounded-lg font-bold hover:bg-blue-700 transition"
             >
               Sign In/Register
             </Link>
@@ -61,7 +64,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Menu Dropdown - ADDED PRICING */}
       {isOpen && (
         <div className="md:hidden bg-white border-t border-gray-100 absolute w-full shadow-xl">
           <div className="px-4 pt-2 pb-6 space-y-2">
@@ -78,6 +81,13 @@ export default function Navbar() {
               onClick={() => setIsOpen(false)}
             >
               Features
+            </Link>
+            <Link 
+              href="/pricing" 
+              className="block px-3 py-4 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
+              onClick={() => setIsOpen(false)}
+            >
+              Pricing
             </Link>
             <Link 
               href="/about" 

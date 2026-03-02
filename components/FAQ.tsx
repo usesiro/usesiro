@@ -40,11 +40,15 @@ export default function FAQ() {
   };
 
   return (
-    <section className="py-24 bg-white">
+    // Added overflow-hidden to keep the animations clean
+    <section className="py-24 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* HEADER */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        {/* HEADER (Fades up first) */}
+        <div 
+          className="text-center max-w-3xl mx-auto mb-16"
+          data-aos="fade-up"
+        >
           <h2 className="text-3xl md:text-4xl font-bold text-dark mb-4">
             Frequently Asked Questions
           </h2>
@@ -53,11 +57,13 @@ export default function FAQ() {
           </p>
         </div>
 
-        {/* FAQ GRID */}
+        {/* FAQ GRID (Staggered fade up) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
           {faqs.map((faq, index) => (
             <div 
               key={index} 
+              data-aos="fade-up"
+              data-aos-delay={index * 100} // Multiplies delay by 100ms per card
               className="border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition bg-white h-fit"
             >
               <button 

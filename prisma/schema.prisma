@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- ENUMS ---
+enum Role {
+  USER
+  ADMIN
+}
+
+enum BusinessType {
+  SOLE_PROPRIETORSHIP
+  PARTNERSHIP
+  LIMITED_LIABILITY
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionSource {
+  MANUAL
+  MONO
+}
+
+enum VatStatus {
+  TAGGED
+  MISSING_VAT
+  EXEMPT
+}
+
+// --- MODELS ---
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  otpSecret    String?   // Stores the 6-digit code temporarily
+  otpExpiresAt DateTime?
+  isVerified   Boolean   @default(false)
+  role         Role      @default(USER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  business     Business? // 1-to-1 relationship
+}
+
+model Business {
+  id        String       @id @default(uuid())
+  userId    String       @unique
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name      String
+  type      BusinessType
+  industry  String
+  tin       String?      // Tax Identification Number (Optional)
+  
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  transactions Transaction[] // 1-to-Many relationship
+}
+
+model Category {
+  id         String   @id @default(uuid())
+  name       String   @unique
+  slug       String   @unique
+  isStandard Boolean  @default(true) // True for system defaults like "Travel"
+
+  transactions Transaction[]
+}
+
+model Transaction {
+  id          String            @id @default(uuid())
+  businessId  String
+  business    Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  categoryId  String?           // Nullable until Auto-categorized or manually set
+  category    Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  amount      Decimal           @db.Decimal(12, 2)
+  date        DateTime
+  description String
+  source      TransactionSource @default(MANUAL)
+  type        TransactionType
+  vatStatus   VatStatus         @default(MISSING_VAT)
+  
+  externalId  String?           @unique // Mono's ID to prevent duplicates
+  
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  document    Document?         // 1-to-1 relationship (Receipt/Invoice)
+}
+
+model Document {
+  id            String      @id @default(uuid())
+  transactionId String      @unique
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  
+  url           String      // AWS S3 or Supabase Storage URL
+  mimeType      String      // e.g. "image/jpeg", "application/pdf"
+  
+  createdAt     DateTime    @default(now())
+}

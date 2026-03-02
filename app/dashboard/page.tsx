@@ -8,8 +8,9 @@ import {
   CreditCardIcon,
   ScaleIcon,
   ShieldCheckIcon,
-  CpuChipIcon,
-  QuestionMarkCircleIcon
+  DocumentTextIcon, // Changed icon for Documentation
+  ExclamationTriangleIcon, // Changed icon for Compliance
+  MapPinIcon // Used for Reconciliation
 } from "@heroicons/react/24/outline";
 import { 
   BarChart, 
@@ -23,7 +24,6 @@ import {
 
 export default function Dashboard() {
   
-  // REAL DATA STRUCTURE FOR RECHARTS
   const chartData = [
     { name: 'Jan', income: 40, expense: 25 },
     { name: 'Feb', income: 35, expense: 40 },
@@ -44,27 +44,25 @@ export default function Dashboard() {
       
       {/* FILTER ROW */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        {/* Time Filter */}
         <div className="bg-white border border-gray-200 rounded-lg p-1 flex">
           {["12 months", "30 days", "7 days", "24 hours"].map((period, idx) => (
             <button 
               key={period} 
               className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all
-                ${idx === 0 ? "bg-white text-dark shadow-sm border border-gray-100" : "text-gray-500 hover:text-dark hover:bg-gray-50"}`}
+                ${idx === 0 ? "bg-white text-gray-700 shadow-sm border border-gray-100" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}
             >
               {period}
             </button>
           ))}
         </div>
         
-        {/* Export Button */}
         <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 bg-white rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
           <ArrowDownTrayIcon className="w-4 h-4" />
           Export report
         </button>
       </div>
 
-      {/* TOP ROW STATS (3 Columns) */}
+      {/* TOP ROW STATS (Financials) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {/* Total Income */}
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
@@ -74,7 +72,7 @@ export default function Dashboard() {
               <WalletIcon className="w-5 h-5" />
             </div>
           </div>
-          <h3 className="text-2xl font-bold text-dark mb-1">N 536,000.00</h3>
+          <h3 className="text-2xl font-bold text-gray-600 mb-1">N 536,000.00</h3>
           <p className="text-xs text-blue-500 flex items-center gap-1 font-medium">
             <ArrowUpRightIcon className="w-3 h-3" /> 100% <span className="text-gray-400 font-normal">from last month</span>
           </p>
@@ -88,7 +86,7 @@ export default function Dashboard() {
               <CreditCardIcon className="w-5 h-5" />
             </div>
           </div>
-          <h3 className="text-2xl font-bold text-dark mb-1">N 132,394.05</h3>
+          <h3 className="text-2xl font-bold text-gray-600 mb-1">N 132,394.05</h3>
           <p className="text-xs text-red-500 flex items-center gap-1 font-medium">
             <ArrowUpRightIcon className="w-3 h-3" /> 100% <span className="text-gray-400 font-normal">from last month</span>
           </p>
@@ -102,59 +100,80 @@ export default function Dashboard() {
               <ScaleIcon className="w-5 h-5" />
             </div>
           </div>
-          <h3 className="text-2xl font-bold text-dark mb-1">N 357,304.26</h3>
+          <h3 className="text-2xl font-bold text-gray-600 mb-1">N 357,304.26</h3>
           <p className="text-xs text-blue-500 flex items-center gap-1 font-medium">
             <ArrowUpRightIcon className="w-3 h-3" /> 100% <span className="text-gray-400 font-normal">from last month</span>
           </p>
         </div>
       </div>
 
-      {/* BOTTOM ROW STATS (3 Columns) */}
+      {/* MIDDLE ROW STATS (Status & Issues) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        {/* Tax Readiness */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex justify-between items-start mb-4">
-            <span className="text-gray-500 text-sm">Tax Readiness Status</span>
-            <div className="p-2 bg-red-50 text-red-800 rounded-full">
-               <ShieldCheckIcon className="w-5 h-5" />
+        
+        {/* CARD 1: Reconciliation Status (Progress Bar) */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-gray-500 text-sm">Reconciliation Status</span>
+              <div className="p-2 bg-red-50 text-red-800 rounded-full">
+                 <MapPinIcon className="w-5 h-5" />
+              </div>
             </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">43% Reconciled</h3>
           </div>
-          <h3 className="text-2xl font-bold text-dark mb-1">43%</h3>
-          <p className="text-xs text-red-800 flex items-center gap-1 font-medium">
-            <ArrowUpRightIcon className="w-3 h-3" /> 100% <span className="text-gray-400 font-normal">from last month</span>
-          </p>
+          
+          {/* Progress Bar (Brown/Reddish) */}
+          <div className="w-full h-4 bg-red-100 rounded-full overflow-hidden">
+            <div className="h-full bg-red-800 rounded-full" style={{ width: '43%' }}></div>
+          </div>
         </div>
 
-        {/* Automation Coverage */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex justify-between items-start mb-4">
-            <span className="text-gray-500 text-sm">Automation Coverage</span>
-            <div className="p-2 bg-yellow-50 text-yellow-600 rounded-lg">
-              <CpuChipIcon className="w-5 h-5" />
+        {/* CARD 2: Documentation Coverage (Progress Bar) */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-gray-500 text-sm">Documentation Coverage</span>
+              <div className="p-2 bg-orange-50 text-orange-500 rounded-lg">
+                <DocumentTextIcon className="w-5 h-5" />
+              </div>
             </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">352</h3>
           </div>
-          <h3 className="text-2xl font-bold text-dark mb-1">352</h3>
-          <p className="text-xs text-yellow-600 flex items-center gap-1 font-medium">
-            <ArrowUpRightIcon className="w-3 h-3" /> 100% <span className="text-gray-400 font-normal">from last month</span>
-          </p>
+
+          {/* Progress Bar (Orange) */}
+          <div className="w-full h-4 bg-orange-100 rounded-full overflow-hidden">
+            <div className="h-full bg-orange-400 rounded-full" style={{ width: '60%' }}></div>
+          </div>
         </div>
 
-        {/* Uncategorized Transaction */}
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex justify-between items-start mb-4">
-            <span className="text-gray-500 text-sm">Uncategorized Transaction</span>
-            <div className="p-2 bg-purple-50 text-purple-500 rounded-lg">
-              <QuestionMarkCircleIcon className="w-5 h-5" />
+        {/* CARD 3: Open Compliance Issue (List) */}
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-gray-500 text-sm">Open Compliance Issue</span>
+              <div className="p-2 bg-purple-50 text-purple-500 rounded-lg">
+                <ExclamationTriangleIcon className="w-5 h-5" />
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800 mb-3">5 Issues</h3>
+          </div>
+          
+          {/* Issues List */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+              3 Missing VAT
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+              2 Missing documentation
             </div>
           </div>
-          <h3 className="text-2xl font-bold text-dark mb-1">107</h3>
-          <p className="text-xs text-purple-500 flex items-center gap-1 font-medium">
-            <ArrowUpRightIcon className="w-3 h-3" /> 100% <span className="text-gray-400 font-normal">from last month</span>
-          </p>
         </div>
+
       </div>
 
-      {/* CHART SECTION (NOW USING RECHARTS) */}
+      {/* CHART SECTION */}
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm h-96 flex flex-col">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-gray-600 font-medium">Monthly Transaction Trend</h3>
@@ -168,7 +187,6 @@ export default function Dashboard() {
           </div>
         </div>
         
-        {/* RECHARTS COMPONENT */}
         <div className="flex-1 w-full min-h-0">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} barGap={8}>

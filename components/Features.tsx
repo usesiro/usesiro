@@ -30,11 +30,15 @@ const features = [
 
 export default function Features() {
   return (
-    <section id="features" className="py-24 bg-white">
+    // Added overflow-hidden to prevent horizontal scrollbars during animations
+    <section id="features" className="py-24 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* HEADER */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        {/* HEADER - Fades up all together */}
+        <div 
+          className="text-center max-w-3xl mx-auto mb-16"
+          data-aos="fade-up" 
+        >
           <div className="inline-block bg-blue-50 text-primary px-4 py-1.5 rounded-full text-sm font-semibold mb-4">
             What Siro Does
           </div>
@@ -47,11 +51,13 @@ export default function Features() {
           </p>
         </div>
 
-        {/* CARDS GRID */}
+        {/* CARDS GRID - Fades up one by one! */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {features.map((feature) => (
+          {features.map((feature, index) => (
             <div 
               key={feature.name} 
+              data-aos="fade-up"
+              data-aos-delay={index * 150} // Multiplies delay by 150ms per card (0ms, 150ms, 300ms, 450ms)
               className="p-8 rounded-2xl border border-gray-100 hover:border-blue-100 hover:shadow-xl hover:shadow-blue-500/5 transition duration-300 bg-white group"
             >
               <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-primary transition duration-300">

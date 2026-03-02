@@ -8,17 +8,23 @@ import {
   CreditCardIcon, 
   ScaleIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
   ArrowDownTrayIcon,
   PlusIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  XMarkIcon,
+  CheckCircleIcon,
+  CalendarIcon
 } from "@heroicons/react/24/outline";
 
 export default function Transactions() {
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // --- STATE ---
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  // Mock Data from your screenshot
+  // Mock Data
   const transactions = [
     { description: "Payment from XYZ Ltd", amount: "18,765.00", type: "Income", date: "07, Jan 2026", source: "POS", category: "Service" },
     { description: "Payment from XYZ Ltd", amount: "18,765.00", type: "Income", date: "07, Jan 2026", source: "Cash", category: "Interest" },
@@ -32,13 +38,22 @@ export default function Transactions() {
     { description: "Payment to Fathia", amount: "18,765.00", type: "Income", date: "07, Jan 2026", source: "Bank Transfer", category: "Salary" },
   ];
 
+  // --- HANDLER FOR ADD TRANSACTION FORM ---
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSuccess(true);
+    setTimeout(() => {
+      setIsAddModalOpen(false);
+      setIsSuccess(false);
+    }, 1500);
+  };
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 relative">
         
         {/* TOP STATS ROW */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Income */}
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
             <div className="flex justify-between items-start mb-2">
               <span className="text-gray-500 text-sm">Total Income</span>
@@ -46,13 +61,12 @@ export default function Transactions() {
                 <WalletIcon className="w-5 h-5" />
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-dark mb-1">N 200,000.00</h3>
+            <h3 className="text-2xl font-bold text-gray-600 mb-1">N 200,000.00</h3>
             <p className="text-xs text-blue-500 flex items-center gap-1 font-medium">
               <ArrowUpRightIcon className="w-3 h-3" /> 100% <span className="text-gray-400 font-normal">from last month</span>
             </p>
           </div>
 
-          {/* Expense */}
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
             <div className="flex justify-between items-start mb-2">
               <span className="text-gray-500 text-sm">Total Expense</span>
@@ -60,13 +74,12 @@ export default function Transactions() {
                 <CreditCardIcon className="w-5 h-5" />
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-dark mb-1">N 187,000.00</h3>
+            <h3 className="text-2xl font-bold text-gray-600 mb-1">N 187,000.00</h3>
             <p className="text-xs text-blue-500 flex items-center gap-1 font-medium">
               <ArrowUpRightIcon className="w-3 h-3" /> 100% <span className="text-gray-400 font-normal">from last month</span>
             </p>
           </div>
 
-          {/* Net Balance */}
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
             <div className="flex justify-between items-start mb-2">
               <span className="text-gray-500 text-sm">Net Balance</span>
@@ -74,7 +87,7 @@ export default function Transactions() {
                 <ScaleIcon className="w-5 h-5" />
               </div>
             </div>
-            <h3 className="text-2xl font-bold text-dark mb-1">N 13,000.00</h3>
+            <h3 className="text-2xl font-bold text-gray-600 mb-1">N 13,000.00</h3>
             <p className="text-xs text-blue-500 flex items-center gap-1 font-medium">
               <ArrowUpRightIcon className="w-3 h-3" /> 100% <span className="text-gray-400 font-normal">from last month</span>
             </p>
@@ -83,34 +96,23 @@ export default function Transactions() {
 
         {/* MAIN TABLE SECTION */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-lg font-bold text-dark mb-6">Transaction List</h2>
+          <h2 className="text-lg font-bold text-gray-700 mb-6">Transaction List</h2>
 
           {/* FILTERS TOOLBAR */}
           <div className="flex flex-col md:flex-row gap-4 justify-between mb-8">
             <div className="flex flex-col md:flex-row gap-3 flex-1">
-              {/* Search */}
               <div className="relative w-full md:w-64">
                 <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input 
-                  type="text" 
-                  placeholder="Search" 
-                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary"
-                />
+                <input type="text" placeholder="Search" className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary" />
               </div>
-
-              {/* Type Dropdown */}
               <div className="relative w-full md:w-40">
                 <select className="w-full pl-4 pr-10 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary appearance-none bg-white text-gray-500">
                   <option>Type</option>
                   <option>Income</option>
                   <option>Expense</option>
                 </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                </div>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"><svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg></div>
               </div>
-
-              {/* Date Range Picker (Visual Only) */}
               <div className="relative w-full md:w-64">
                  <button className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg text-left text-gray-500 flex items-center justify-between">
                    <span>2026-01-20 &rarr; 2026-04-02</span>
@@ -118,17 +120,9 @@ export default function Transactions() {
                  </button>
               </div>
             </div>
-
-            {/* Right Actions */}
             <div className="flex gap-3">
-              <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
-                <ArrowDownTrayIcon className="w-4 h-4" />
-                Export
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-lg shadow-blue-500/30">
-                <PlusIcon className="w-4 h-4" />
-                Add Transaction
-              </button>
+              <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition"><ArrowDownTrayIcon className="w-4 h-4" /> Export</button>
+              <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"><PlusIcon className="w-4 h-4" /> Add Transaction</button>
             </div>
           </div>
 
@@ -148,8 +142,8 @@ export default function Transactions() {
               <tbody className="divide-y divide-gray-50">
                 {transactions.map((t, idx) => (
                   <tr key={idx} className="hover:bg-gray-50/50 transition duration-150">
-                    <td className="py-4 px-4 text-sm font-medium text-dark">{t.description}</td>
-                    <td className="py-4 px-4 text-sm font-bold text-dark">{t.amount}</td>
+                    <td className="py-4 px-4 text-sm font-medium text-gray-700">{t.description}</td>
+                    <td className="py-4 px-4 text-sm font-medium text-gray-600">{t.amount}</td>
                     <td className="py-4 px-4 text-sm text-gray-500">{t.type}</td>
                     <td className="py-4 px-4 text-sm text-gray-500">{t.date}</td>
                     <td className="py-4 px-4 text-sm text-gray-500">{t.source}</td>
@@ -162,27 +156,37 @@ export default function Transactions() {
 
           {/* PAGINATION */}
           <div className="flex justify-end items-center mt-8 gap-2">
-            <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:text-primary hover:border-primary transition">
-              <ChevronLeftIcon className="w-4 h-4" />
-            </button>
-            {[1, 2, 3, 4, 5].map((page) => (
-              <button 
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition
-                  ${currentPage === page 
-                    ? "bg-blue-50 text-primary border border-blue-100" 
-                    : "border border-gray-200 text-gray-500 hover:text-dark hover:bg-gray-50"}`}
-              >
-                {page}
-              </button>
-            ))}
-            <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:text-primary hover:border-primary transition">
-              <ChevronRightIcon className="w-4 h-4" />
-            </button>
+            <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:text-primary hover:border-primary transition"><ChevronLeftIcon className="w-4 h-4" /></button>
+            {[1, 2, 3, 4, 5].map((page) => (<button key={page} onClick={() => setCurrentPage(page)} className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition ${currentPage === page ? "bg-blue-50 text-primary border border-blue-100" : "border border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}>{page}</button>))}
+            <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:text-primary hover:border-primary transition"><ChevronRightIcon className="w-4 h-4" /></button>
           </div>
-
         </div>
+
+        {/* --- ADD TRANSACTION MODAL ONLY --- */}
+        {isAddModalOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={() => setIsAddModalOpen(false)}></div>
+            <div className="relative bg-white rounded-2xl w-full max-w-lg p-8 animate-fade-in-up">
+              {isSuccess ? (
+                <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-green-500 animate-bounce"><CheckCircleIcon className="w-10 h-10" /></div>
+                  <div><h3 className="text-xl font-bold text-gray-700">Transaction Added!</h3><p className="text-gray-500 mt-1">Your record has been saved successfully.</p></div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold text-gray-700">Add Transaction</h3><button onClick={() => setIsAddModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition"><XMarkIcon className="w-6 h-6" /></button></div>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Simplified Form Inputs */}
+                    <div><label className="block text-sm font-medium text-gray-600 mb-1">Amount</label><div className="relative"><span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">₦</span><input type="text" placeholder="0.00" className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:border-primary outline-none"/></div></div>
+                    <div><label className="block text-sm font-medium text-gray-600 mb-1">Description</label><input type="text" placeholder="e.g. Payment" className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary outline-none"/></div>
+                    <div className="pt-2"><button type="submit" className="w-full bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition">Save Transaction</button></div>
+                  </form>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
       </div>
     </DashboardLayout>
   );
