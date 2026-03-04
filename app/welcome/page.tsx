@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import DashboardLayout from "@/components/DashboardLayout";
+import MonoButton from "@/components/mono/MonoButton";
 import { 
   CheckIcon, 
   BuildingLibraryIcon, 
@@ -25,7 +25,6 @@ export default function WelcomePage() {
 
         {/* Stepper / Progress Bar */}
         <div className="relative flex items-center justify-between mb-20 max-w-2xl mx-auto">
-          {/* Step 1: Completed */}
           <div className="flex flex-col items-center gap-2 relative z-10">
             <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white">
               <CheckIcon className="w-6 h-6 stroke-[3]" />
@@ -35,7 +34,6 @@ export default function WelcomePage() {
 
           <div className="flex-1 h-[2px] bg-green-600 mx-4"></div>
 
-          {/* Step 2: Completed */}
           <div className="flex flex-col items-center gap-2 relative z-10">
             <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white">
               <CheckIcon className="w-6 h-6 stroke-[3]" />
@@ -45,7 +43,6 @@ export default function WelcomePage() {
 
           <div className="flex-1 h-[2px] bg-gray-300 mx-4"></div>
 
-          {/* Step 3: Active */}
           <div className="flex flex-col items-center gap-2 relative z-10">
             <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">
               3
@@ -55,7 +52,6 @@ export default function WelcomePage() {
 
           <div className="flex-1 h-[2px] bg-gray-300 mx-4"></div>
 
-          {/* Step 4: Pending */}
           <div className="flex flex-col items-center gap-2 relative z-10">
             <div className="w-10 h-10 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center text-gray-400 font-bold">
               4
@@ -67,7 +63,7 @@ export default function WelcomePage() {
         {/* Action Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           
-          {/* Card 1: Bank Account */}
+          {/* Card 1: Bank Account - UPDATED WITH MONO */}
           <div className="bg-primary text-white p-8 rounded-3xl text-left relative overflow-hidden group">
             <div className="absolute top-6 right-8 bg-blue-400/30 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
               Recommended
@@ -79,10 +75,12 @@ export default function WelcomePage() {
             <p className="text-blue-100 text-sm leading-relaxed mb-8">
               Automatically pull in your transactions through Open Banking. Siro categorizes and VAT-tags them for you.
             </p>
-            <Link href="/dashboard" className="inline-flex items-center justify-between w-full bg-white text-primary font-bold py-4 px-6 rounded-xl hover:bg-blue-50 transition">
-              Get Started
-              <ArrowRightIcon className="w-5 h-5" />
-            </Link>
+            
+            <MonoButton 
+              label="Get Started"
+              className="inline-flex items-center justify-between w-full bg-white text-primary font-bold py-4 px-6 rounded-xl hover:bg-blue-50 transition"
+              onSuccess={() => window.location.href = '/dashboard'}
+            />
           </div>
 
           {/* Card 2: Manual Upload */}
@@ -101,7 +99,6 @@ export default function WelcomePage() {
           </div>
         </div>
 
-        {/* Footer Link */}
         <Link href="/dashboard" className="text-gray-400 hover:text-gray-600 text-sm font-medium underline underline-offset-4">
           Skip for now - take me to dashboard
         </Link>

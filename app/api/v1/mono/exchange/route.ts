@@ -4,7 +4,6 @@ import { jwtVerify } from "jose";
 
 export async function POST(request: Request) {
   try {
-    // 1. Auth Guard (Verify the user is logged in)
     const authHeader = request.headers.get("authorization");
     const token = authHeader?.split(" ")[1];
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -13,28 +12,35 @@ export async function POST(request: Request) {
     const { payload } = await jwtVerify(token, secret);
     const userId = payload.userId as string;
 
-    // 2. Get the temporary code from the frontend
     const { code } = await request.json();
 
-    // 3. Exchange code for Account ID via Mono API
-    const monoResponse = await fetch("https://api.withmono.com/account/auth", {
+    // Exchange with Mono V2
+    const monoResponse = await fetch("https://api.withmono.com/v2/accounts/auth", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "mono-sec-key": process.env.MONO_SECRET_KEY!,
+        "accept": "application/json",
+        "mono-sec-key": process.env.MONO_SECRET_KEY as string,
       },
       body: JSON.stringify({ code }),
     });
 
     const monoData = await monoResponse.json();
+    console.log("MONO EXCHANGE RAW RESPONSE:", monoData); // <-- This will tell us exactly what Mono sent
 
     if (!monoResponse.ok) {
       return NextResponse.json({ error: "Mono Exchange Failed", details: monoData }, { status: 400 });
     }
 
-    const monoAccountId = monoData.id;
+    // Safely extract the ID (Mono sometimes wraps it differently in V2)
+    const monoAccountId = monoData.id || monoData.data?.id;
 
-    // 4. Save the Mono Account ID to the Business record in our DB
+    if (!monoAccountId) {
+      console.error("No ID found in Mono response!");
+      return NextResponse.json({ error: "Invalid Mono Response" }, { status: 500 });
+    }
+
+    // Save to the Database
     await prisma.business.update({
       where: { userId },
       data: { monoAccountId },
