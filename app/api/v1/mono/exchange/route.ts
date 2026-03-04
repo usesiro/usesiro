@@ -35,10 +35,9 @@ export async function POST(request: Request) {
     const monoAccountId = monoData.id;
 
     // 4. Save the Mono Account ID to the Business record in our DB
-    // [Inference] based on schema: Business is linked to User 1:1
     await prisma.business.update({
       where: { userId },
-      data: { monoAccountId }, // We need to add this field to Prisma next
+      data: { monoAccountId },
     });
 
     return NextResponse.json({ message: "Bank connected successfully!", accountId: monoAccountId });

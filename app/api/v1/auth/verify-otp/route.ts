@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const validation = verifySchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { error: "Validation Failed", details: validation.error.errors },
+        { error: "Validation Failed", details: validation.error.issues },
         { status: 400 }
       );
     }
