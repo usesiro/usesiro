@@ -1,12 +1,12 @@
 generator client {
-  provider        = "prisma-client-js"
-  engineType      = "library"
-  binaryTargets   = ["native", "rhel-debian-node-18.x"]
+  provider      = "prisma-client-js"
+  engineType    = "library"
+  binaryTargets = ["native", "rhel-debian-node-18.x"]
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // REMOVED: url = env("DATABASE_URL") 
 }
 
 // --- ENUMS ---
