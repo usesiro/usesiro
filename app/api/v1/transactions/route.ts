@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
+import { autoCategorize } from "@/lib/categorizer";
 
 // --- GET: Fetch all transactions ---
 export async function GET(request: Request) {
@@ -21,8 +22,44 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
+    // --- NEW: Parse URL parameters for filtering ---
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+    const type = searchParams.get("type");
+    const source = searchParams.get("source");
+
+    // Build the dynamic where clause
+    const whereClause: any = { businessId: business.id };
+
+    if (search) {
+      whereClause.description = { contains: search, mode: "insensitive" };
+    }
+    
+    if (startDate || endDate) {
+      whereClause.date = {};
+      if (startDate) whereClause.date.gte = new Date(startDate);
+      if (endDate) {
+        // Set to the very end of the selected day to ensure we catch everything
+        const end = new Date(endDate);
+        end.setUTCHours(23, 59, 59, 999);
+        whereClause.date.lte = end;
+      }
+    }
+
+    if (type && type !== "All Types") {
+      // Assuming frontend sends "Income" or "Expense", map it to Enum
+      whereClause.type = type.toUpperCase(); 
+    }
+
+    if (source && source !== "All Sources") {
+      whereClause.source = source.toUpperCase();
+    }
+
+    // Fetch the filtered transactions
     const transactions = await prisma.transaction.findMany({
-      where: { businessId: business.id },
+      where: whereClause,
       orderBy: { date: 'desc' },
       include: {
         category: true,
@@ -30,6 +67,7 @@ export async function GET(request: Request) {
       }
     });
 
+    // Stats will now dynamically reflect the current filter
     const totalIncome = transactions
       .filter(t => t.type === 'INCOME')
       .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -78,6 +116,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // 1. Fetch all available categories from the database
+    const allCategories = await prisma.category.findMany();
+    
+    // 2. Pass the description through the categorizer
+    const matchedCategoryId = autoCategorize(description, type as any, allCategories);
+
     // Create the transaction
     const newTransaction = await prisma.transaction.create({
       data: {
@@ -87,6 +131,7 @@ export async function POST(request: Request) {
         type, // "INCOME" or "EXPENSE"
         date: new Date(date),
         source: "MANUAL",
+        categoryId: matchedCategoryId, // Injects the matched category ID
         vatStatus: "MISSING_VAT", // Defaulting to missing so it flags in Tax Readiness
       }
     });

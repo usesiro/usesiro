@@ -3,27 +3,25 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   Squares2X2Icon, DocumentTextIcon, ClipboardDocumentCheckIcon, 
   MapPinIcon, ChartBarIcon, Cog6ToothIcon, BellIcon, Bars3Icon, 
-  XMarkIcon, EnvelopeIcon, DocumentCheckIcon, ChevronLeftIcon, ChevronRightIcon 
+  XMarkIcon, QuestionMarkCircleIcon, ArrowLeftOnRectangleIcon,
+  ChevronLeftIcon, ChevronRightIcon
 } from "@heroicons/react/24/outline";
 
 const getInitials = (name: string) => {
   if (!name) return "U";
   const parts = name.trim().split(" ");
-  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return parts.length === 1 ? parts[0].substring(0, 2).toUpperCase() : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  
-  // --- NEW: Dynamic Business State ---
   const [businessData, setBusinessData] = useState({ name: "Loading...", industry: "" });
 
   useEffect(() => {
@@ -32,18 +30,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const res = await fetch("/api/v1/business/me", {
           headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` }
         });
-        if (res.ok) {
-          const data = await res.json();
-          setBusinessData(data);
-        }
-      } catch (err) {
-        console.error("Layout fetch error:", err);
-      }
+        if (res.ok) setBusinessData(await res.json());
+      } catch (err) { console.error(err); }
     }
     fetchProfile();
   }, []);
 
-  const businessName = businessData.name;
+  const handleLogout = () => {
+    localStorage.removeItem("siro_access_token");
+    router.push("/login");
+  };
 
   const menuItems = [
     { name: "Dashboard", href: "/dashboard", icon: Squares2X2Icon },
@@ -54,104 +50,84 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Settings", href: "/settings", icon: Cog6ToothIcon },
   ];
 
-  const activeItem = menuItems.find(item => item.href === pathname);
-  const pageTitle = activeItem ? activeItem.name : "Dashboard"; 
-
-  const recentNotifications = [
-    { id: 1, text: "New Message From Support", time: "2m ago", icon: EnvelopeIcon, color: "text-blue-500 bg-blue-50" },
-    { id: 2, text: "New Income Recorded", time: "1h ago", icon: DocumentCheckIcon, color: "text-green-500 bg-green-50" },
-    { id: 3, text: "Tax Readiness Updated", time: "5h ago", icon: MapPinIcon, color: "text-red-500 bg-red-50" },
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-50 flex transition-all duration-300">
-      {/* MOBILE SIDEBAR */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
-          <div className="absolute left-0 top-0 bottom-0 w-64 bg-white shadow-xl flex flex-col p-6 animate-slide-in-left">
-            <div className="flex justify-between items-center mb-8">
-              <Image src="/logo.svg" alt="Siro Logo" width={80} height={34} className="object-contain" />
-              <button onClick={() => setIsMobileMenuOpen(false)}>
-                <XMarkIcon className="w-6 h-6 text-gray-500" />
-              </button>
-            </div>
-            <nav className="flex-1 space-y-2">
-              {menuItems.map((item) => (
-                <Link 
-                  key={item.name} 
-                  href={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
-                    ${pathname === item.href ? "bg-blue-50 text-primary" : "text-gray-500 hover:bg-gray-50"}`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        </div>
-      )}
-
-      {/* DESKTOP SIDEBAR */}
-      <aside className={`hidden lg:flex flex-col border-r border-gray-100 fixed h-full z-10 bg-white transition-all duration-300 ease-in-out ${isDesktopSidebarOpen ? "w-64" : "w-20"}`}>
-        <div className={`h-20 flex items-center border-b border-gray-50 transition-all duration-300 ${isDesktopSidebarOpen ? "px-8 justify-start" : "px-0 justify-center"}`}>
-          <Link href="/">
-             {isDesktopSidebarOpen ? (
-                <Image src="/logo.svg" alt="Siro Logo" width={80} height={34} className="object-contain" />
-             ) : (
-                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-xl">S</div>
-             )}
-          </Link>
+    <div className="min-h-screen bg-[#F9FAFB] flex">
+      <aside className={`hidden lg:flex flex-col border-r border-gray-100 fixed h-full z-30 bg-white transition-all duration-300 ${isDesktopSidebarOpen ? "w-64" : "w-20"}`}>
+        <div className="h-20 flex items-center px-6 border-b border-gray-50">
+          <Image src="/logo.svg" alt="Logo" width={100} height={40} className={`${!isDesktopSidebarOpen && "hidden"}`} />
+          {!isDesktopSidebarOpen && <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold">S</div>}
         </div>
 
-        <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto">
+        <nav className="flex-1 py-6 px-4 space-y-1">
           {menuItems.map((item) => (
             <Link 
               key={item.name} 
               href={item.href}
-              className={`flex items-center rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap group relative
-                ${isDesktopSidebarOpen ? "gap-3 px-4 py-3" : "justify-center p-3"} 
-                ${pathname === item.href ? "bg-blue-50 text-primary" : "text-gray-500 hover:bg-gray-50"}`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all
+                ${pathname === item.href ? "bg-primary text-white shadow-md shadow-blue-100" : "text-gray-500 hover:bg-gray-50"}`}
             >
-              <item.icon className={`flex-shrink-0 transition-all ${isDesktopSidebarOpen ? "w-5 h-5" : "w-6 h-6"}`} />
-              <span className={`transition-all duration-300 overflow-hidden ${isDesktopSidebarOpen ? "opacity-100 w-auto" : "opacity-0 w-0 hidden"}`}>
-                {item.name}
-              </span>
+              <item.icon className="w-5 h-5 flex-shrink-0" />
+              <span className={`${!isDesktopSidebarOpen && "hidden"}`}>{item.name}</span>
             </Link>
           ))}
         </nav>
 
-        <div className="p-4 border-t border-gray-50">
-          <button onClick={() => setIsDesktopSidebarOpen(!isDesktopSidebarOpen)} className={`w-full flex items-center rounded-lg p-2 text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-colors ${isDesktopSidebarOpen ? "justify-start gap-3" : "justify-center"}`}>
-            {isDesktopSidebarOpen ? <><ChevronLeftIcon className="w-5 h-5" /> <span className="text-sm font-medium">Collapse</span></> : <ChevronRightIcon className="w-5 h-5" />}
+        <div className="p-4 border-t border-gray-50 space-y-1">
+          {/* UPDATED LINK TO EXACTLY /help */}
+          <Link 
+            href="/help"
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all
+              ${pathname === "/help" ? "bg-primary text-white shadow-md shadow-blue-100" : "text-gray-500 hover:bg-gray-50"}`}
+          >
+            <QuestionMarkCircleIcon className="w-5 h-5 flex-shrink-0" />
+            <span className={`${!isDesktopSidebarOpen && "hidden"}`}>Help Centre</span>
+          </Link>
+          
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 transition-all"
+          >
+            <ArrowLeftOnRectangleIcon className="w-5 h-5 flex-shrink-0" />
+            <span className={`${!isDesktopSidebarOpen && "hidden"}`}>Logout</span>
+          </button>
+
+          <button 
+            onClick={() => setIsDesktopSidebarOpen(!isDesktopSidebarOpen)}
+            className="w-full mt-2 flex items-center justify-center py-2 text-gray-300 hover:text-gray-500"
+          >
+            {isDesktopSidebarOpen ? <ChevronLeftIcon className="w-5 h-5" /> : <ChevronRightIcon className="w-5 h-5" />}
           </button>
         </div>
       </aside>
 
-      {/* CONTENT */}
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ${isDesktopSidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
-        <header className="bg-white border-b border-gray-100 h-20 px-4 md:px-8 flex items-center justify-between sticky top-0 z-20">
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${isDesktopSidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
+        <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 h-20 px-8 flex items-center justify-between sticky top-0 z-20">
+          <h1 className="text-xl font-black text-gray-900">
+            {/* UPDATED TITLE CHECK TO EXACTLY /help */}
+            {pathname === "/help" 
+              ? "Help Centre" 
+              : menuItems.find(i => i.href === pathname)?.name || "Overview"}
+          </h1>
+          
           <div className="flex items-center gap-4">
-            <button onClick={() => setIsMobileMenuOpen(true)} className="lg:hidden text-gray-600 p-2"><Bars3Icon className="w-6 h-6" /></button>
-            <h1 className="text-xl font-bold text-dark">{pageTitle}</h1>
-          </div>
-
-          <div className="flex items-center gap-6">
-            <button onClick={() => setIsNotificationOpen(!isNotificationOpen)} className="relative text-gray-500"><BellIcon className="w-6 h-6" /></button>
-            <div className="flex items-center gap-3 pl-6 border-l border-gray-100">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">
-                {getInitials(businessName)}
+            <button className="p-2 text-gray-400 hover:bg-gray-50 rounded-full transition-colors">
+              <BellIcon className="w-6 h-6" />
+            </button>
+            <div className="flex items-center gap-3 pl-4 border-l border-gray-100">
+              <div className="text-right hidden md:block">
+                <p className="text-sm font-black text-gray-900 leading-none">{businessData.name}</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Administrator</p>
               </div>
-              <div className="hidden md:block">
-                <p className="text-sm font-bold text-dark leading-tight">{businessName}</p>
-                <p className="text-xs text-gray-400">Admin</p>
+              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white font-bold shadow-lg shadow-blue-100">
+                {getInitials(businessData.name)}
               </div>
             </div>
           </div>
         </header>
-        <main className="p-4 md:p-8">{children}</main>
+
+        <main className="p-8 max-w-[1600px] mx-auto w-full">
+          {children}
+        </main>
       </div>
     </div>
   );

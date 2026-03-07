@@ -10,15 +10,17 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#2F6EF6', // The Blue you found
-          light: 'rgba(47, 110, 246, 0.1)', // The 10% opacity accent
+          DEFAULT: '#2F6EF6', 
+          light: 'rgba(47, 110, 246, 0.1)', 
         },
         dark: {
-          DEFAULT: '#290619', // The dark background color
+          DEFAULT: '#290619', 
         },
       },
       fontFamily: {
-        sans: ['var(--font-poppins)'], // This connects to the font setup we did earlier
+        sans: ['var(--font-poppins)'], 
+        // ADDED FRAUNCES HERE
+        fraunces: ['var(--font-fraunces)', 'serif'], 
       }
     },
   },

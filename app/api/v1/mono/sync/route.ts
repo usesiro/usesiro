@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
+import { autoCategorize } from "@/lib/categorizer";
 
 export async function POST(request: Request) {
   try {
@@ -37,7 +38,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to fetch transactions", details: monoData }, { status: 400 });
     }
 
-    // 4. Save to Database
+    // 4. Fetch all available categories from the database ONCE before the loop
+    const allCategories = await prisma.category.findMany();
+
+    // 5. Save to Database
     const transactions = monoData.data || [];
     let savedCount = 0;
 
@@ -48,14 +52,22 @@ export async function POST(request: Request) {
       });
 
       if (!existingTxn) {
+        // Determine type and description
+        const transactionType = txn.type === "credit" ? "INCOME" : "EXPENSE";
+        const description = txn.narration || "Bank Transaction";
+
+        // Pass through the categorizer
+        const matchedCategoryId = autoCategorize(description, transactionType, allCategories);
+
         await prisma.transaction.create({
           data: {
             businessId: business.id,
             amount: txn.amount / 100, // Mono returns Kobo, divide by 100 for Naira
             date: new Date(txn.date || txn.created_at),
-            description: txn.narration || "Bank Transaction",
+            description: description,
             source: "MONO",
-            type: txn.type === "credit" ? "INCOME" : "EXPENSE",
+            type: transactionType,
+            categoryId: matchedCategoryId, // Injects the matched category ID
             vatStatus: "MISSING_VAT",
             externalId: txn._id || txn.id,
           }
