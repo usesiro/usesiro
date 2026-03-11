@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { 
   WalletIcon, 
   TagIcon, 
@@ -15,13 +17,23 @@ import {
   ArrowDownTrayIcon,
   CalendarIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  DocumentTextIcon, 
+  TableCellsIcon
 } from "@heroicons/react/24/outline";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
 
 export default function TaxReadiness() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // NEW EXPORT MODAL STATE
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportParams, setExportParams] = useState({
+    startDate: "",
+    endDate: "",
+    format: "PDF" 
+  });
 
   // Filter State
   const [filters, setFilters] = useState({
@@ -99,13 +111,125 @@ export default function TaxReadiness() {
   
   const totalIssues = missingVatCount + uncategorizedCount + missingDocCount;
 
-  // Rough Tax Readiness Score (We will finalize the 40/40/20 formula on Day 12)
+  // Rough Tax Readiness Score
   const totalTxns = transactions.length || 1; 
   const score = Math.max(0, Math.round(((totalTxns - totalIssues) / totalTxns) * 100));
 
   // Handlers
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
+  };
+
+  const handleExportParamChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setExportParams({ ...exportParams, [e.target.name]: e.target.value });
+  };
+
+  // --- ADVANCED EXPORT GENERATOR ---
+  const handleGenerateExport = () => {
+    // 1. Filter based on selected date range and sort nicely (Newest First)
+    const dataToExport = transactions.filter(t => {
+      const tDate = new Date(t.date).getTime();
+      const sDate = exportParams.startDate ? new Date(exportParams.startDate).getTime() : null;
+      const eDate = exportParams.endDate ? new Date(exportParams.endDate).getTime() : null;
+      
+      if (sDate && tDate < sDate) return false;
+      if (eDate && tDate > eDate) return false;
+      return true;
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    if (dataToExport.length === 0) {
+      alert("No transactions found in this date range.");
+      return;
+    }
+
+    // 2. Calculate VAT totals specifically for this exported range
+    const expOutputVat = dataToExport.reduce((acc, t) => t.vatStatus === 'TAGGED' && t.type === 'INCOME' ? acc + (t.vatAmount ? Number(t.vatAmount) : Number(t.amount) * VAT_RATE) : acc, 0);
+    const expInputVat = dataToExport.reduce((acc, t) => t.vatStatus === 'TAGGED' && t.type === 'EXPENSE' ? acc + (t.vatAmount ? Number(t.vatAmount) : Number(t.amount) * VAT_RATE) : acc, 0);
+    const expNetVat = expOutputVat - expInputVat;
+
+    const reportTitle = `Siro_Tax_Readiness_Report_${new Date().toISOString().split('T')[0]}`;
+
+    if (exportParams.format === 'CSV') {
+      // --- Generate Beautiful CSV ---
+      const headers = ["Date", "Description", "Type", "Amount (NGN)", "Source", "VAT Status", "Documentation"];
+      const csvRows = dataToExport.map(t => [
+        new Date(t.date).toLocaleDateString('en-GB'),
+        `"${t.description.replace(/"/g, '""')}"`, // Escape commas and quotes safely
+        t.type,
+        Number(t.amount).toFixed(2), // Force 2 decimal places for Excel
+        t.source === 'MONO' ? 'Bank (Mono)' : 'Manual',
+        t.vatStatus || 'MISSING_VAT',
+        t.document ? 'Uploaded' : 'Missing'
+      ].join(','));
+
+      const csvString = [headers.join(','), ...csvRows].join('\n');
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${reportTitle}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+    } else {
+      // --- Generate Professional PDF ---
+      const doc = new jsPDF();
+      
+      // Document Header
+      doc.setFontSize(20);
+      doc.setTextColor(47, 110, 246); // Primary Blue
+      doc.text("Siro Tax Readiness Report", 14, 22);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      const dateRangeStr = (exportParams.startDate || exportParams.endDate) 
+        ? `Date Range: ${exportParams.startDate || 'Start'} to ${exportParams.endDate || 'Present'}`
+        : `Date Range: All Time`;
+      doc.text(dateRangeStr, 14, 30);
+      doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB')}`, 14, 35);
+
+      // Summary VAT Boxes (Tax Ready view)
+      doc.setFillColor(243, 244, 246); // Gray background
+      doc.rect(14, 45, 182, 25, 'F');
+      
+      doc.setFontSize(10);
+      doc.setTextColor(50);
+      doc.text("Output VAT (Collected):", 20, 55);
+      doc.text("Input VAT (Paid):", 85, 55);
+      doc.text("Net VAT Payable:", 145, 55);
+
+      doc.setFontSize(12);
+      doc.setTextColor(0); // Black text for values
+      doc.text(`NGN ${expOutputVat.toLocaleString('en-NG', {minimumFractionDigits: 2})}`, 20, 62);
+      doc.text(`NGN ${expInputVat.toLocaleString('en-NG', {minimumFractionDigits: 2})}`, 85, 62);
+      doc.setTextColor(47, 110, 246); // Highlight net payable
+      doc.text(`NGN ${expNetVat.toLocaleString('en-NG', {minimumFractionDigits: 2})}`, 145, 62);
+
+      // Data Table
+      const tableColumn = ["Date", "Description", "Type", "Amount (NGN)", "VAT Status", "Doc"];
+      const tableRows = dataToExport.map(t => [
+        new Date(t.date).toLocaleDateString('en-GB'),
+        t.description,
+        t.type,
+        Number(t.amount).toLocaleString('en-NG', {minimumFractionDigits: 2}),
+        t.vatStatus || 'MISSING_VAT',
+        t.document ? 'Yes' : 'No'
+      ]);
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 80,
+        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: [47, 110, 246] },
+        alternateRowStyles: { fillColor: [249, 250, 251] },
+      });
+
+      doc.save(`${reportTitle}.pdf`);
+    }
+
+    setIsExportModalOpen(false); // Close modal on success
   };
 
   const formatCurrency = (amount: number) => {
@@ -231,7 +355,7 @@ export default function TaxReadiness() {
                   </div>
                 )}
                 {totalIssues === 0 && (
-                  <div className="text-sm text-green-600 font-medium">No gaps found! You are tax ready.</div>
+                  <div className="text-sm text-green-600 font-medium">No gap found! You are tax ready.</div>
                 )}
               </div>
             </div>
@@ -298,8 +422,11 @@ export default function TaxReadiness() {
               </div>
             </div>
             <div className="flex gap-3">
-               <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition">
-                 <ArrowDownTrayIcon className="w-4 h-4" /> Export
+               <button 
+                 onClick={() => setIsExportModalOpen(true)}
+                 className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+               >
+                 <ArrowDownTrayIcon className="w-4 h-4" /> Export Report
                </button>
             </div>
           </div>
@@ -362,6 +489,74 @@ export default function TaxReadiness() {
           </div>
 
         </div>
+
+        {/* --- EXPORT RANGE & FORMAT MODAL --- */}
+        {isExportModalOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={() => setIsExportModalOpen(false)}></div>
+            <div className="relative bg-white rounded-2xl w-full max-w-md p-8 animate-fade-in-up">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-gray-700">Export Tax Report</h3>
+                <button onClick={() => setIsExportModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition"><XMarkIcon className="w-6 h-6" /></button>
+              </div>
+              
+              <div className="space-y-5">
+                <div className="flex gap-4">
+                  <div className="w-1/2">
+                    <label className="block text-sm font-medium text-gray-600 mb-1">Start Date</label>
+                    <input 
+                      type="date" 
+                      name="startDate"
+                      value={exportParams.startDate}
+                      onChange={handleExportParamChange}
+                      className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:border-primary outline-none text-gray-600"
+                    />
+                  </div>
+                  <div className="w-1/2">
+                    <label className="block text-sm font-medium text-gray-600 mb-1">End Date</label>
+                    <input 
+                      type="date" 
+                      name="endDate"
+                      value={exportParams.endDate}
+                      onChange={handleExportParamChange}
+                      className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:border-primary outline-none text-gray-600"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                   <label className="block text-sm font-medium text-gray-600 mb-2">Select Format</label>
+                   <div className="flex gap-3">
+                      <button 
+                        onClick={() => setExportParams({...exportParams, format: 'PDF'})}
+                        className={`flex-1 flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all ${exportParams.format === 'PDF' ? 'border-primary bg-blue-50/50 text-primary' : 'border-gray-100 bg-white text-gray-500 hover:border-gray-200'}`}
+                      >
+                        <DocumentTextIcon className="w-8 h-8" />
+                        <span className="text-sm font-bold">PDF Report</span>
+                      </button>
+                      <button 
+                        onClick={() => setExportParams({...exportParams, format: 'CSV'})}
+                        className={`flex-1 flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all ${exportParams.format === 'CSV' ? 'border-primary bg-blue-50/50 text-primary' : 'border-gray-100 bg-white text-gray-500 hover:border-gray-200'}`}
+                      >
+                        <TableCellsIcon className="w-8 h-8" />
+                        <span className="text-sm font-bold">Excel (CSV)</span>
+                      </button>
+                   </div>
+                </div>
+                
+                <div className="pt-2">
+                  <button 
+                    onClick={handleGenerateExport}
+                    className="w-full flex items-center justify-center gap-2 bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition"
+                  >
+                    <ArrowDownTrayIcon className="w-5 h-5" /> Download {exportParams.format}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </DashboardLayout>
   );

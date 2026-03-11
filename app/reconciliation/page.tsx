@@ -46,22 +46,30 @@ export default function Reconciliation() {
     if (!selectedTransaction) return;
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/v1/transactions/${selectedTransaction.id}`, {
+      // Pointed to the correct VAT update endpoint and added transactionId to the body
+      const res = await fetch(`/api/v1/transactions/vat`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` 
         },
-        body: JSON.stringify({ vatStatus: editVatStatus })
+        body: JSON.stringify({ 
+          transactionId: selectedTransaction.id, 
+          vatStatus: editVatStatus 
+        })
       });
 
       if (res.ok) {
-        // [Inference] Removing item locally prevents unnecessary re-fetch and feels faster
+        // Removing item locally prevents unnecessary re-fetch and feels faster
         setTransactions(prev => prev.filter(t => t.id !== selectedTransaction.id));
         setIsDetailsModalOpen(false);
+      } else {
+        const errData = await res.json();
+        alert(errData.error || "Failed to update transaction.");
       }
     } catch (err) {
       console.error("Update failed", err);
+      alert("Network error. Please try again.");
     } finally {
       setIsSaving(false);
     }
