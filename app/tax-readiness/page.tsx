@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { calculateTaxReadinessScore } from "@/utils/taxScoring"; // <-- IMPORT ADDED
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { 
@@ -111,9 +112,8 @@ export default function TaxReadiness() {
   
   const totalIssues = missingVatCount + uncategorizedCount + missingDocCount;
 
-  // Rough Tax Readiness Score
-  const totalTxns = transactions.length || 1; 
-  const score = Math.max(0, Math.round(((totalTxns - totalIssues) / totalTxns) * 100));
+  // --- NEW CENTRALIZED SCORE LOGIC APPLIED ---
+  const score = calculateTaxReadinessScore(transactions);
 
   // Handlers
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

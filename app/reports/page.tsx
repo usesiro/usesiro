@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { calculateTaxReadinessScore } from "@/utils/taxScoring"; // <-- IMPORT ADDED
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { 
@@ -41,7 +42,7 @@ export default function Reports() {
   }, []);
 
   const { totalIncome, totalExpense, netBalance, barData, donutData, score } = useMemo(() => {
-    let inc = 0, exp = 0, ready = 0;
+    let inc = 0, exp = 0;
     const monthlyMap: Record<string, any> = {};
     const categoryMap: Record<string, number> = {};
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -50,9 +51,6 @@ export default function Reports() {
     transactions.forEach(t => {
       const amt = Number(t.amount);
       const m = months[new Date(t.date).getMonth()];
-      
-      // Calculate Score: Must have category AND not be "MISSING_VAT"
-      if (t.categoryId && t.vatStatus !== 'MISSING_VAT') ready++;
 
       if (t.type === 'INCOME') {
         inc += amt;
@@ -73,7 +71,7 @@ export default function Reports() {
       totalIncome: inc, totalExpense: exp, netBalance: inc - exp,
       barData: Object.values(monthlyMap),
       donutData: processedDonut.length ? processedDonut : [{name: 'Empty', value: 100, color: '#F3F4F6'}],
-      score: transactions.length ? Math.round((ready / transactions.length) * 100) : 0
+      score: calculateTaxReadinessScore(transactions) // <-- NEW SCORE LOGIC APPLIED
     };
   }, [transactions]);
 
@@ -219,7 +217,6 @@ export default function Reports() {
             </ResponsiveContainer>
           </div>
 
-          {/* --- ONLY THE SCORE WAS EDITED (NO SVG, BIG TEXT) --- */}
           <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center h-[450px]">
             <h2 className="text-gray-400 font-bold mb-4 uppercase tracking-widest text-sm">Tax Readiness Score</h2>
             <span className="text-[120px] leading-none font-black text-primary drop-shadow-sm">

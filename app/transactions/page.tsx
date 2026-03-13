@@ -9,7 +9,7 @@ import {
   ArrowUpRightIcon, WalletIcon, CreditCardIcon, ScaleIcon,
   MagnifyingGlassIcon, ArrowDownTrayIcon, PlusIcon,
   ChevronLeftIcon, ChevronRightIcon, XMarkIcon, CheckCircleIcon,
-  ReceiptRefundIcon, DocumentChartBarIcon, DocumentTextIcon, TableCellsIcon
+  ReceiptRefundIcon, DocumentChartBarIcon, DocumentTextIcon, TableCellsIcon, ArrowPathIcon
 } from "@heroicons/react/24/outline";
 
 const ITEMS_PER_PAGE = 15; // Set pagination limit
@@ -20,6 +20,7 @@ export default function Transactions() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false); // <-- MOVED FROM DASHBOARD
 
   // Dynamic Data State
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -368,6 +369,18 @@ export default function Transactions() {
   return (
     <DashboardLayout>
       <div className="space-y-6 relative">
+
+        {/* --- MOVED SYNC BUTTON HERE --- */}
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-gray-800">Transactions</h1>
+          <button 
+            onClick={async () => { setIsSyncing(true); await fetch("/api/v1/mono/sync", { method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` } }); window.location.reload(); }} 
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition shadow-none"
+          >
+            <ArrowPathIcon className={`w-4 h-4 text-primary ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? "Syncing..." : "Sync Bank"}
+          </button>
+        </div>
         
         {/* TOP STATS ROW */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
