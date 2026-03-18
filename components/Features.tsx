@@ -51,7 +51,7 @@ export default function Features() {
             <div className="text-primary text-xs font-semibold uppercase tracking-widest mb-3">
               WHAT SIRO DOES
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 leading-[1.3]">
+            <h2 className="text-3xl md:text-4xl font-fraunces font-bold text-gray-900 leading-[1.3]">
               Everything you need <br className="hidden md:block" />
               to stay tax-ready.
             </h2>

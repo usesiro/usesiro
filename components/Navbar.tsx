@@ -3,10 +3,31 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Unified Scroll Function
+  const handleScrollToFeatures = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsOpen(false);
+
+    const element = document.getElementById("features");
+    
+    if (pathname === "/") {
+      // If on home page, just scroll
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    } else {
+      // If on another page, go home first then scroll
+      router.push("/#features");
+    }
+  };
 
   return (
     <nav className="fixed w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
@@ -31,9 +52,13 @@ export default function Navbar() {
             <Link href="/" className="text-sm text-gray-900 font-semibold transition-colors">
               Home
             </Link>
-            <Link href="/#features" className="text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors">
+            {/* FIXED: Features Link now uses handleScrollToFeatures */}
+            <button 
+              onClick={handleScrollToFeatures}
+              className="text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors"
+            >
               Features
-            </Link>
+            </button>
             <Link href="/pricing" className="text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors">
               Pricing
             </Link>
@@ -75,13 +100,13 @@ export default function Navbar() {
             >
               Home
             </Link>
-            <Link 
-              href="/#features" 
-              className="block px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors"
-              onClick={() => setIsOpen(false)}
+            {/* FIXED: Mobile Features Link */}
+            <button 
+              onClick={handleScrollToFeatures}
+              className="w-full text-left block px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors"
             >
               Features
-            </Link>
+            </button>
             <Link 
               href="/pricing" 
               className="block px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors"
