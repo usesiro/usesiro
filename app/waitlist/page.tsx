@@ -75,12 +75,13 @@ export default function WaitlistPage() {
             <span className="text-primary text-xs font-semibold tracking-wide">Beta coming soon</span>
           </div>
           
+          {/* Changed the <br> below to force the break on all screen sizes */}
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-fraunces font-bold text-gray-900 tracking-tight mb-6 leading-[1.1]">
-            Get early access <br className="hidden md:block" />
+            Get early access <br />
             to <span className="text-primary italic">Siro.</span>
           </h1>
           
-          <p className="text-gray-500 text-lg font-medium leading-relaxed max-w-xl mx-auto">
+          <p className="text-gray-500 text-lg font-medium leading-relaxed max-w-xl mx-auto px-2">
             No more tax season scrambles. Join the waitlist and be among the first Nigerian businesses to go fully tax-ready.
           </p>
         </div>
