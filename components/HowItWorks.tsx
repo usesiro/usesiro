@@ -4,7 +4,7 @@ const steps = [
   {
     num: "1",
     title: "Create your account",
-    desc: "Sign up and set up your business profile in under 5 minutes.",
+    desc: "Sign up and set up your business profile in under 2 minutes.",
   },
   {
     num: "2",

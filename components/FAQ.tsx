@@ -5,29 +5,29 @@ import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 
 const faqs = [
   {
-    question: "Is my financial data safe?",
-    answer: "Yes. All data is encrypted using bank-grade security protocols, and we do not sell your data to third parties."
+    question: "What exactly is Siro?",
+    answer: "Siro is a tax compliance platform for Nigerian businesses. It connects to your bank account, automatically pulls your transactions, helps you tag your VAT, categorizes your income and expenses, and generates a clean NRS compliant report so when the NRS comes, your records are already ready. It is not an accounting software or a tax filing tool."
   },
   {
-    question: "Is there customer support if I get stuck?",
-    answer: "Absolutely. We have a dedicated support team available via chat and email to assist you with any issues."
+    question: "Is my financial data safe with Siro?",
+    answer: "Yes. All data is encrypted and we connect to your bank through regulated open banking infrastructure. We have read only access. We cannot move money or make any changes to your account."
+  },
+  {
+    question: "What types of businesses is Siro built for?",
+    answer: "Siro is built for Nigerian businesses like retailers, hotels, restaurants, lounges, pharmacies, service providers, logistics companies, and more. If your business has regular transactions and tax obligations, Siro is for you."
+  },
+  {
+    question: "What happens to my records if I join Siro after the year has started?",
+    answer: "When you connect your bank, Siro pulls your full transaction history, not just from the day you sign up. Depending on your bank, that can go back several months automatically. You do not start from zero."
   },
   {
     question: "Can I still add transactions manually?",
-    answer: "Yes! While we focus on automation, you can easily add cash transactions or manual entries via the mobile app."
+    answer: "Yes! While we focus on automation, you can easily add cash transactions or manual entries for anything that does not go through your bank."
   },
   {
-    question: "Can I access the platform on mobile?",
-    answer: "Yes, we have a fully responsive mobile app available for both iOS and Android devices."
-  },
-  {
-    question: "Can this help me file taxes automatically?",
-    answer: "We prepare all your reports and organize your data so it is 100% tax-ready, making filing instant and stress-free."
-  },
-  {
-    question: "How much does the platform cost?",
-    answer: "We offer flexible pricing plans starting with a free trial. Check our pricing page for more details."
-  },
+    question: "Can I cancel anytime?",
+    answer: "Yes. No lock in contracts. Cancel at any time and your data remains accessible until the end of your billing period."
+  }
 ];
 
 export default function FAQ() {
@@ -49,9 +49,9 @@ export default function FAQ() {
           <div className="text-primary text-xs font-semibold uppercase tracking-widest mb-3">
             FAQ
           </div>
-<h2 className="text-3xl md:text-4xl font-fraunces font-bold text-gray-900 mb-4 leading-tight">
-  Frequently Asked Questions
-</h2>
+          <h2 className="text-3xl md:text-4xl font-fraunces font-bold text-gray-900 mb-4 leading-tight">
+            Frequently Asked Questions
+          </h2>
           <p className="text-gray-500 text-sm md:text-base leading-relaxed">
             These are some of the questions that users frequently ask and we have answered them here.
           </p>

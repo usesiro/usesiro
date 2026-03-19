@@ -39,11 +39,11 @@ export default function VatReporting() {
           data-aos="fade-up"
           data-aos-delay="300"
         >
-          <Link href="/register">
-            <button className="px-8 py-3 bg-primary text-white rounded-lg font-medium text-sm hover:bg-blue-600 transition-colors">
-              Try it for free
-            </button>
-          </Link>
+          <Link href="/waitlist">
+  <button className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30">
+    Join the waitlist
+  </button>
+</Link>
         </div>
 
       </div>
