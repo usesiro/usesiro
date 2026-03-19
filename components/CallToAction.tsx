@@ -8,7 +8,7 @@ export default function CallToAction() {
       id="get-started" 
       className="relative py-20 md:py-28 bg-primary overflow-hidden"
     >
-      {/* --- BACKGROUND PATTERNS (Refined Circles) --- */}
+      {/* --- BACKGROUND PATTERNS --- */}
       <div className="absolute -top-24 -right-24 w-80 h-80 md:w-[600px] md:h-[600px] rounded-full bg-white opacity-[0.08] blur-[80px] pointer-events-none" />
       <div className="absolute -bottom-32 -left-32 w-64 h-64 md:w-[400px] md:h-[400px] rounded-full bg-white opacity-[0.06] blur-[40px] pointer-events-none" />
 
@@ -16,7 +16,7 @@ export default function CallToAction() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center relative z-10">
         
         <h2 
-          className="text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight mb-6 leading-[1.1]"
+          className="text-4xl md:text-5xl lg:text-6xl font-fraunces font-bold text-white tracking-tight mb-6 leading-[1.1]"
           data-aos="fade-up"
         >
           Ready to get your<br /> business tax-ready?
@@ -36,14 +36,14 @@ export default function CallToAction() {
           data-aos="fade-up"
           data-aos-delay="200"
         >
-          <Link href="/register">
-            <button className="w-full sm:w-auto px-10 py-4 bg-white text-primary rounded-xl font-black text-sm hover:bg-gray-50 transition active:scale-95 shadow-xl shadow-black/10">
-              Get Started
+          <Link href="/waitlist">
+            <button className="w-full sm:w-auto px-10 py-4 bg-white text-primary rounded-xl font-bold text-sm hover:bg-gray-50 transition active:scale-95 shadow-xl shadow-black/10">
+              Join the waitlist
             </button>
           </Link>
           
-          <Link href="/demo">
-            <button className="w-full sm:w-auto px-10 py-4 bg-transparent text-white border-2 border-white rounded-xl font-black text-sm hover:bg-white hover:text-primary transition active:scale-95">
+          <Link href="/contact">
+            <button className="w-full sm:w-auto px-10 py-4 bg-transparent text-white border-2 border-white rounded-xl font-bold text-sm hover:bg-white hover:text-primary transition active:scale-95">
               Book a Demo
             </button>
           </Link>

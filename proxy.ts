@@ -5,8 +5,8 @@ import { jwtVerify } from 'jose';
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Let public authentication routes pass freely without a token
-  if (pathname.startsWith('/api/v1/auth')) {
+  // 1. Let public authentication and waitlist routes pass freely without a token
+  if (pathname.startsWith('/api/v1/auth') || pathname.startsWith('/api/v1/waitlist')) {
     return NextResponse.next();
   }
 

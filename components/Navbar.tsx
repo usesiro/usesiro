@@ -30,7 +30,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="fixed w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
+    <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
           
@@ -38,7 +38,7 @@ export default function Navbar() {
           <div className="flex-shrink-0 flex items-center w-40">
             <Link href="/">
               <Image 
-                src="/logo.svg" 
+                src="/logo.png" 
                 alt="Siro Logo" 
                 width={80} 
                 height={34} 
@@ -52,7 +52,6 @@ export default function Navbar() {
             <Link href="/" className="text-sm text-gray-900 font-semibold transition-colors">
               Home
             </Link>
-            {/* FIXED: Features Link now uses handleScrollToFeatures */}
             <button 
               onClick={handleScrollToFeatures}
               className="text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors"
@@ -71,12 +70,12 @@ export default function Navbar() {
           </div>
 
           {/* CTA Button */}
-          <div className="hidden md:flex items-center justify-end w-40">
+          <div className="hidden md:flex items-center justify-end w-auto">
             <Link 
-              href="/login" 
-              className="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors"
+              href="/waitlist" 
+              className="bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap"
             >
-              Sign In/Register
+              Join the waitlist
             </Link>
           </div>
 
@@ -100,7 +99,6 @@ export default function Navbar() {
             >
               Home
             </Link>
-            {/* FIXED: Mobile Features Link */}
             <button 
               onClick={handleScrollToFeatures}
               className="w-full text-left block px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors"
@@ -130,11 +128,11 @@ export default function Navbar() {
             </Link>
             <div className="pt-4 px-2">
               <Link 
-                href="/login"
-                className="block w-full text-center py-3 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                href="/waitlist"
+                className="block w-full text-center py-3 bg-primary text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
                 onClick={() => setIsOpen(false)}
               >
-                Sign In/Register
+                Join the waitlist
               </Link>
             </div>
           </div>

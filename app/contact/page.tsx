@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FAQ from "@/components/FAQ";
@@ -25,10 +26,10 @@ export default function ContactPage() {
   const isValid = formData.fullName && formData.email && formData.topic && formData.message;
 
   return (
-    <div className="bg-[#FAFAFA] min-h-screen font-sans selection:bg-primary selection:text-white">
+    <div className="bg-[#FAFAFA] min-h-screen font-sans selection:bg-primary selection:text-white flex flex-col">
       <Navbar />
 
-      <section className="pt-36 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section className="pt-36 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full flex-grow">
         
         {/* HEADER */}
         <div className="text-center mb-16" data-aos="fade-up">
@@ -38,8 +39,8 @@ export default function ContactPage() {
           </div>
           
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-fraunces font-bold text-gray-900 tracking-tight">
-  We're a <span className="text-primary">message</span> away
-</h1>
+            We're a <span className="text-primary italic">message</span> away
+          </h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -47,42 +48,45 @@ export default function ContactPage() {
           {/* LEFT COLUMN: INFO CARDS */}
           <div className="lg:col-span-4 space-y-6" data-aos="fade-right" data-aos-delay="100">
             {/* Direct Channel Card */}
-            <div className="bg-white p-8 rounded-2xl border border-gray-100">
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm hover:border-blue-100 transition-colors">
               <h3 className="font-bold text-lg text-gray-900 mb-6">Direct Channel</h3>
               <ul className="space-y-5">
                 <li className="flex items-center gap-4 text-gray-600">
-                  <EnvelopeIcon className="w-5 h-5 text-primary" />
-                  <span className="text-sm font-medium">Support@loremipsum.com</span>
+                  <EnvelopeIcon className="w-5 h-5 text-primary flex-shrink-0" />
+                  <span className="text-sm font-medium">info@usesiro.com</span>
                 </li>
                 <li className="flex items-center gap-4 text-gray-600">
-                  <EnvelopeIcon className="w-5 h-5 text-primary" />
-                  <span className="text-sm font-medium">Info@loremipsum.com</span>
+                  <EnvelopeIcon className="w-5 h-5 text-primary flex-shrink-0" />
+                  <span className="text-sm font-medium">usesironow@gmail.com</span>
                 </li>
                 <li className="flex items-center gap-4 text-gray-600">
-                  <PhoneIcon className="w-5 h-5 text-primary" />
-                  <span className="text-sm font-medium">+23400000000000</span>
+                  <PhoneIcon className="w-5 h-5 text-primary flex-shrink-0" />
+                  <span className="text-sm font-medium">+234 902 886 7544</span>
                 </li>
               </ul>
             </div>
 
             {/* Book a Demo Card */}
-            <div className="bg-primary p-8 rounded-2xl text-white">
+            <div className="bg-primary p-8 rounded-[2rem] text-white shadow-xl shadow-blue-500/20">
               <h3 className="font-bold text-lg mb-3">Book a Demo</h3>
               <p className="text-white/80 text-sm mb-8 leading-relaxed font-medium">
-                Get a guided walkthrough of how the platform works
+                Get a guided walkthrough of how the platform works and see how Siro can automate your tax compliance.
               </p>
-              <button className="bg-white text-primary px-6 py-3 rounded-lg text-sm font-bold hover:bg-gray-50 transition-colors w-max">
-                Book a Demo
-              </button>
+              <Link 
+                href="/waitlist" 
+                className="bg-white text-primary px-6 py-3 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors w-max inline-block shadow-sm"
+              >
+                Join the waitlist
+              </Link>
             </div>
           </div>
 
           {/* RIGHT COLUMN: FORM */}
           <div className="lg:col-span-8" data-aos="fade-left" data-aos-delay="200">
-            <div className="bg-white p-8 md:p-10 rounded-2xl border border-gray-100 h-full">
+            <div className="bg-white p-8 md:p-10 rounded-[2rem] border border-gray-100 shadow-sm h-full hover:border-blue-100 transition-colors">
               <h3 className="font-bold text-lg text-gray-900 mb-8">Send us a Message</h3>
               
-              <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); alert("Message Sent!"); }}>
+              <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); alert("Message Sent! We will get back to you shortly."); }}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
@@ -92,7 +96,7 @@ export default function ContactPage() {
                       onChange={handleChange} 
                       type="text" 
                       placeholder="Enter Full Name" 
-                      className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm transition-colors" 
+                      className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:bg-white text-sm transition-colors" 
                     />
                   </div>
                   <div>
@@ -103,7 +107,7 @@ export default function ContactPage() {
                       onChange={handleChange} 
                       type="email" 
                       placeholder="Enter Email" 
-                      className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm transition-colors" 
+                      className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:bg-white text-sm transition-colors" 
                     />
                   </div>
                 </div>
@@ -115,11 +119,12 @@ export default function ContactPage() {
                       name="topic" 
                       value={formData.topic} 
                       onChange={handleChange} 
-                      className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm appearance-none text-gray-500 transition-colors"
+                      className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:bg-white text-sm appearance-none text-gray-500 transition-colors"
                     >
-                      <option value="">Select Topic</option>
-                      <option value="inquiry">General Inquiry</option>
+                      <option value="">Enquiries</option>
+                      <option value="waitlist">Waitlist Questions</option>
                       <option value="support">Technical Support</option>
+                      <option value="partnership">Partnerships</option>
                     </select>
                     <ChevronDownIcon className="w-5 h-5 text-gray-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
@@ -133,7 +138,7 @@ export default function ContactPage() {
                     onChange={handleChange} 
                     placeholder="How Can We Help" 
                     rows={6} 
-                    className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm resize-none transition-colors"
+                    className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:bg-white text-sm resize-none transition-colors"
                   ></textarea>
                 </div>
 
@@ -141,7 +146,7 @@ export default function ContactPage() {
                   <button 
                     type="submit" 
                     disabled={!isValid} 
-                    className={`px-8 py-3.5 rounded-xl font-bold text-sm text-white transition-colors ${isValid ? "bg-primary hover:bg-blue-700 cursor-pointer" : "bg-primary/50 cursor-not-allowed"}`}
+                    className={`px-8 py-3.5 rounded-xl font-bold text-sm text-white transition-colors shadow-sm ${isValid ? "bg-primary hover:bg-blue-700 cursor-pointer shadow-blue-500/30" : "bg-primary/50 cursor-not-allowed"}`}
                   >
                     Submit
                   </button>

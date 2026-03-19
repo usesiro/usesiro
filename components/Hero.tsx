@@ -13,17 +13,17 @@ export default function Hero() {
           data-aos="fade-up"
         >
           <div className="w-2 h-2 rounded-full bg-primary" />
-          <span className="text-primary text-xs font-semibold tracking-wide">Now in Beta</span>
+          <span className="text-primary text-xs font-semibold tracking-wide">Beta coming soon</span>
         </div>
 
         {/* --- MAIN HEADLINE --- */}
        <div data-aos="fade-up" data-aos-duration="800">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-fraunces font-bold text-gray-900 mb-6 leading-[1.15] tracking-tight">
             Your business,<br />
-            <span className="text-primary">always</span> tax-ready.
+            <span className="text-primary italic">always</span> tax-ready.
           </h1>
 
-          <p className="mt-4 max-w-2xl mx-auto text-sm md:text-base text-gray-500 leading-relaxed">
+          <p className="mt-4 max-w-2xl mx-auto text-sm md:text-base text-gray-500 leading-relaxed font-medium">
             Stop patching your finances with WhatsApp notes and Excel sheets. <br className="hidden md:block" />
             Every transaction organized, every VAT tagged, compliance handled automatically.
           </p>
@@ -35,14 +35,14 @@ export default function Hero() {
           data-aos="fade-up" 
           data-aos-delay="200"
         >
-          <Link href="/register">
-            <button className="w-full sm:w-auto px-8 py-3 bg-primary text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors">
-              Get Started
+          <Link href="/waitlist">
+            <button className="w-full sm:w-auto px-8 py-3 bg-primary text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20">
+              Join the waitlist
             </button>
           </Link>
           
-          <Link href="/demo">
-            <button className="w-full sm:w-auto px-8 py-3 bg-white text-gray-700 border border-gray-200 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors">
+          <Link href="/contact">
+            <button className="w-full sm:w-auto px-8 py-3 bg-white text-primary border border-primary/20 rounded-lg font-bold text-sm hover:bg-blue-50 transition-colors">
               Book a Demo
             </button>
           </Link>
