@@ -30,7 +30,7 @@ export default function AboutPage() {
         </h1>
 
         <p 
-          className="mt-6 max-w-2xl mx-auto text-lg text-gray-500 leading-relaxed font-medium mb-16"
+          className="mt-6 max-w-2xl mx-auto text-lg text-gray-500 leading-relaxed mb-16"
           data-aos="fade-up"
           data-aos-delay="200"
         >
@@ -54,10 +54,10 @@ export default function AboutPage() {
                 was solving properly.
               </h2>
               
-              <div className="space-y-6 text-gray-600 text-base md:text-lg leading-relaxed font-medium">
+              <div className="space-y-6 text-gray-600 text-base md:text-lg leading-relaxed">
                 <p>
                   Every year, thousands of Nigerian business owners scramble at tax season. 
-                  Not because they're dishonest, <span className="text-primary font-bold">but because no one ever gave them the tools to stay ready.</span>
+                  Not because they're dishonest, <span className="text-primary font-semibold">but because no one ever gave them the tools to stay ready.</span>
                 </p>
                 <p>
                   Existing solutions told businesses to "pay your tax online." But you can't pay 
@@ -75,14 +75,14 @@ export default function AboutPage() {
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-[0.05] rounded-full translate-x-1/3 -translate-y-1/3"></div>
                 <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-[0.05] rounded-full -translate-x-1/3 translate-y-1/3"></div>
                 
-                <h3 className="text-2xl md:text-3xl font-serif font-medium leading-[1.4] mb-12 relative z-10 italic">
+                <h3 className="text-2xl md:text-3xl font-serif leading-[1.4] mb-12 relative z-10 italic">
                   "Tax compliance isn't a payment problem. It's a readiness problem. We're solving it from the ground up."
                 </h3>
                 
                 <div className="flex items-center gap-4 relative z-10">
                   <div className="w-12 h-12 bg-white/20 rounded-xl backdrop-blur-sm"></div>
                   <div>
-                    <div className="font-bold text-sm">Muhammed Mustapha</div>
+                    <div className="font-semibold text-sm">Muhammed Mustapha</div>
                     <div className="text-white/70 text-xs">CEO & Co-Founder, Siro</div>
                   </div>
                 </div>
@@ -105,7 +105,7 @@ export default function AboutPage() {
               Every Nigerian business faces a <br className="hidden md:block"/>
               <span className="text-[#82A0FF] italic">compliance gap</span> that costs them
             </h2>
-            <p className="text-gray-400 font-medium text-lg">
+            <p className="text-gray-400 text-lg">
               The Nigerian Tax Act 2025 made compliance non-negotiable. But most businesses still have no system. They're exposed, and they don't know it.
             </p>
           </div>
@@ -118,8 +118,8 @@ export default function AboutPage() {
             ].map((item, index) => (
               <div key={index} className="bg-[#1F2937] border border-gray-800 rounded-[2rem] p-10 hover:bg-[#25303F] transition-colors" data-aos="fade-up" data-aos-delay={index * 100}>
                 <div className="w-12 h-12 bg-[#374151] rounded-full mb-8"></div>
-                <h3 className="text-xl font-bold text-white mb-4">{item.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed font-medium">{item.desc}</p>
+                <h3 className="text-xl font-semibold text-white mb-4">{item.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -137,9 +137,9 @@ export default function AboutPage() {
                 Build the financial <br className="hidden md:block" /> infrastructure every <br className="hidden md:block" /> Nigerian business <br className="hidden md:block" /> deserves.
               </h2>
             </div>
-            <div className="md:w-1/2 space-y-6 text-gray-600 text-lg leading-relaxed font-medium" data-aos="fade-left">
-              <p>Siro is not a bookkeeping platform. We are not an accounting firm. <span className="text-primary font-bold">We are the financial infrastructure</span>, the layer that sits between a business's daily transactions and its legal obligations.</p>
-              <p>We believe that <span className="text-primary font-bold">tax readiness should be automatic</span>, not seasonal. That every business, from a fashion brand in Lagos to a hotel in Abuja should be able to face any NRS audit with confidence.</p>
+            <div className="md:w-1/2 space-y-6 text-gray-600 text-lg leading-relaxed" data-aos="fade-left">
+              <p>Siro is not a bookkeeping platform. We are not an accounting firm. <span className="text-primary font-semibold">We are the financial infrastructure</span>, the layer that sits between a business's daily transactions and its legal obligations.</p>
+              <p>We believe that <span className="text-primary font-semibold">tax readiness should be automatic</span>, not seasonal. That every business, from a fashion brand in Lagos to a hotel in Abuja should be able to face any NRS audit with confidence.</p>
               <p>That's what we're building. One transaction at a time.</p>
             </div>
           </div>
@@ -154,8 +154,8 @@ export default function AboutPage() {
                 <div className="text-5xl font-fraunces font-black mb-8 text-transparent" style={{ WebkitTextStroke: '1.5px #3B82F6' }}>
                   {item.num}
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-4">{item.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed font-medium">{item.desc}</p>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4">{item.title}</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>

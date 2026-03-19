@@ -42,7 +42,7 @@ export default function CallToAction() {
             </button>
           </Link>
           
-          <Link href="/contact">
+          <Link href="/demo">
             <button className="w-full sm:w-auto px-10 py-4 bg-transparent text-white border-2 border-white rounded-xl font-bold text-sm hover:bg-white hover:text-primary transition active:scale-95">
               Book a Demo
             </button>

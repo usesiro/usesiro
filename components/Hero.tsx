@@ -41,7 +41,7 @@ export default function Hero() {
             </button>
           </Link>
           
-          <Link href="/contact">
+          <Link href="/demo">
             <button className="w-full sm:w-auto px-8 py-3 bg-white text-primary border border-primary/20 rounded-lg font-bold text-sm hover:bg-blue-50 transition-colors">
               Book a Demo
             </button>
