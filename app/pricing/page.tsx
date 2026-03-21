@@ -5,7 +5,15 @@ import Navbar from "@/components/Navbar";
 import FAQ from "@/components/FAQ";
 import CallToAction from "@/components/CallToAction";
 import Footer from "@/components/Footer";
-import { CheckCircleIcon, LockClosedIcon } from "@heroicons/react/24/solid";
+import { 
+  CheckCircleIcon, 
+  LockClosedIcon,
+  ArrowPathIcon,
+  TagIcon,
+  FolderIcon,
+  DocumentTextIcon,
+  PencilSquareIcon
+} from "@heroicons/react/24/solid";
 
 export default function PricingPage() {
   return (
@@ -100,19 +108,24 @@ export default function PricingPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
-              {title: "Automatic Transaction Sync", desc: "Connect your bank account securely. Transactions pull in automatically on a weekly basis, with manual sync available anytime."}, 
-              {title: "VAT Tagging", desc: "Every transaction is reviewed for VAT applicability. You see exactly what you've collected and what you owe."}, 
-              {title: "Smart Categorization", desc: "Income and expenses are automatically sorted. Review, correct, and confirm with a single click."}, 
-              {title: "Reconciliation", desc: "Match your transactions against records and flag any discrepancies before they become compliance issues."},
-              {title: "VAT Report Export", desc: "Generate a clean, NRS-ready VAT report in seconds. Download and file without the last-minute scramble."},
-              {title: "Manual Transactions", desc: "Add cash sales, POS settlements, and any transaction that doesn't go through your bank account."}
-            ].map((item, index) => (
-              <div key={index} className="p-8 rounded-2xl border border-gray-100 bg-white hover:border-blue-100 transition-colors" data-aos="fade-up" data-aos-delay={index * 50}>
-                <div className="w-10 h-10 bg-blue-50 rounded-full mb-6"></div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">{item.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
+              {title: "Automatic Transaction Sync", desc: "Connect your bank account securely. Transactions pull in automatically on a weekly basis, with manual sync available anytime.", icon: ArrowPathIcon}, 
+              {title: "VAT Tagging", desc: "Every transaction is reviewed for VAT applicability. You see exactly what you've collected and what you owe.", icon: TagIcon}, 
+              {title: "Smart Categorization", desc: "Income and expenses are automatically sorted. Review, correct, and confirm with a single click.", icon: FolderIcon}, 
+              {title: "Reconciliation", desc: "Match your transactions against records and flag any discrepancies before they become compliance issues.", icon: CheckCircleIcon},
+              {title: "VAT Report Export", desc: "Generate a clean, NRS-ready VAT report in seconds. Download and file without the last-minute scramble.", icon: DocumentTextIcon},
+              {title: "Manual Transactions", desc: "Add cash sales, POS settlements, and any transaction that doesn't go through your bank account.", icon: PencilSquareIcon}
+            ].map((item, index) => {
+              const Icon = item.icon;
+              return (
+                <div key={index} className="p-8 rounded-2xl border border-gray-100 bg-white hover:border-blue-100 transition-colors" data-aos="fade-up" data-aos-delay={index * 50}>
+                  <div className="w-10 h-10 bg-blue-50 rounded-full mb-6 flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">{item.title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

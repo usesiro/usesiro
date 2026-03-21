@@ -3,6 +3,14 @@
 import Navbar from "@/components/Navbar";
 import CallToAction from "@/components/CallToAction";
 import Footer from "@/components/Footer";
+import { 
+  DocumentTextIcon, 
+  TagIcon, 
+  ExclamationTriangleIcon,
+  SparklesIcon,
+  ShieldCheckIcon,
+  BoltIcon
+} from "@heroicons/react/24/solid";
 
 export default function AboutPage() {
   return (
@@ -112,16 +120,21 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { title: "No Documentation System", desc: "Most businesses keep receipts in bags, WhatsApp chats, and notebooks. Nothing is organized when it needs to be." },
-              { title: "VAT is misunderstood", desc: "Business owners don't know which transactions attract VAT, how to tag them, or what a correct VAT report looks like." },
-              { title: "Compliance is reactive", desc: "Everything happens at filing time. Months of transactions get reconstructed in days. Mistakes get made. Penalties follow." }
-            ].map((item, index) => (
-              <div key={index} className="bg-[#1F2937] border border-gray-800 rounded-[2rem] p-10 hover:bg-[#25303F] transition-colors" data-aos="fade-up" data-aos-delay={index * 100}>
-                <div className="w-12 h-12 bg-[#374151] rounded-full mb-8"></div>
-                <h3 className="text-xl font-semibold text-white mb-4">{item.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
+              { title: "No Documentation System", desc: "Most businesses keep receipts in bags, WhatsApp chats, and notebooks. Nothing is organized when it needs to be.", icon: DocumentTextIcon },
+              { title: "VAT is misunderstood", desc: "Business owners don't know which transactions attract VAT, how to tag them, or what a correct VAT report looks like.", icon: TagIcon },
+              { title: "Compliance is reactive", desc: "Everything happens at filing time. Months of transactions get reconstructed in days. Mistakes get made. Penalties follow.", icon: ExclamationTriangleIcon }
+            ].map((item, index) => {
+              const Icon = item.icon;
+              return (
+                <div key={index} className="bg-[#1F2937] border border-gray-800 rounded-[2rem] p-10 hover:bg-[#25303F] transition-colors" data-aos="fade-up" data-aos-delay={index * 100}>
+                  <div className="w-12 h-12 bg-[#374151] rounded-full mb-8 flex items-center justify-center">
+                    <Icon className="w-6 h-6 text-[#82A0FF]" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-4">{item.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -146,18 +159,26 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { num: "01", title: "Users first, always", desc: "Every feature we build starts with one question: does this make life easier for a Nigerian business owner trying to stay compliant?" },
-              { num: "02", title: "Trust through accuracy", desc: "We handle financial data. If our VAT tagging is wrong, a business gets penalized. Accuracy is not a feature, it's the foundation." },
-              { num: "03", title: "Speed with purpose", desc: "We move fast because the market needs us to. But we never move so fast that we compromise the integrity of what we're building." }
-            ].map((item, index) => (
-              <div key={index} className="bg-white border border-gray-100 rounded-[2rem] p-10 hover:border-blue-100 transition-colors" data-aos="fade-up" data-aos-delay={index * 100}>
-                <div className="text-5xl font-fraunces font-black mb-8 text-transparent" style={{ WebkitTextStroke: '1.5px #3B82F6' }}>
-                  {item.num}
+              { num: "01", title: "Users first, always", desc: "Every feature we build starts with one question: does this make life easier for a Nigerian business owner trying to stay compliant?", icon: SparklesIcon },
+              { num: "02", title: "Trust through accuracy", desc: "We handle financial data. If our VAT tagging is wrong, a business gets penalized. Accuracy is not a feature, it's the foundation.", icon: ShieldCheckIcon },
+              { num: "03", title: "Speed with purpose", desc: "We move fast because the market needs us to. But we never move so fast that we compromise the integrity of what we're building.", icon: BoltIcon }
+            ].map((item, index) => {
+              const Icon = item.icon;
+              return (
+                <div key={index} className="bg-white border border-gray-100 rounded-[2rem] p-10 hover:border-blue-100 transition-colors" data-aos="fade-up" data-aos-delay={index * 100}>
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="text-5xl font-fraunces font-black text-transparent" style={{ WebkitTextStroke: '1.5px #3B82F6' }}>
+                      {item.num}
+                    </div>
+                    <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
+                      <Icon className="w-5 h-5 text-primary" />
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">{item.title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">{item.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
