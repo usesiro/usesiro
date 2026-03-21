@@ -12,7 +12,8 @@ import {
   TagIcon,
   FolderIcon,
   DocumentTextIcon,
-  PencilSquareIcon
+  PencilSquareIcon,
+  RocketLaunchIcon
 } from "@heroicons/react/24/solid";
 
 export default function PricingPage() {
@@ -46,7 +47,9 @@ export default function PricingPage() {
           
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
             <div>
-              <div className="w-12 h-12 bg-blue-50 rounded-xl mb-4"></div>
+              <div className="w-12 h-12 bg-blue-50 rounded-xl mb-4 flex items-center justify-center">
+                <RocketLaunchIcon className="w-6 h-6 text-primary" />
+              </div>
               <h3 className="text-3xl font-semibold text-gray-900 mb-1">Beta Plan</h3>
               <p className="text-xs font-semibold text-primary tracking-widest uppercase">FULL ACCESS • ALL FEATURES</p>
             </div>
