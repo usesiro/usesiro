@@ -29,6 +29,9 @@ export default function Navbar() {
     }
   };
 
+  // Helper to check if a link is active
+  const isActive = (path: string) => pathname === path;
+
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -49,7 +52,10 @@ export default function Navbar() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center justify-center gap-8 flex-1">
-            <Link href="/" className="text-sm text-gray-900 font-semibold transition-colors">
+            <Link 
+              href="/" 
+              className={`text-sm transition-colors ${isActive("/") ? "text-primary font-semibold" : "text-gray-500 hover:text-gray-900 font-medium"}`}
+            >
               Home
             </Link>
             <button 
@@ -58,13 +64,22 @@ export default function Navbar() {
             >
               Features
             </button>
-            <Link href="/pricing" className="text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors">
+            <Link 
+              href="/pricing" 
+              className={`text-sm transition-colors ${isActive("/pricing") ? "text-primary font-semibold" : "text-gray-500 hover:text-gray-900 font-medium"}`}
+            >
               Pricing
             </Link>
-            <Link href="/about" className="text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors">
+            <Link 
+              href="/about" 
+              className={`text-sm transition-colors ${isActive("/about") ? "text-primary font-semibold" : "text-gray-500 hover:text-gray-900 font-medium"}`}
+            >
               About Us
             </Link>
-            <Link href="/contact" className="text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors">
+            <Link 
+              href="/contact" 
+              className={`text-sm transition-colors ${isActive("/contact") ? "text-primary font-semibold" : "text-gray-500 hover:text-gray-900 font-medium"}`}
+            >
               Contact Us
             </Link>
           </div>
@@ -94,7 +109,7 @@ export default function Navbar() {
           <div className="px-4 pt-4 pb-6 space-y-2">
             <Link 
               href="/" 
-              className="block px-4 py-3 text-sm font-semibold text-gray-900 bg-gray-50 rounded-lg"
+              className={`block px-4 py-3 text-sm rounded-lg transition-colors ${isActive("/") ? "font-semibold text-primary bg-blue-50" : "font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"}`}
               onClick={() => setIsOpen(false)}
             >
               Home
@@ -107,21 +122,21 @@ export default function Navbar() {
             </button>
             <Link 
               href="/pricing" 
-              className="block px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors"
+              className={`block px-4 py-3 text-sm rounded-lg transition-colors ${isActive("/pricing") ? "font-semibold text-primary bg-blue-50" : "font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"}`}
               onClick={() => setIsOpen(false)}
             >
               Pricing
             </Link>
             <Link 
               href="/about" 
-              className="block px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors"
+              className={`block px-4 py-3 text-sm rounded-lg transition-colors ${isActive("/about") ? "font-semibold text-primary bg-blue-50" : "font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"}`}
               onClick={() => setIsOpen(false)}
             >
               About Us
             </Link>
             <Link 
               href="/contact" 
-              className="block px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors"
+              className={`block px-4 py-3 text-sm rounded-lg transition-colors ${isActive("/contact") ? "font-semibold text-primary bg-blue-50" : "font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"}`}
               onClick={() => setIsOpen(false)}
             >
               Contact Us

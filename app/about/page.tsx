@@ -87,12 +87,9 @@ export default function AboutPage() {
                   "Tax compliance isn't a payment problem. It's a readiness problem. We're solving it from the ground up."
                 </h3>
                 
-                <div className="flex items-center gap-4 relative z-10">
-                  <div className="w-12 h-12 bg-white/20 rounded-xl backdrop-blur-sm"></div>
-                  <div>
-                    <div className="font-semibold text-sm">Muhammed Mustapha</div>
-                    <div className="text-white/70 text-xs">CEO & Co-Founder, Siro</div>
-                  </div>
+                <div className="relative z-10 pt-6 border-t border-white/20 inline-block">
+                  <div className="font-bold text-lg tracking-wide">Muhammed Mustapha</div>
+                  <div className="text-white/80 text-sm mt-1 font-medium">CEO & Co-Founder, Siro</div>
                 </div>
               </div>
             </div>
