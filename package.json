@@ -12,9 +12,11 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@mono.co/connect.js": "^2.0.2",
+    "@next/third-parties": "^16.2.1",
     "@prisma/adapter-pg": "^7.4.2",
     "@prisma/client": "^7.4.2",
     "@prisma/config": "^7.4.2",
+    "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "^2.3.1",
     "aos": "^2.3.4",
     "bcryptjs": "^3.0.3",

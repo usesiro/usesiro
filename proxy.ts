@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-export async function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Let public authentication and waitlist routes pass freely without a token
-  if (pathname.startsWith('/api/v1/auth') || pathname.startsWith('/api/v1/waitlist')) {
+  // 1. Let public authentication, waitlist, and contact routes pass freely without a token
+  if (
+    pathname.startsWith('/api/v1/auth') || 
+    pathname.startsWith('/api/v1/waitlist') ||
+    pathname.startsWith('/api/v1/contact')
+  ) {
     return NextResponse.next();
   }
 
@@ -40,7 +44,7 @@ export async function proxy(request: NextRequest) {
   }
 }
 
-// 6. Tell Next.js to only run this middleware on API routes to save execution costs
+// 6. Tell Next.js to only run this proxy on API routes to save execution costs
 export const config = {
   matcher: ['/api/v1/:path*'],
 };

@@ -135,3 +135,13 @@ model Waitlist {
   
   joinedAt       DateTime       @default(now())
 }
+
+// --- CONTACT MESSAGES ---
+model ContactMessage {
+  id        String   @id @default(uuid())
+  fullName  String
+  email     String
+  topic     String
+  message   String
+  createdAt DateTime @default(now())
+}

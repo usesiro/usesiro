@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Poppins, Fraunces } from "next/font/google"; 
 import "./globals.css";
 import { AOSInit } from "@/components/AOSInit";
+import { Analytics } from "@vercel/analytics/react"; // <-- IMPORTED VERCEL ANALYTICS
+import { GoogleAnalytics } from "@next/third-parties/google"; // <-- IMPORTED GOOGLE ANALYTICS
 
 // Setup Poppins
 const poppins = Poppins({
@@ -38,7 +40,7 @@ export const metadata: Metadata = {
     siteName: 'Siro',
     images: [
       {
-        url: '/logo.png', // This will show up when you share the link on WhatsApp/Twitter
+        url: '/logo.png', 
         width: 1200,
         height: 630,
         alt: 'Siro Technologies Logo',
@@ -79,6 +81,10 @@ export default function RootLayout({
       <body className={`${poppins.variable} ${fraunces.variable} font-sans`}>
         <AOSInit />
         {children}
+        
+        {/* --- INJECTED TRACKING SCRIPTS --- */}
+        <Analytics /> 
+        <GoogleAnalytics gaId="G-Y7D62XQJKE" /> 
       </body>
     </html>
   );
