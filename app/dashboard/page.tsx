@@ -100,7 +100,7 @@ export default function Dashboard() {
               <ExclamationTriangleIcon className="w-5 h-5 text-red-500"/>
             </div>
             <div className="flex justify-between items-end">
-              <span className="text-2xl font-bold text-gray-800">{pendingCount}</span>
+              <span className="text-2xl font-bold text-gray-600">{pendingCount}</span>
               <a href="/reconciliation" className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
                 Fix <ChevronRightIcon className="w-3 h-3"/>
               </a>
@@ -162,7 +162,7 @@ function StatCard({ title, value, icon }: any) {
         <span className="text-gray-400 text-xs font-bold uppercase">{title}</span>
         {icon}
       </div>
-      <div className="text-xl font-bold text-gray-800">{value}</div>
+      <div className="text-2xl font-bold text-gray-600">{value}</div>
     </div>
   );
 }
@@ -176,7 +176,7 @@ function ProgressCard({ title, percentage, icon }: any) {
       </div>
       <div>
         <div className="flex justify-between items-end mb-1">
-          <span className="text-lg font-bold text-gray-800">{percentage}%</span>
+          <span className="text-2xl font-bold text-gray-600">{percentage}%</span>
         </div>
         <div className="w-full h-1.5 bg-gray-50 rounded-full">
           <div className={`h-full ${percentage > 80 ? 'bg-green-500' : percentage > 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${percentage}%` }}></div>

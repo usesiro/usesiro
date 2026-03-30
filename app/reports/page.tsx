@@ -186,7 +186,7 @@ export default function Reports() {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center print:hidden">
-          <h1 className="text-2xl font-bold text-dark">Reports</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Reports</h1>
           
           {/* WIRED UP EXPORT BUTTON */}
           <button 
@@ -219,8 +219,8 @@ export default function Reports() {
 
           <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center h-[450px]">
             <h2 className="text-gray-400 font-bold mb-4 uppercase tracking-widest text-sm">Tax Readiness Score</h2>
-            <span className="text-[120px] leading-none font-black text-primary drop-shadow-sm">
-              {score}<span className="text-6xl text-blue-300 ml-1">%</span>
+            <span className="text-[120px] leading-none font-black text-gray-600 drop-shadow-sm">
+              {score}<span className="text-6xl text-gray-400 ml-1">%</span>
             </span>
             <p className="text-sm text-gray-500 font-medium mt-6 bg-white/60 px-5 py-2 rounded-full border border-gray-100 backdrop-blur-sm shadow-sm">
               Current Compliance Level
@@ -307,7 +307,7 @@ function StatCard({ title, amount, icon, color }: any) {
         <span className="text-gray-500 text-sm font-bold uppercase">{title}</span>
         <div className={`p-2 rounded-xl ${isRed ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'}`}>{icon}</div>
       </div>
-      <h3 className="text-2xl font-black text-dark">{amount}</h3>
+      <h3 className="text-2xl font-black text-gray-600">{amount}</h3>
       <p className={`text-xs mt-2 ${isRed ? 'text-red-500' : 'text-blue-500'} font-bold flex items-center gap-1`}>
         <ArrowUpRightIcon className="w-3 h-3" /> 100% <span className="text-gray-400 font-normal">from last month</span>
       </p>

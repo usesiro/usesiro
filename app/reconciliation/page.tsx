@@ -256,7 +256,7 @@ export default function Reconciliation() {
                       <span className="text-gray-500 text-sm ml-2">- {new Date(selectedTransaction?.date).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})}</span>
                       <p className="text-sm font-medium text-gray-600 mt-1">{selectedTransaction?.description}</p>
                     </div>
-                    <span className="text-lg font-black text-gray-900">{formatCurrency(selectedTransaction?.amount || 0)}</span>
+                    <span className="text-lg font-black text-gray-600">{formatCurrency(selectedTransaction?.amount || 0)}</span>
                   </div>
                   <div className="text-sm text-gray-500 flex items-center gap-2 mt-4">
                     <span className="font-bold">{selectedTransaction?.type === 'INCOME' ? 'Income' : 'Expense'}</span>
@@ -344,7 +344,7 @@ function StatCard({ title, count, subtitle, trend, icon, isRed }: any) {
       <div className="flex justify-between items-start mb-4">
         <div>
           <span className="text-gray-500 text-sm font-medium">{title}</span>
-          <h3 className="text-3xl font-black text-gray-900 mt-2 flex items-baseline gap-2">
+          <h3 className="text-3xl font-black text-gray-600 mt-2 flex items-baseline gap-2">
             {count} <span className="text-lg font-bold text-gray-500">{subtitle}</span>
           </h3>
         </div>

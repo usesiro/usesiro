@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout"; // Import the layout
+import DashboardLayout from "@/components/DashboardLayout"; 
 import { ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
 // --- DUMMY DATA ---
@@ -89,7 +89,7 @@ export default function HelpCenterPage() {
                   {/* Category Header */}
                   <div className="flex items-center gap-3 mb-5">
                     <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100"></div>
-                    <h3 className="font-bold text-gray-900 text-lg">{category}</h3>
+                    <h3 className="font-bold text-gray-800 text-lg">{category}</h3>
                   </div>
 
                   {/* FAQ Items */}
@@ -104,7 +104,7 @@ export default function HelpCenterPage() {
                           onClick={() => toggleFaq(id)}
                         >
                           <div className="flex justify-between items-center gap-4">
-                            <h4 className="font-bold text-gray-900 text-sm">{faq.question}</h4>
+                            <h4 className="font-bold text-gray-800 text-sm">{faq.question}</h4>
                             {isOpen ? (
                               <ChevronUpIcon className="w-5 h-5 text-gray-500 flex-shrink-0" />
                             ) : (
@@ -129,7 +129,7 @@ export default function HelpCenterPage() {
           <div className="lg:col-span-4 space-y-6">
             
             <div className="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 shadow-sm">
-              <h3 className="font-bold text-lg text-gray-900 mb-2">Contact Support</h3>
+              <h3 className="font-bold text-lg text-gray-800 mb-2">Contact Support</h3>
               <p className="text-gray-500 text-sm mb-6 leading-relaxed">
                 Can't find what you're looking for? Send us a message and we'll get back to you.
               </p>
@@ -164,7 +164,7 @@ export default function HelpCenterPage() {
             </div>
 
             <div className="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 shadow-sm">
-              <h3 className="font-bold text-lg text-gray-900 mb-6">Common Quick Actions</h3>
+              <h3 className="font-bold text-lg text-gray-800 mb-6">Common Quick Actions</h3>
               <div className="space-y-4">
                 {[
                   "Connect Bank Account",
@@ -173,7 +173,7 @@ export default function HelpCenterPage() {
                 ].map((action, idx) => (
                   <div key={idx} className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-2 -ml-2 rounded-xl transition-colors group">
                     <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex-shrink-0 group-hover:bg-blue-100 transition-colors"></div>
-                    <span className="text-sm font-bold text-gray-900">{action}</span>
+                    <span className="text-sm font-bold text-gray-800">{action}</span>
                   </div>
                 ))}
               </div>

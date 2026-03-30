@@ -316,13 +316,13 @@ export default function Settings() {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   <tr className="text-sm hover:bg-gray-50/50 transition">
-                    <td className="px-8 py-5 font-bold text-gray-700">Bank Synced (Mono)</td>
-                    <td className="px-8 py-5 text-gray-600">Admin</td>
+                    <td className="px-8 py-5 font-bold text-gray-600">Bank Synced (Mono)</td>
+                    <td className="px-8 py-5 text-gray-500">Admin</td>
                     <td className="px-8 py-5 text-gray-400">Today, 10:45 AM</td>
                   </tr>
                   <tr className="text-sm hover:bg-gray-50/50 transition">
-                    <td className="px-8 py-5 font-bold text-gray-700">Logged In</td>
-                    <td className="px-8 py-5 text-gray-600">Admin</td>
+                    <td className="px-8 py-5 font-bold text-gray-600">Logged In</td>
+                    <td className="px-8 py-5 text-gray-500">Admin</td>
                     <td className="px-8 py-5 text-gray-400">Today, 09:00 AM</td>
                   </tr>
                 </tbody>
@@ -341,7 +341,7 @@ function Field({ label, value }: { label: string, value: string }) {
   return (
     <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100/50">
       <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">{label}</label>
-      <div className="text-[15px] font-bold text-gray-800">{value || "Not set"}</div>
+      <div className="text-[15px] font-bold text-gray-600">{value || "Not set"}</div>
     </div>
   );
 }
@@ -357,7 +357,7 @@ function EditField({ label, name, value, onChange, disabled = false, note }: any
         onChange={onChange}
         disabled={disabled}
         className={`w-full text-sm font-bold border rounded-xl px-4 py-3.5 transition focus:outline-none 
-          ${disabled ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-800 border-gray-200 focus:border-primary'}`}
+          ${disabled ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white text-gray-600 border-gray-200 focus:border-primary'}`}
       />
       {note && <p className="text-[10px] text-gray-400 mt-2 font-medium">{note}</p>}
     </div>
@@ -368,8 +368,8 @@ function Toggle({ label, description, checked, onChange }: any) {
   return (
     <div className="flex justify-between items-center py-5 border-b border-gray-50 last:border-0 cursor-pointer group" onClick={onChange}>
       <div>
-        <span className="block text-sm font-bold text-gray-800 mb-0.5">{label}</span>
-        <span className="block text-xs text-gray-500">{description}</span>
+        <span className="block text-sm font-bold text-gray-600 mb-0.5">{label}</span>
+        <span className="block text-xs text-gray-400">{description}</span>
       </div>
       <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${checked ? 'bg-primary' : 'bg-gray-200 group-hover:bg-gray-300'}`}>
         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 shadow-sm ${checked ? 'translate-x-7' : 'translate-x-1'}`} />

@@ -4,7 +4,6 @@ import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
 import { z } from "zod";
 
-// 1. Zod Schema: Validate incoming login data
 const loginSchema = z.object({
   email: z.string().email("Invalid email format"),
   password: z.string().min(1, "Password is required"),
@@ -14,7 +13,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // 2. Validate Payload
+    // 1. Validate Payload
     const validation = loginSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
@@ -25,39 +24,61 @@ export async function POST(request: Request) {
 
     const { email, password } = validation.data;
 
-    // 3. Find user
-    const user = await prisma.user.findUnique({ where: { email } });
+    // 2. Find user
+    const user = await prisma.user.findUnique({ 
+        where: { email },
+        include: { business: true } // Include business info for the frontend
+    });
+
     if (!user) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // 4. Check if they verified their OTP
+    // 3. Check Verification
     if (!user.isVerified) {
       return NextResponse.json({ error: "Please verify your email before logging in." }, { status: 403 });
     }
 
-    // 5. Verify Password
+    // 4. Verify Password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // 6. Generate the JWT using 'jose' (Edge Compatible)
+    // 5. Generate the JWT (Edge Compatible)
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     
     const accessToken = await new SignJWT({ userId: user.id, role: user.role })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
-      .setExpirationTime("15m") // Short-lived access token
+      .setExpirationTime("24h") // Extended for the meeting demo
       .sign(secret);
 
-    return NextResponse.json(
+    // 6. Create the Response
+    const response = NextResponse.json(
       { 
         message: "Login successful", 
-        accessToken 
+        accessToken,
+        user: {
+            id: user.id,
+            email: user.email,
+            businessName: user.business?.name
+        }
       },
       { status: 200 }
     );
+
+    // 7. SET THE SECURITY COOKIE (The "Badge")
+    // This is what the Middleware looks for to allow access to /dashboard
+    response.cookies.set("siro_auth_token", accessToken, {
+      httpOnly: true, // Security: Prevents Cross-Site Scripting (XSS)
+      secure: process.env.NODE_ENV === "production", // Only send over HTTPS in prod
+      sameSite: "lax", // Protects against CSRF
+      maxAge: 60 * 60 * 24, // 24 hours
+      path: "/", // Valid for the whole site
+    });
+
+    return response;
 
   } catch (error) {
     console.error("Login Error:", error);
