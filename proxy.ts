@@ -37,7 +37,7 @@ export default async function middleware(request: NextRequest) {
   }
 
 
-  // --- LAYER 2: API ROUTE PROTECTION (Your Existing Logic) ---
+  // --- LAYER 2: API ROUTE PROTECTION (Migrated to Cookies) ---
   if (pathname.startsWith('/api/v1/')) {
     // Let public auth/waitlist/contact pass
     if (
@@ -48,20 +48,18 @@ export default async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    const authHeader = request.headers.get('authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // We completely drop the `authorization` header check.
+    // Instead, we reuse the `pageToken` extracted cleanly from cookies in Layer 1!
+    if (!pageToken) {
       return NextResponse.json(
-        { error: 'Unauthorized: Missing token' }, 
+        { error: 'Unauthorized: Missing token cookie' }, 
         { status: 401 }
       );
     }
 
-    const apiToken = authHeader.split(' ')[1];
-
     try {
       const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-      await jwtVerify(apiToken, secret);
+      await jwtVerify(pageToken, secret);
       return NextResponse.next();
     } catch (error) {
       return NextResponse.json(

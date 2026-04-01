@@ -41,39 +41,57 @@ export async function POST(request: Request) {
     // 4. Fetch all available categories from the database ONCE before the loop
     const allCategories = await prisma.category.findMany();
 
-    // 5. Save to Database
+    // 5. Save to Database (Bulk Insert Optimization)
     const transactions = monoData.data || [];
-    let savedCount = 0;
+    if (transactions.length === 0) {
+      return NextResponse.json({ message: "No new transactions found to sync!" });
+    }
 
+    // A. Gather all external IDs to check
+    const incomingIds = transactions
+      .map((txn: any) => txn._id || txn.id)
+      .filter(Boolean);
+
+    // B. Hit the DB ONCE to find all existing records
+    const existingRecords = await prisma.transaction.findMany({
+      where: { externalId: { in: incomingIds } },
+      select: { externalId: true },
+    });
+    const existingIdsSet = new Set(existingRecords.map(r => r.externalId));
+
+    // C. Prepare the bulk array in memory (No DB hits here!)
+    const bulkData: any[] = [];
     for (const txn of transactions) {
-      // Use externalId to prevent duplicate transactions if they click sync twice
-      const existingTxn = await prisma.transaction.findUnique({
-        where: { externalId: txn._id || txn.id },
+      const extId = txn._id || txn.id;
+      
+      // Skip if it already exists in the database
+      if (!extId || existingIdsSet.has(extId)) continue;
+
+      const transactionType = txn.type === "credit" ? "INCOME" : "EXPENSE";
+      const description = txn.narration || "Bank Transaction";
+      const matchedCategoryId = autoCategorize(description, transactionType, allCategories);
+
+      bulkData.push({
+        businessId: business.id,
+        amount: txn.amount / 100, // Mono returns Kobo, divide by 100 for Naira
+        date: new Date(txn.date || txn.created_at),
+        description: description,
+        source: "MONO",
+        type: transactionType,
+        categoryId: matchedCategoryId,
+        vatStatus: "MISSING_VAT",
+        externalId: extId,
       });
+    }
 
-      if (!existingTxn) {
-        // Determine type and description
-        const transactionType = txn.type === "credit" ? "INCOME" : "EXPENSE";
-        const description = txn.narration || "Bank Transaction";
-
-        // Pass through the categorizer
-        const matchedCategoryId = autoCategorize(description, transactionType, allCategories);
-
-        await prisma.transaction.create({
-          data: {
-            businessId: business.id,
-            amount: txn.amount / 100, // Mono returns Kobo, divide by 100 for Naira
-            date: new Date(txn.date || txn.created_at),
-            description: description,
-            source: "MONO",
-            type: transactionType,
-            categoryId: matchedCategoryId, // Injects the matched category ID
-            vatStatus: "MISSING_VAT",
-            externalId: txn._id || txn.id,
-          }
-        });
-        savedCount++;
-      }
+    // D. Hit the DB ONCE to insert everything
+    let savedCount = 0;
+    if (bulkData.length > 0) {
+      const result = await prisma.transaction.createMany({
+        data: bulkData,
+        skipDuplicates: true, // Double safety net
+      });
+      savedCount = result.count;
     }
 
     return NextResponse.json({ message: `Successfully synced ${savedCount} new transactions!` });
