@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AuthLayout from "@/components/AuthLayout";
 import { ShieldCheckIcon, EnvelopeIcon, LockClosedIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
-export default function AdminLoginPage() {
+function AdminAuthContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -130,5 +130,20 @@ export default function AdminLoginPage() {
         </button>
       </form>
     </AuthLayout>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <ShieldCheckIcon className="w-16 h-16 text-primary/20 mx-auto mb-4 animate-pulse" />
+          <p className="text-[11px] font-black text-gray-400 border-2 uppercase tracking-[0.3em]">Initializing Security Portal...</p>
+        </div>
+      </div>
+    }>
+      <AdminAuthContent />
+    </Suspense>
   );
 }
