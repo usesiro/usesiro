@@ -8,7 +8,8 @@ import {
   Squares2X2Icon, UsersIcon, ServerStackIcon, 
   Bars3Icon, XMarkIcon, ArrowTrendingDownIcon, 
   BanknotesIcon, XCircleIcon, ShieldCheckIcon, 
-  ChatBubbleLeftEllipsisIcon, PlusIcon
+  ChatBubbleLeftEllipsisIcon, PlusIcon,
+  ArrowLeftOnRectangleIcon
 } from "@heroicons/react/24/outline";
 
 // Structured navigation matching the Figma groups
@@ -48,9 +49,26 @@ const navigation = [
   }
 ];
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  const handleLogout = async () => {
+    try {
+      // 1. Tell the server to kill the session (kills HttpOnly cookies)
+      await fetch("/api/v1/auth/logout", { method: "POST" });
+      
+      // 2. Clear client-side as a backup
+      document.cookie = "siro_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+      
+      // 3. Force a full page reload to the auth screen
+      window.location.href = "/admin/auth";
+    } catch (err) {
+      console.error("Logout failed:", err);
+      // Fallback redirect even if API fails
+      window.location.href = "/admin/auth";
+    }
+  };
 
   // Dynamic header title matching Figma screenshots
   const getPageTitle = () => {
@@ -129,6 +147,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         <NavContent />
+
+        {/* --- SIDEBAR FOOTER (USER PROFILE & LOGOUT) --- */}
+        <div className="p-6 border-t border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#1E293B] text-white flex items-center justify-center text-sm font-bold shadow-sm">
+              N
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[13px] font-bold text-gray-700 leading-tight">Admin</span>
+              <span className="text-[10px] text-gray-400 font-medium">Super Admin</span>
+            </div>
+          </div>
+          
+          <button 
+            onClick={handleLogout}
+            title="Sign Out"
+            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all group"
+          >
+            <ArrowLeftOnRectangleIcon className="w-5 h-5" />
+          </button>
+        </div>
       </aside>
 
       {/* --- MAIN CONTENT AREA --- */}

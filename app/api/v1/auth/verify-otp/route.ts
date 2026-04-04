@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { recordAuditLog } from "@/lib/logger";
 import { z } from "zod";
 
 // 1. Zod Schema: Ensure we get exactly a 6-digit string
@@ -49,8 +50,16 @@ export async function POST(request: Request) {
       },
     });
 
+    // 6. Record Audit Log (Compliance)
+    await recordAuditLog({
+      userId: user.id,
+      action: "AUTH.VERIFY_SUCCESS",
+      status: "SUCCESS",
+      details: { email: user.email }
+    });
+
     return NextResponse.json(
-      { message: "Email verified successfully!" },
+      { message: "Account verified successfully!" },
       { status: 200 }
     );
 

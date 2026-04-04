@@ -35,11 +35,17 @@ export default function Login() {
       const res = await fetch("/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, portal: "USER" }),
       });
       const data = await res.json();
       
-      if (!res.ok) throw new Error(data.error || "Login failed");
+      if (!res.ok) {
+        if (data.redirectTo) {
+          router.push(data.redirectTo + `?error=${encodeURIComponent(data.error)}`);
+          return;
+        }
+        throw new Error(data.error || "Login failed");
+      }
 
       // 1. Save the token
       localStorage.setItem("siro_access_token", data.accessToken);

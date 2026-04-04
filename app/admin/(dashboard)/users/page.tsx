@@ -1,16 +1,23 @@
 import { MagnifyingGlassIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 
-// --- MOCK DATA ---
-const users = [
-  { id: 1, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", plan: "Foundation", signedUp: "Mar 3", lastActive: "Today", bank: "Connected", status: "Active" },
-  { id: 2, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", plan: "Foundation", signedUp: "Mar 3", lastActive: "Today", bank: "Connected", status: "Active" },
-  { id: 3, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", plan: "Foundation", signedUp: "Mar 3", lastActive: "Today", bank: "Connected", status: "Active" },
-  { id: 4, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", plan: "Foundation", signedUp: "Mar 3", lastActive: "Today", bank: "Connected", status: "Active" },
-  { id: 5, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", plan: "Foundation", signedUp: "Mar 3", lastActive: "Today", bank: "Connected", status: "Active" },
-];
+export default async function AllUsersPage() {
+  const businesses = await prisma.business.findMany({
+    include: { user: true },
+    orderBy: { createdAt: 'desc' }
+  });
 
-export default function AllUsersPage() {
+  const users = businesses.map(b => ({
+    id: b.id,
+    name: b.name,
+    email: b.user.email,
+    plan: "Foundation", // Default plan for now
+    signedUp: new Date(b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    lastActive: "Today", // Mock for now
+    bank: b.monoAccountId ? "Connected" : "Pending",
+    status: b.user.isVerified ? "Active" : "Pending"
+  }));
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 font-sans pb-10">
       
