@@ -21,11 +21,16 @@ export default async function middleware(request: NextRequest) {
   const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
   const pageToken = request.cookies.get('siro_auth_token')?.value;
 
+  const isAuthPage = 
+    pathname.includes('/admin/setup') || 
+    pathname.includes('/admin/auth') || 
+    pathname.includes('/admin/verify');
+
   if (isProtectedRoute) {
-    // 1. Genesis Check: If no users exist, redirect ALL admin attempts to /admin/setup
-    if (isAdminRoute && !pathname.includes('/admin/setup')) {
+    // 1. Genesis Check: If no users exist, redirect to /admin/setup
+    // Skip this if we're already on an auth/setup/verify page to prevent loops
+    if (isAdminRoute && !isAuthPage) {
       try {
-        // We use a fetch here because middleware is edge-only and prisma might fail
         const statusRes = await fetch(new URL('/api/v1/auth/status', request.url));
         if (statusRes.ok) {
            const { adminCount } = await statusRes.json();
@@ -35,11 +40,6 @@ export default async function middleware(request: NextRequest) {
         }
       } catch (err) { console.error("Genesis check failed", err); }
     }
-
-    const isAuthPage = 
-      pathname.includes('/admin/setup') || 
-      pathname.includes('/admin/auth') || 
-      pathname.includes('/admin/verify');
 
     if (!pageToken && !isAuthPage) {
       // Unauthenticated on admin? Dedicated Admin Login
