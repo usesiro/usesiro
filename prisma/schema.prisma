@@ -11,7 +11,9 @@ datasource db {
 // --- ENUMS ---
 enum Role {
   USER
-  ADMIN
+  SUPER_ADMIN
+  BUSINESS_ADMIN
+  FINANCE_ADMIN
 }
 
 enum BusinessType {
@@ -53,6 +55,7 @@ model User {
   updatedAt    DateTime  @updatedAt
 
   business     Business? 
+  auditLogs    AuditLog[]
 }
 
 model Business {
@@ -144,4 +147,24 @@ model ContactMessage {
   topic     String
   message   String
   createdAt DateTime @default(now())
+}
+
+// --- COMPLIANCE AUDIT LOGGING ---
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?  // Optional for failed logins
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  action    String   // e.g., "AUTH.LOGIN", "AUTH.SIGNUP", "ADMIN.USER_DELETED"
+  status    String   // SUCCESS, FAILURE, WARNING
+  details   Json?    // Contextual metadata
+  
+  ip        String?
+  userAgent String?
+  
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
 }

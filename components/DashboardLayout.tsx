@@ -36,9 +36,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     fetchProfile();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("siro_access_token");
-    router.push("/login");
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/v1/auth/logout", { method: "POST" });
+      localStorage.removeItem("siro_access_token");
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   const menuItems = [
