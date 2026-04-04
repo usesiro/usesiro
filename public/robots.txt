@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Allow: /favicon.ico
+Allow: /icon.svg
+Allow: /logo.png
+
+Sitemap: https://usesiro.com/sitemap.xml
