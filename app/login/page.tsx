@@ -41,7 +41,7 @@ export default function Login() {
       
       if (!res.ok) {
         if (data.redirectTo) {
-          router.push(data.redirectTo + `?error=${encodeURIComponent(data.error)}`);
+          router.push(data.redirectTo + `?error=${data.code || 'unauthorized'}`);
           return;
         }
         throw new Error(data.error || "Login failed");

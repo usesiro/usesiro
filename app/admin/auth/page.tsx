@@ -1,16 +1,41 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AuthLayout from "@/components/AuthLayout";
 import { ShieldCheckIcon, EnvelopeIcon, LockClosedIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Error code mapping for professional display
+  const errorMap: Record<string, string> = {
+    admin_detected: "Administrative account detected. Please sign in here to access the control center.",
+    setup_completed: "System initialization is already complete. Please log in with your master credentials.",
+    unauthorized_portal: "Access Denied: This portal is reserved for administrators only.",
+    session_expired: "Your session has expired. Please log in again."
+  };
+
+  useEffect(() => {
+    const errorCode = searchParams.get("error");
+    if (errorCode && errorMap[errorCode]) {
+      setError(errorMap[errorCode]);
+      
+      // Clean up the URL without refreshing to keep it looking premium
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, [searchParams]);
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    if (error) setError(""); // Clear error when user starts typing
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +92,7 @@ export default function AdminLoginPage() {
               required
               type="email" 
               value={formData.email} 
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              onChange={(e) => handleInputChange("email", e.target.value)}
               placeholder="admin@usesiro.com" 
               className="w-full pl-11 pr-4 py-3.5 text-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary text-gray-900 bg-gray-50/50 transition-all"
             />
@@ -82,7 +107,7 @@ export default function AdminLoginPage() {
               required
               type={showPassword ? "text" : "password"} 
               value={formData.password} 
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
+              onChange={(e) => handleInputChange("password", e.target.value)}
               placeholder="••••••••••••" 
               className="w-full pl-11 pr-12 py-3.5 text-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary text-gray-900 bg-gray-50/50 transition-all font-mono"
             />

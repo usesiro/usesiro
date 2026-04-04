@@ -41,7 +41,10 @@ export async function POST(request: Request) {
     
     if (portal === "ADMIN" && !isAdmin) {
       return NextResponse.json(
-        { error: "Access Denied: This portal is reserved for administrators only." }, 
+        { 
+          error: "Access Denied: This portal is reserved for administrators only.",
+          code: "unauthorized_portal"
+        }, 
         { status: 403 }
       );
     }
@@ -50,6 +53,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { 
           error: "Admin Account Detected: Please use the Administrative Portal to log in.",
+          code: "admin_detected",
           redirectTo: "/admin/auth" 
         }, 
         { status: 403 }
