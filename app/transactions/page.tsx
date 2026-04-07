@@ -11,17 +11,19 @@ import {
   ChevronLeftIcon, ChevronRightIcon, XMarkIcon, CheckCircleIcon,
   ReceiptRefundIcon, DocumentChartBarIcon, DocumentTextIcon, TableCellsIcon, ArrowPathIcon
 } from "@heroicons/react/24/outline";
+import { useNotification } from "@/context/NotificationContext";
 import TableSkeleton from "@/components/TableSkeleton";
 
 const ITEMS_PER_PAGE = 15; // Set pagination limit
 
 export default function Transactions() {
+  const { showNotification } = useNotification();
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false); // <-- MOVED FROM DASHBOARD
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Dynamic Data State
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -150,7 +152,7 @@ export default function Transactions() {
 
   const handleBulkCategorize = async () => {
     if (!selectedCategory) {
-      alert("Please select a category first.");
+      showNotification("Please select a category first.", "warning");
       return;
     }
 
@@ -169,14 +171,15 @@ export default function Transactions() {
       });
 
       if (res.ok) {
+        showNotification("Bulk update successful", "success");
         await fetchData(); 
         setSelectedCategory(""); 
       } else {
         const errData = await res.json();
-        alert(errData.error || "Failed to update transactions");
+        showNotification(errData.error || "Failed to update transactions", "error");
       }
     } catch (error) {
-      alert("Network error during bulk update");
+      showNotification("Network error during bulk update", "error");
     } finally {
       setIsBulkUpdating(false);
     }
@@ -201,11 +204,13 @@ export default function Transactions() {
 
       if (!res.ok) {
          const errData = await res.json();
-         alert(errData.error || "Failed to update VAT status");
+         showNotification(errData.error || "Failed to update VAT status", "error");
          await fetchData(); 
+      } else {
+         showNotification("VAT status updated", "success");
       }
     } catch (error) {
-      alert("Network error while updating VAT status");
+      showNotification("Network error while updating VAT status", "error");
       await fetchData(); 
     }
   };
@@ -226,6 +231,7 @@ export default function Transactions() {
 
       if (res.ok) {
         setIsSuccess(true);
+        showNotification("Transaction added successfully", "success");
         await fetchData(); 
         setTimeout(() => {
           setIsAddModalOpen(false);
@@ -234,10 +240,10 @@ export default function Transactions() {
         }, 1500);
       } else {
         const errData = await res.json();
-        alert(errData.error || "Failed to add transaction");
+        showNotification(errData.error || "Failed to add transaction", "error");
       }
     } catch (error) {
-      alert("Network error while adding transaction");
+      showNotification("Network error while adding transaction", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -260,7 +266,7 @@ export default function Transactions() {
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     if (dataToExport.length === 0) {
-      alert("No transactions found in this date range.");
+      showNotification("No transactions found in this date range.", "warning");
       return;
     }
 
@@ -643,7 +649,7 @@ export default function Transactions() {
               
               <div className="space-y-5">
                 <div className="flex gap-4">
-                  <div className="w-1/2">
+                   <div className="w-1/2">
                     <label className="block text-sm font-medium text-gray-600 mb-1">Start Date</label>
                     <input 
                       type="date" 

@@ -12,3 +12,22 @@
     font-size: 90%; 
   }
 }
+
+/* --- PREMIUM TOAST ANIMATIONS --- */
+@keyframes slide-in-top {
+  0% { transform: translate(-50%, -100%); opacity: 0; }
+  100% { transform: translate(-50%, 0); opacity: 1; }
+}
+
+@keyframes slide-out-top {
+  0% { transform: translate(-50%, 0); opacity: 1; }
+  100% { transform: translate(-50%, -100%); opacity: 0; }
+}
+
+.animate-toast-in {
+  animation: slide-in-top 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-toast-out {
+  animation: slide-out-top 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

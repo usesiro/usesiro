@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthLayout from "@/components/AuthLayout";
+import { useNotification } from "@/context/NotificationContext";
 import { 
   EnvelopeIcon, 
   LockClosedIcon, 
@@ -14,6 +15,7 @@ import {
 
 export default function ForgotPassword() {
   const router = useRouter();
+  const { showNotification } = useNotification();
   const [step, setStep] = useState(1); 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -93,9 +95,11 @@ export default function ForgotPassword() {
         setTimeLeft(60);
         setIsTimerActive(true);
         setSuccessMessage("Verification code has been sent to your email");
+        showNotification("Verification code sent to your email", "success");
         setTimeout(() => setSuccessMessage(""), 5000); // Hide toast after 5s
       } else {
         setErrorMessage(data.error || "Failed to send code.");
+        showNotification(data.error || "Failed to send code.", "error");
       }
     } catch (err) {
       setErrorMessage("Network error. Please try again.");
@@ -131,10 +135,11 @@ export default function ForgotPassword() {
       const data = await res.json();
 
       if (res.ok) {
-        alert("Password Reset Successful! You can now log in.");
+        showNotification("Password Reset Successful! You can now log in.", "success");
         router.push("/login");
       } else {
         setErrorMessage(data.error || "Failed to reset password.");
+        showNotification(data.error || "Failed to reset password.", "error");
       }
     } catch (err) {
       setErrorMessage("Network error. Please try again.");

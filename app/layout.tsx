@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Poppins, Fraunces } from "next/font/google"; 
 import "./globals.css";
 import { AOSInit } from "@/components/AOSInit";
-import { Analytics } from "@vercel/analytics/react"; // <-- IMPORTED VERCEL ANALYTICS
-import { GoogleAnalytics } from "@next/third-parties/google"; // <-- IMPORTED GOOGLE ANALYTICS
+import { Analytics } from "@vercel/analytics/react"; 
+import { GoogleAnalytics } from "@next/third-parties/google"; 
+import { NotificationProvider } from "@/context/NotificationContext";
 
 // Setup Poppins
 const poppins = Poppins({
@@ -84,7 +85,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${poppins.variable} ${fraunces.variable} font-sans`}>
         <AOSInit />
-        {children}
+        <NotificationProvider>
+          {children}
+        </NotificationProvider>
         
         {/* --- INJECTED TRACKING SCRIPTS --- */}
         <Analytics /> 
