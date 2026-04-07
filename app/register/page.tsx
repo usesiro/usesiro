@@ -182,6 +182,10 @@ export default function Register() {
           <button type="submit" disabled={!isStep1Valid || isLoading} className={`w-full py-3 rounded-lg font-semibold text-white transition mt-2 ${isStep1Valid && !isLoading ? "bg-primary hover:bg-blue-700 shadow-lg cursor-pointer" : "bg-primary opacity-50 cursor-not-allowed"}`}>
             {isLoading ? "Processing..." : "Continue"}
           </button>
+          <div className="mt-8 text-center text-sm">
+            <span className="text-gray-500">Already have an account? </span>
+            <Link href="/login" className="text-primary font-bold hover:underline">Login</Link>
+          </div>
         </form>
       )}
 

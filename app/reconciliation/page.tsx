@@ -8,6 +8,7 @@ import {
   ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon, PlusIcon, DocumentIcon,
   TrashIcon
 } from "@heroicons/react/24/outline";
+import TableSkeleton from "@/components/TableSkeleton";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -160,6 +161,8 @@ export default function Reconciliation() {
     if (!t.document && t.source === 'MANUAL') return "Missing Document";
     return "Review Required";
   };
+
+  if (isLoading) return <TableSkeleton />;
 
   return (
     <DashboardLayout>

@@ -11,6 +11,7 @@ import {
   ChevronLeftIcon, ChevronRightIcon, XMarkIcon, CheckCircleIcon,
   ReceiptRefundIcon, DocumentChartBarIcon, DocumentTextIcon, TableCellsIcon, ArrowPathIcon
 } from "@heroicons/react/24/outline";
+import TableSkeleton from "@/components/TableSkeleton";
 
 const ITEMS_PER_PAGE = 15; // Set pagination limit
 
@@ -365,6 +366,8 @@ export default function Transactions() {
 
   // Helper check for "Select All" based on the current page
   const isAllCurrentPageSelected = paginatedTransactions.length > 0 && paginatedTransactions.every(t => selectedIds.includes(t.id));
+
+  if (isLoading && transactions.length === 0) return <TableSkeleton />;
 
   return (
     <DashboardLayout>

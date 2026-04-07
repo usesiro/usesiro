@@ -51,9 +51,10 @@ export async function POST(request: Request) {
       data: {
         email,
         passwordHash,
+        firstName, // Fixed: Added this line to save the first name
         otpSecret: otpCode,
         otpExpiresAt,
-        role: role as any, // Cast to any because the Prisma client might need a refresh to see the new enum members
+        role: role as any,
       },
     });
 

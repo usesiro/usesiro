@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import MonoButton from "@/components/mono/MonoButton";
 import { PencilSquareIcon, PhotoIcon, ChevronRightIcon, PlusIcon } from "@heroicons/react/24/outline";
+import SettingsSkeleton from "@/components/SettingsSkeleton";
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("Personal Info");
@@ -49,6 +50,10 @@ export default function Settings() {
           businessName: fetchedData?.name || "",
           industry: fetchedData?.industry || "",
         });
+        setPreferences({
+          emailNotifications: fetchedData?.owner?.marketingEmails,
+          loginAlerts: fetchedData?.owner?.twoFactorEnabled
+        });
       }
     } finally { 
       setLoading(false); 
@@ -58,6 +63,8 @@ export default function Settings() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  if (loading) return <SettingsSkeleton />;
 
   // --- HANDLERS ---
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

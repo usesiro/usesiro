@@ -13,6 +13,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, PieChart, Pie, Cell 
 } from 'recharts';
+import DashboardSkeleton from "@/components/DashboardSkeleton";
 
 export default function Reports() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -181,6 +182,8 @@ export default function Reports() {
 
     setIsExportModalOpen(false); 
   };
+
+  if (isLoading) return <DashboardSkeleton />;
 
   return (
     <DashboardLayout>

@@ -100,6 +100,10 @@ export default function Login() {
           {isLoading ? "Authenticating..." : "Login"}
         </button>
       </form>
+      <div className="mt-8 text-center text-sm">
+        <span className="text-gray-500">Don't have an account? </span>
+        <Link href="/register" className="text-primary font-bold hover:underline">Signup</Link>
+      </div>
     </AuthLayout>
   );
 }

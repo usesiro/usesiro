@@ -20,6 +20,7 @@ import {
   TableCellsIcon
 } from "@heroicons/react/24/outline";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import TableSkeleton from "@/components/TableSkeleton";
 
 export default function TaxReadiness() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -169,7 +170,7 @@ export default function TaxReadiness() {
     return new Date(dateString).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
-  if (isLoading) return <DashboardLayout><div className="p-10 text-center text-gray-500">Loading Tax Data...</div></DashboardLayout>;
+  if (isLoading) return <TableSkeleton />;
 
   return (
     <DashboardLayout>
