@@ -13,21 +13,21 @@ export default async function middleware(request: NextRequest) {
     '/reconciliation',
     '/reports',
     '/settings',
-    '/admin' // New admin protection
+    '/pigshit' // New admin protection
   ];
 
-  const adminRoutes = ['/admin'];
+  const adminRoutes = ['/pigshit'];
   const isProtectedRoute = protectedPageRoutes.some(route => pathname.startsWith(route));
   const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
   const pageToken = request.cookies.get('siro_auth_token')?.value;
 
   const isAuthPage = 
-    pathname.includes('/admin/setup') || 
-    pathname.includes('/admin/auth') || 
-    pathname.includes('/admin/verify');
+    pathname.includes('/pigshit/setup') || 
+    pathname.includes('/pigshit/auth') || 
+    pathname.includes('/pigshit/verify');
 
   if (isProtectedRoute) {
-    // 1. Genesis Check: If no users exist, redirect to /admin/setup
+    // 1. Genesis Check: If no users exist, redirect to /pigshit/setup
     // Skip this if we're already on an auth/setup/verify page to prevent loops
     if (isAdminRoute && !isAuthPage) {
       try {
@@ -35,7 +35,7 @@ export default async function middleware(request: NextRequest) {
         if (statusRes.ok) {
            const { adminCount } = await statusRes.json();
            if (adminCount === 0) {
-             return NextResponse.redirect(new URL('/admin/setup', request.url));
+             return NextResponse.redirect(new URL('/pigshit/setup', request.url));
            }
         }
       } catch (err) { console.error("Genesis check failed", err); }
@@ -43,7 +43,7 @@ export default async function middleware(request: NextRequest) {
 
     if (!pageToken && !isAuthPage) {
       // Unauthenticated on admin? Dedicated Admin Login
-      const authUrl = isAdminRoute ? '/admin/auth' : '/login';
+      const authUrl = isAdminRoute ? '/pigshit/auth' : '/login';
       return NextResponse.redirect(new URL(authUrl, request.url));
     }
 
@@ -110,7 +110,7 @@ export const config = {
   matcher: [
     '/api/v1/:path*',
     '/dashboard/:path*',
-    '/admin/:path*',
+    '/pigshit/:path*',
     '/transactions/:path*',
     '/tax-readiness/:path*',
     '/reconciliation/:path*',

@@ -17,34 +17,34 @@ const navigation = [
   {
     section: "OVERVIEW",
     items: [
-      { name: "Dashboard", href: "/admin", icon: Squares2X2Icon },
+      { name: "Dashboard", href: "/pigshit", icon: Squares2X2Icon },
     ],
   },
   {
     section: "USERS",
     items: [
-      { name: "All Users", href: "/admin/users", icon: UsersIcon },
-      { name: "Churn Risk", href: "/admin/churn", icon: ArrowTrendingDownIcon, badge: 4 },
+      { name: "All Users", href: "/pigshit/users", icon: UsersIcon },
+      { name: "Churn Risk", href: "/pigshit/churn", icon: ArrowTrendingDownIcon, badge: 4 },
     ],
   },
   {
     section: "REVENUE",
     items: [
-      { name: "Revenue", href: "/admin/revenue", icon: BanknotesIcon },
-      { name: "Failed Payments", href: "/admin/failed-payments", icon: XCircleIcon, badge: 4 },
+      { name: "Revenue", href: "/pigshit/revenue", icon: BanknotesIcon },
+      { name: "Failed Payments", href: "/pigshit/failed-payments", icon: XCircleIcon, badge: 4 },
     ],
   },
   {
     section: "PLATFORM",
     items: [
-      { name: "Platform Health", href: "/admin/health", icon: ShieldCheckIcon },
-      { name: "API Logs", href: "/admin/logs", icon: ServerStackIcon },
+      { name: "Platform Health", href: "/pigshit/health", icon: ShieldCheckIcon },
+      { name: "API Logs", href: "/pigshit/logs", icon: ServerStackIcon },
     ],
   },
   {
     section: "COMMUNICATIONS",
     items: [
-      { name: "Support", href: "/admin/support", icon: ChatBubbleLeftEllipsisIcon },
+      { name: "Support", href: "/pigshit/support", icon: ChatBubbleLeftEllipsisIcon },
     ],
   }
 ];
@@ -62,20 +62,20 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
       document.cookie = "siro_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
       
       // 3. Force a full page reload to the auth screen
-      window.location.href = "/admin/auth";
+      window.location.href = "/pigshit/auth";
     } catch (err) {
       console.error("Logout failed:", err);
       // Fallback redirect even if API fails
-      window.location.href = "/admin/auth";
+      window.location.href = "/pigshit/auth";
     }
   };
 
   // Dynamic header title matching Figma screenshots
   const getPageTitle = () => {
-    if (pathname === "/admin") return "Dashboard";
-    if (pathname === "/admin/users") return "User Management";
-    if (pathname === "/admin/revenue") return "Revenue";
-    if (pathname === "/admin/health") return "Platform Health";
+    if (pathname === "/pigshit") return "Dashboard";
+    if (pathname === "/pigshit/users") return "User Management";
+    if (pathname === "/pigshit/revenue") return "Revenue";
+    if (pathname === "/pigshit/health") return "Platform Health";
     return navigation.flatMap(g => g.items).find(i => i.href === pathname)?.name || "Dashboard";
   };
 

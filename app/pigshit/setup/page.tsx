@@ -7,7 +7,7 @@ export default async function AdminSetupPage() {
   // Temporarily relaxed from User.count() === 0 to allow testing with 6 existing users.
   const adminCount = await prisma.user.count({ where: { role: 'SUPER_ADMIN' as any } });
   if (adminCount > 0) {
-    redirect("/admin/auth?error=setup_completed");
+    redirect("/pigshit/auth?error=setup_completed");
   }
 
   return <AdminSetupClient />;

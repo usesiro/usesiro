@@ -42,10 +42,6 @@ export default function Login() {
       const data = await res.json();
       
       if (!res.ok) {
-        if (data.redirectTo) {
-          router.push(data.redirectTo + `?error=${data.code || 'unauthorized'}`);
-          return;
-        }
         throw new Error(data.error || "Login failed");
       }
 
