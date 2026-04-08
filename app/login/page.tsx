@@ -4,10 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthLayout from "@/components/AuthLayout";
+import { useNotification } from "@/context/NotificationContext";
 import { EnvelopeIcon, LockClosedIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 export default function Login() {
   const router = useRouter();
+  const { showNotification } = useNotification();
   const [showPassword, setShowPassword] = useState(false);
   
   // API States
@@ -54,7 +56,11 @@ export default function Login() {
       router.push("/dashboard");
 
     } catch (err: any) {
-      setErrorMsg(err.message);
+      const msg = err.message === "Failed to fetch" || err.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : err.message;
+      setErrorMsg(msg);
+      showNotification(msg, "error");
     } finally {
       setIsLoading(false);
     }

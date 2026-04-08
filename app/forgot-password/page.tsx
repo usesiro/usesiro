@@ -20,7 +20,6 @@ export default function ForgotPassword() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   
   // Timer State
   const [timeLeft, setTimeLeft] = useState(60); // 60 seconds
@@ -94,15 +93,15 @@ export default function ForgotPassword() {
         setStep(2);
         setTimeLeft(60);
         setIsTimerActive(true);
-        setSuccessMessage("Verification code has been sent to your email");
         showNotification("Verification code sent to your email", "success");
-        setTimeout(() => setSuccessMessage(""), 5000); // Hide toast after 5s
       } else {
         setErrorMessage(data.error || "Failed to send code.");
         showNotification(data.error || "Failed to send code.", "error");
       }
     } catch (err) {
-      setErrorMessage("Network error. Please try again.");
+      const msg = "Your connection has been cut off. Please check your internet and try again later.";
+      setErrorMessage(msg);
+      showNotification(msg, "error");
     } finally {
       setIsLoading(false);
     }
@@ -142,7 +141,9 @@ export default function ForgotPassword() {
         showNotification(data.error || "Failed to reset password.", "error");
       }
     } catch (err) {
-      setErrorMessage("Network error. Please try again.");
+      const msg = "Your connection has been cut off. Please check your internet and try again later.";
+      setErrorMessage(msg);
+      showNotification(msg, "error");
     } finally {
       setIsLoading(false);
     }
@@ -156,21 +157,6 @@ export default function ForgotPassword() {
 
   return (
     <AuthLayout>
-      {/* Success Toast */}
-      {successMessage && (
-        <div className="absolute top-4 right-4 md:right-8 bg-blue-50 text-primary px-4 py-2 rounded-lg text-xs font-medium flex items-center shadow-sm border border-blue-100 animate-fade-in z-50">
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-          {successMessage}
-        </div>
-      )}
-
-      {/* Global Error Display */}
-      {errorMessage && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-sm font-medium rounded-lg">
-          {errorMessage}
-        </div>
-      )}
-
       {/* --- STEP 1: EMAIL --- */}
       {step === 1 && (
         <>

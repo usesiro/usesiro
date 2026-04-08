@@ -84,8 +84,12 @@ export default function Transactions() {
         setCurrentPage(1); // Reset to page 1 whenever filters change
         setSelectedIds([]); // Clear selection on new fetch
       }
-    } catch (err) {
-      console.error("Failed to load transactions", err);
+    } catch (err: any) {
+      const msg = err.message === "Failed to fetch" || err.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : "Failed to load transactions";
+      console.error(msg, err);
+      showNotification(msg, "error");
     } finally {
       setIsLoading(false);
     }
@@ -100,8 +104,12 @@ export default function Transactions() {
         const data = await res.json();
         setCategories(data.categories || []);
       }
-    } catch (err) {
-      console.error("Failed to load categories", err);
+    } catch (err: any) {
+      const msg = err.message === "Failed to fetch" || err.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : "Failed to load categories";
+      console.error(msg, err);
+      showNotification(msg, "error");
     }
   };
 
@@ -178,8 +186,11 @@ export default function Transactions() {
         const errData = await res.json();
         showNotification(errData.error || "Failed to update transactions", "error");
       }
-    } catch (error) {
-      showNotification("Network error during bulk update", "error");
+    } catch (error: any) {
+      const msg = error.message === "Failed to fetch" || error.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : "Network error during bulk update";
+      showNotification(msg, "error");
     } finally {
       setIsBulkUpdating(false);
     }
@@ -209,8 +220,11 @@ export default function Transactions() {
       } else {
          showNotification("VAT status updated", "success");
       }
-    } catch (error) {
-      showNotification("Network error while updating VAT status", "error");
+    } catch (error: any) {
+      const msg = error.message === "Failed to fetch" || error.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : "Network error while updating VAT status";
+      showNotification(msg, "error");
       await fetchData(); 
     }
   };
@@ -242,8 +256,11 @@ export default function Transactions() {
         const errData = await res.json();
         showNotification(errData.error || "Failed to add transaction", "error");
       }
-    } catch (error) {
-      showNotification("Network error while adding transaction", "error");
+    } catch (error: any) {
+      const msg = error.message === "Failed to fetch" || error.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : "Network error while adding transaction";
+      showNotification(msg, "error");
     } finally {
       setIsSubmitting(false);
     }

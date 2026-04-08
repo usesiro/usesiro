@@ -100,8 +100,11 @@ export default function Settings() {
         const err = await res.json();
         showNotification(err.error || `Failed to update ${section} info`, "error");
       }
-    } catch (error) {
-      showNotification("Network error. Please try again.", "error");
+    } catch (error: any) {
+      const msg = error.message === "Failed to fetch" || error.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : error.message || "Network error. Please try again.";
+      showNotification(msg, "error");
     } finally {
       setIsSaving(false);
     }
@@ -129,6 +132,11 @@ export default function Settings() {
       } else {
         showNotification("Failed to update password.", "error");
       }
+    } catch (error: any) {
+      const msg = error.message === "Failed to fetch" || error.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : "Failed to update password.";
+      showNotification(msg, "error");
     } finally {
       setIsSaving(false);
     }

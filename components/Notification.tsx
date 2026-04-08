@@ -22,8 +22,8 @@ export default function Notification({ message, type, onClose }: NotificationPro
     switch (type) {
       case "success":
         return {
-          container: "bg-white/90 border-green-100 text-green-800 shadow-green-100/20",
-          iconBg: "bg-green-50 text-green-600",
+          container: "bg-white/90 border-blue-100 text-blue-800 shadow-blue-100/20",
+          iconBg: "bg-blue-50 text-primary",
           Icon: CheckCircleIcon
         };
       case "error":
