@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useNotification } from "@/context/NotificationContext";
 import MonoButton from "@/components/mono/MonoButton";
 import { PencilSquareIcon, PhotoIcon, ChevronRightIcon, PlusIcon } from "@heroicons/react/24/outline";
+import SettingsSkeleton from "@/components/SettingsSkeleton";
 
 export default function Settings() {
+  const router = useRouter();
+  const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState("Personal Info");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +54,10 @@ export default function Settings() {
           businessName: fetchedData?.name || "",
           industry: fetchedData?.industry || "",
         });
+        setPreferences({
+          emailNotifications: fetchedData?.owner?.marketingEmails,
+          loginAlerts: fetchedData?.owner?.twoFactorEnabled
+        });
       }
     } finally { 
       setLoading(false); 
@@ -58,6 +67,8 @@ export default function Settings() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  if (loading) return <SettingsSkeleton />;
 
   // --- HANDLERS ---
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,12 +95,16 @@ export default function Settings() {
       if (res.ok) {
         await fetchData(); // Refresh data from server
         section === "personal" ? setIsEditingPersonal(false) : setIsEditingBusiness(false);
+        showNotification("Profile updated successfully", "success");
       } else {
         const err = await res.json();
-        alert(err.error || `Failed to update ${section} info`);
+        showNotification(err.error || `Failed to update ${section} info`, "error");
       }
-    } catch (error) {
-      alert("Network error. Please try again.");
+    } catch (error: any) {
+      const msg = error.message === "Failed to fetch" || error.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : error.message || "Network error. Please try again.";
+      showNotification(msg, "error");
     } finally {
       setIsSaving(false);
     }
@@ -97,7 +112,7 @@ export default function Settings() {
 
   const handleUpdatePassword = async () => {
     if (passwords.newPassword !== passwords.confirmPassword) {
-      alert("Passwords do not match!");
+      showNotification("Passwords do not match!", "error");
       return;
     }
     setIsSaving(true);
@@ -112,11 +127,16 @@ export default function Settings() {
       });
 
       if (res.ok) {
-        alert("Password updated successfully!");
+        showNotification("Password updated successfully!", "success");
         setPasswords({ newPassword: "", confirmPassword: "" });
       } else {
-        alert("Failed to update password.");
+        showNotification("Failed to update password.", "error");
       }
+    } catch (error: any) {
+      const msg = error.message === "Failed to fetch" || error.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : "Failed to update password.";
+      showNotification(msg, "error");
     } finally {
       setIsSaving(false);
     }

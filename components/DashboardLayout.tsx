@@ -17,6 +17,12 @@ const getInitials = (name: string) => {
   return parts.length === 1 ? parts[0].substring(0, 2).toUpperCase() : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
+const formatBusinessName = (name: string) => {
+  if (!name) return "";
+  const LIMIT = 18;
+  return name.length > LIMIT ? name.substring(0, LIMIT).trim() + "..." : name;
+};
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -190,15 +196,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <button className="p-2 text-gray-400 hover:bg-gray-50 rounded-full transition-colors hidden sm:block">
               <BellIcon className="w-6 h-6" />
             </button>
-            <div className="flex items-center gap-3 sm:pl-4 sm:border-l border-gray-100">
+            <Link 
+              href="/settings"
+              className="flex items-center gap-3 sm:pl-4 sm:border-l border-gray-100 hover:bg-gray-50 p-1.5 rounded-2xl transition-all cursor-pointer group"
+            >
               <div className="text-right hidden md:block">
-                <p className="text-sm font-black text-gray-900 leading-none">{businessData.name}</p>
+                <p className="text-sm font-black text-gray-900 leading-none group-hover:text-primary transition-colors">
+                  {formatBusinessName(businessData.name)}
+                </p>
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Administrator</p>
               </div>
-              <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-primary flex items-center justify-center text-white font-bold shadow-lg shadow-blue-100 text-sm md:text-base">
+              <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-primary flex items-center justify-center text-white font-bold shadow-lg shadow-blue-100 text-sm md:text-base group-hover:scale-105 transition-transform">
                 {getInitials(businessData.name)}
               </div>
-            </div>
+            </Link>
           </div>
         </header>
 

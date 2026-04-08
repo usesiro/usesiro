@@ -35,7 +35,7 @@ export default function AuthLayout({ children, leftContent }: AuthLayoutProps) {
                 alt="Siro Tech Logo White" 
                 width={200} 
                 height={80}
-                className="w-48 h-auto opacity-90"
+                className="w-48 h-auto"
               />
             )}
             {/* Overlay the small logo for branding consistency */}

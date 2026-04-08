@@ -4,10 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthLayout from "@/components/AuthLayout";
+import { useNotification } from "@/context/NotificationContext";
 import { EnvelopeIcon, LockClosedIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 export default function Login() {
   const router = useRouter();
+  const { showNotification } = useNotification();
   const [showPassword, setShowPassword] = useState(false);
   
   // API States
@@ -40,10 +42,6 @@ export default function Login() {
       const data = await res.json();
       
       if (!res.ok) {
-        if (data.redirectTo) {
-          router.push(data.redirectTo + `?error=${data.code || 'unauthorized'}`);
-          return;
-        }
         throw new Error(data.error || "Login failed");
       }
 
@@ -54,7 +52,11 @@ export default function Login() {
       router.push("/dashboard");
 
     } catch (err: any) {
-      setErrorMsg(err.message);
+      const msg = err.message === "Failed to fetch" || err.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : err.message;
+      setErrorMsg(msg);
+      showNotification(msg, "error");
     } finally {
       setIsLoading(false);
     }
@@ -100,6 +102,10 @@ export default function Login() {
           {isLoading ? "Authenticating..." : "Login"}
         </button>
       </form>
+      <div className="mt-8 text-center text-sm">
+        <span className="text-gray-500">Don't have an account? </span>
+        <Link href="/register" className="text-primary font-bold hover:underline">Signup</Link>
+      </div>
     </AuthLayout>
   );
 }

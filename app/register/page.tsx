@@ -4,12 +4,14 @@ import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthLayout from "@/components/AuthLayout";
+import { useNotification } from "@/context/NotificationContext";
 import { 
   UserIcon, EnvelopeIcon, PhoneIcon, LockClosedIcon, EyeIcon, EyeSlashIcon 
 } from "@heroicons/react/24/outline";
 
 export default function Register() {
   const router = useRouter();
+  const { showNotification } = useNotification();
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   
@@ -67,7 +69,11 @@ export default function Register() {
       if (!res.ok) throw new Error(data.error || "Registration failed");
       setStep(2);
     } catch (err: any) {
-      setErrorMsg(err.message);
+      const msg = err.message === "Failed to fetch" || err.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : err.message;
+      setErrorMsg(msg);
+      showNotification(msg, "error");
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +106,11 @@ export default function Register() {
       localStorage.setItem("siro_access_token", loginData.accessToken);
       setStep(3);
     } catch (err: any) {
-      setErrorMsg(err.message);
+      const msg = err.message === "Failed to fetch" || err.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : err.message;
+      setErrorMsg(msg);
+      showNotification(msg, "error");
     } finally {
       setIsLoading(false);
     }
@@ -131,7 +141,11 @@ export default function Register() {
       // Success! Send them to the dashboard
       router.push("/welcome"); 
     } catch (err: any) {
-      setErrorMsg(err.message);
+      const msg = err.message === "Failed to fetch" || err.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : err.message;
+      setErrorMsg(msg);
+      showNotification(msg, "error");
     } finally {
       setIsLoading(false);
     }
@@ -182,6 +196,10 @@ export default function Register() {
           <button type="submit" disabled={!isStep1Valid || isLoading} className={`w-full py-3 rounded-lg font-semibold text-white transition mt-2 ${isStep1Valid && !isLoading ? "bg-primary hover:bg-blue-700 shadow-lg cursor-pointer" : "bg-primary opacity-50 cursor-not-allowed"}`}>
             {isLoading ? "Processing..." : "Continue"}
           </button>
+          <div className="mt-8 text-center text-sm">
+            <span className="text-gray-500">Already have an account? </span>
+            <Link href="/login" className="text-primary font-bold hover:underline">Login</Link>
+          </div>
         </form>
       )}
 

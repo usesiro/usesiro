@@ -56,7 +56,7 @@ function AdminAuthContent() {
         throw new Error("Access Denied: This portal is for administrators only.");
       }
 
-      router.push("/admin");
+      router.push("/pigshit");
     } catch (err: any) {
       setError(err.message);
     } finally {

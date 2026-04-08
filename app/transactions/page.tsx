@@ -11,16 +11,19 @@ import {
   ChevronLeftIcon, ChevronRightIcon, XMarkIcon, CheckCircleIcon,
   ReceiptRefundIcon, DocumentChartBarIcon, DocumentTextIcon, TableCellsIcon, ArrowPathIcon
 } from "@heroicons/react/24/outline";
+import { useNotification } from "@/context/NotificationContext";
+import TableSkeleton from "@/components/TableSkeleton";
 
 const ITEMS_PER_PAGE = 15; // Set pagination limit
 
 export default function Transactions() {
+  const { showNotification } = useNotification();
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false); // <-- MOVED FROM DASHBOARD
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Dynamic Data State
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -81,8 +84,12 @@ export default function Transactions() {
         setCurrentPage(1); // Reset to page 1 whenever filters change
         setSelectedIds([]); // Clear selection on new fetch
       }
-    } catch (err) {
-      console.error("Failed to load transactions", err);
+    } catch (err: any) {
+      const msg = err.message === "Failed to fetch" || err.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : "Failed to load transactions";
+      console.error(msg, err);
+      showNotification(msg, "error");
     } finally {
       setIsLoading(false);
     }
@@ -97,8 +104,12 @@ export default function Transactions() {
         const data = await res.json();
         setCategories(data.categories || []);
       }
-    } catch (err) {
-      console.error("Failed to load categories", err);
+    } catch (err: any) {
+      const msg = err.message === "Failed to fetch" || err.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : "Failed to load categories";
+      console.error(msg, err);
+      showNotification(msg, "error");
     }
   };
 
@@ -149,7 +160,7 @@ export default function Transactions() {
 
   const handleBulkCategorize = async () => {
     if (!selectedCategory) {
-      alert("Please select a category first.");
+      showNotification("Please select a category first.", "warning");
       return;
     }
 
@@ -168,14 +179,18 @@ export default function Transactions() {
       });
 
       if (res.ok) {
+        showNotification("Bulk update successful", "success");
         await fetchData(); 
         setSelectedCategory(""); 
       } else {
         const errData = await res.json();
-        alert(errData.error || "Failed to update transactions");
+        showNotification(errData.error || "Failed to update transactions", "error");
       }
-    } catch (error) {
-      alert("Network error during bulk update");
+    } catch (error: any) {
+      const msg = error.message === "Failed to fetch" || error.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : "Network error during bulk update";
+      showNotification(msg, "error");
     } finally {
       setIsBulkUpdating(false);
     }
@@ -200,11 +215,16 @@ export default function Transactions() {
 
       if (!res.ok) {
          const errData = await res.json();
-         alert(errData.error || "Failed to update VAT status");
+         showNotification(errData.error || "Failed to update VAT status", "error");
          await fetchData(); 
+      } else {
+         showNotification("VAT status updated", "success");
       }
-    } catch (error) {
-      alert("Network error while updating VAT status");
+    } catch (error: any) {
+      const msg = error.message === "Failed to fetch" || error.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : "Network error while updating VAT status";
+      showNotification(msg, "error");
       await fetchData(); 
     }
   };
@@ -225,6 +245,7 @@ export default function Transactions() {
 
       if (res.ok) {
         setIsSuccess(true);
+        showNotification("Transaction added successfully", "success");
         await fetchData(); 
         setTimeout(() => {
           setIsAddModalOpen(false);
@@ -233,10 +254,13 @@ export default function Transactions() {
         }, 1500);
       } else {
         const errData = await res.json();
-        alert(errData.error || "Failed to add transaction");
+        showNotification(errData.error || "Failed to add transaction", "error");
       }
-    } catch (error) {
-      alert("Network error while adding transaction");
+    } catch (error: any) {
+      const msg = error.message === "Failed to fetch" || error.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : "Network error while adding transaction";
+      showNotification(msg, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -259,7 +283,7 @@ export default function Transactions() {
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     if (dataToExport.length === 0) {
-      alert("No transactions found in this date range.");
+      showNotification("No transactions found in this date range.", "warning");
       return;
     }
 
@@ -365,6 +389,8 @@ export default function Transactions() {
 
   // Helper check for "Select All" based on the current page
   const isAllCurrentPageSelected = paginatedTransactions.length > 0 && paginatedTransactions.every(t => selectedIds.includes(t.id));
+
+  if (isLoading && transactions.length === 0) return <TableSkeleton />;
 
   return (
     <DashboardLayout>
@@ -640,7 +666,7 @@ export default function Transactions() {
               
               <div className="space-y-5">
                 <div className="flex gap-4">
-                  <div className="w-1/2">
+                   <div className="w-1/2">
                     <label className="block text-sm font-medium text-gray-600 mb-1">Start Date</label>
                     <input 
                       type="date" 

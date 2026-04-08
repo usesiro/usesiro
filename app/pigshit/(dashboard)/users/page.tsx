@@ -89,7 +89,7 @@ export default async function AllUsersPage() {
                     </span>
                   </td>
                   <td className="py-5 text-right pr-4">
-                    <Link href={`/admin/users/${user.id}`} className="text-[13px] font-bold text-primary hover:text-blue-800 transition-colors">
+                    <Link href={`/pigshit/users/${user.id}`} className="text-[13px] font-bold text-primary hover:text-blue-800 transition-colors">
                       View
                     </Link>
                   </td>

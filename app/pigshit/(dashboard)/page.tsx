@@ -119,7 +119,7 @@ export default async function AdminOverviewPage() {
         <div className="xl:col-span-2 bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">
           <div className="px-6 pt-6 pb-4 flex items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900">Recent Signups</h2>
-            <Link href="/admin/users" className="text-sm font-semibold text-primary hover:underline">
+            <Link href="/pigshit/users" className="text-sm font-semibold text-primary hover:underline">
               View all
             </Link>
           </div>
@@ -215,7 +215,7 @@ export default async function AdminOverviewPage() {
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-gray-900">Platform Health</h2>
-            <Link href="/admin/logs" className="text-sm font-semibold text-primary hover:underline">View logs</Link>
+            <Link href="/pigshit/logs" className="text-sm font-semibold text-primary hover:underline">View logs</Link>
           </div>
           <div className="flex-1 space-y-6">
             {platformHealth.map((item) => (
@@ -237,7 +237,7 @@ export default async function AdminOverviewPage() {
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex flex-col">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-bold text-gray-900">Churn Risk</h2>
-            <Link href="/admin/churn" className="text-sm font-semibold text-primary hover:underline">View all</Link>
+            <Link href="/pigshit/churn" className="text-sm font-semibold text-primary hover:underline">View all</Link>
           </div>
           <p className="text-xs text-gray-400 mb-6">All end points responding</p>
           

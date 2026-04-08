@@ -32,7 +32,7 @@ export default function AdminSetupClient() {
       if (!res.ok) throw new Error(data.error || "Setup failed");
 
       // Redirect to Admin OTP verification instead of login
-      router.push(`/admin/verify?email=${encodeURIComponent(formData.email)}`);
+      router.push(`/pigshit/verify?email=${encodeURIComponent(formData.email)}`);
     } catch (err: any) {
       setError(err.message);
     } finally {

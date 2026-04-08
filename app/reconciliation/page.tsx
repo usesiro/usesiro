@@ -2,16 +2,19 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useNotification } from "@/context/NotificationContext";
 import { 
   DocumentMagnifyingGlassIcon, DocumentDuplicateIcon, ExclamationTriangleIcon,
   XMarkIcon, MagnifyingGlassIcon, ArrowDownTrayIcon, CalendarIcon,
   ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon, PlusIcon, DocumentIcon,
   TrashIcon
 } from "@heroicons/react/24/outline";
+import TableSkeleton from "@/components/TableSkeleton";
 
 const ITEMS_PER_PAGE = 10;
 
 export default function Reconciliation() {
+  const { showNotification } = useNotification();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -47,7 +50,7 @@ export default function Reconciliation() {
         setCategories(catData.categories || []);
       }
     } catch (err) {
-      console.error("Failed to load data", err);
+      showNotification("Failed to load data", "error");
     } finally {
       setIsLoading(false);
     }
@@ -135,17 +138,17 @@ export default function Reconciliation() {
       }
 
       if (hasUpdates) {
-        alert("Transaction resolved successfully!");
+        showNotification("Transaction resolved successfully!", "success");
         await fetchData(); // Refresh the list
         setIsDetailsModalOpen(false);
       } else {
-        alert("No changes were made.");
+        showNotification("No changes were made.", "info");
         setIsDetailsModalOpen(false);
       }
 
     } catch (err) {
       console.error("Update failed", err);
-      alert("Error saving updates. Check console.");
+      showNotification("Error saving updates. Please check your connection.", "error");
     } finally {
       setIsSaving(false);
     }
@@ -160,6 +163,8 @@ export default function Reconciliation() {
     if (!t.document && t.source === 'MANUAL') return "Missing Document";
     return "Review Required";
   };
+
+  if (isLoading) return <TableSkeleton />;
 
   return (
     <DashboardLayout>

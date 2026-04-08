@@ -16,7 +16,7 @@ function AdminVerifyContent() {
 
   useEffect(() => {
     if (!email) {
-      router.push("/admin/auth");
+      router.push("/pigshit/auth");
     }
   }, [email, router]);
 
@@ -37,7 +37,7 @@ function AdminVerifyContent() {
 
       setSuccess(true);
       setTimeout(() => {
-        router.push("/admin/auth?message=Verification successful. You can now log in.");
+        router.push("/pigshit/auth?message=Verification successful. You can now log in.");
       }, 2000);
     } catch (err: any) {
       setError(err.message);

@@ -6,16 +6,74 @@ import { calculateTaxReadinessScore } from "@/utils/taxScoring";
 import { 
   WalletIcon, CreditCardIcon, ScaleIcon,
   CheckCircleIcon, DocumentDuplicateIcon, ExclamationTriangleIcon,
-  ChevronRightIcon, BoltIcon
+  ChevronRightIcon, BoltIcon, InformationCircleIcon, XMarkIcon
 } from "@heroicons/react/24/outline";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
+import DashboardSkeleton from "@/components/DashboardSkeleton";
+
+// --- GREETING UTILITIES ---
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good Morning";
+  if (hour < 17) return "Good Afternoon";
+  return "Good Evening";
+};
+
+const getHolidayMessage = () => {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  const dateStr = `${month}-${day}`;
+
+  const holidays: Record<string, string> = {
+    "1-1": "Happy New Year! 🎆",
+    "2-14": "Happy Valentine's Day! ❤️",
+    "3-8": "Happy International Women's Day! 👩",
+    "5-1": "Happy Workers' Day! 🛠️",
+    "5-27": "Happy Children's Day! 🎈",
+    "6-12": "Happy Democracy Day! 🇳🇬",
+    "10-1": "Happy Independence Day! 🇳🇬",
+    "12-25": "Merry Christmas! 🎄",
+    "12-26": "Happy Boxing Day! 🎁",
+  };
+
+  // Current context check for Easter (April 5-7, 2026)
+  if (month === 4 && day >= 5 && day <= 7) return "Happy Easter! 🐣";
+
+  return holidays[dateStr] || null;
+};
+
+const getRandomHumor = () => {
+  const messages = [
+    "Hello, let's get some transactions tagged",
+    "Ready to make those numbers smile? 😊",
+    "Your financial hero era starts today!",
+    "Let's turn those receipts into insights. 📈",
+    "Keeping your books cleaner than a fresh slate.",
+    "Tag, you're it! (The transactions, that is).",
+    "Finance is fun... especially with Siro. 😉",
+    "Ready for some heavy-duty bookkeeping? Let's go!",
+    "Let's balance those books like a pro. ⚖️",
+    "Another day, another step towards financial clarity.",
+  ];
+  return messages[Math.floor(Math.random() * messages.length)];
+};
 
 export default function Dashboard() {
   const [business, setBusiness] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAlertDismissed, setIsAlertDismissed] = useState(false);
+
+  // Memoize greeting and sub-message to keep them stable during session but dynamic on refresh
+  const greeting = useMemo(() => getGreeting(), []);
+  const subMessage = useMemo(() => getHolidayMessage() || getRandomHumor(), []);
+
+  const showProfileAlert = useMemo(() => {
+    return !isAlertDismissed && business && (!business.owner?.lastName || !business.owner?.phone);
+  }, [isAlertDismissed, business]);
 
   useEffect(() => {
     async function getDashboardData() {
@@ -72,12 +130,35 @@ export default function Dashboard() {
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(val);
 
-  if (loading) return <div className="p-10 text-center text-gray-400">Loading Dashboard...</div>;
+  if (loading) return <DashboardSkeleton />;
 
   return (
     <DashboardLayout>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">{business?.name} Overview</h1>
+      {showProfileAlert && (
+        <div className="mb-6 bg-indigo-50 border border-indigo-100 rounded-xl p-3 flex items-center justify-between animate-fade-in">
+          <div className="flex items-center gap-3">
+            <InformationCircleIcon className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+            <p className="text-sm font-medium text-indigo-700">
+              Complete your profile to get the most out of Siro. 
+              <a href="/settings" className="ml-2 font-black underline decoration-2 underline-offset-4 hover:text-indigo-900 transition-colors">Complete Now</a>
+            </p>
+          </div>
+          <button 
+            onClick={() => setIsAlertDismissed(true)}
+            className="p-1 hover:bg-white rounded-full transition-colors text-indigo-400 hover:text-indigo-600"
+          >
+            <XMarkIcon className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      <div className="mb-10">
+        <h1 className="text-2xl md:text-3xl font-black text-gray-900">
+          {greeting}, {business?.owner?.firstName || "there"} 👋
+        </h1>
+        <p className="text-gray-500 font-medium mt-1 text-sm md:text-base">
+          {subMessage}
+        </p>
       </div>
 
       <div className="space-y-6">

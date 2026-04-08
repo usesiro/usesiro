@@ -36,39 +36,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // --- IDENTITY ISOLATION CHECK ---
-    const isAdmin = ["SUPER_ADMIN", "BUSINESS_ADMIN", "FINANCE_ADMIN"].includes(user.role);
-    
-    if (portal === "ADMIN" && !isAdmin) {
-      return NextResponse.json(
-        { 
-          error: "Access Denied: This portal is reserved for administrators only.",
-          code: "unauthorized_portal"
-        }, 
-        { status: 403 }
-      );
-    }
-
-    if (portal === "USER" && isAdmin) {
-      return NextResponse.json(
-        { 
-          error: "Admin Account Detected: Please use the Administrative Portal to log in.",
-          code: "admin_detected",
-          redirectTo: "/admin/auth" 
-        }, 
-        { status: 403 }
-      );
-    }
-
-    // 3. Check Verification
-    if (!user.isVerified) {
-      return NextResponse.json({ error: "Please verify your email before logging in." }, { status: 403 });
-    }
-
-    // 4. Verify Password
+    // 3. Verify Password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
+    // --- IDENTITY ISOLATION CHECK (After Password Verification) ---
+    // This prevents role leakage and user enumeration.
+    const isAdmin = ["SUPER_ADMIN", "BUSINESS_ADMIN", "FINANCE_ADMIN"].includes(user.role);
+    
+    if ((portal === "ADMIN" && !isAdmin) || (portal === "USER" && isAdmin)) {
+      // Record the attempt internally for security auditing
+      await recordAuditLog({
+        userId: user.id,
+        action: "AUTH.PORTAL_MISMATCH",
+        status: "FAILURE",
+        details: { email: user.email, attemptedPortal: portal, userRole: user.role }
+      });
+
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
+    // 4. Check Verification
+    if (!user.isVerified) {
+      return NextResponse.json({ error: "Please verify your email before logging in." }, { status: 403 });
     }
 
     // 5. Generate the JWT (Edge Compatible)
