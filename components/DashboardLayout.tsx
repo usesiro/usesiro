@@ -10,6 +10,8 @@ import {
   XMarkIcon, QuestionMarkCircleIcon, ArrowLeftOnRectangleIcon,
   ChevronLeftIcon, ChevronRightIcon
 } from "@heroicons/react/24/outline";
+import NotificationDropdown from "./NotificationDropdown";
+import NotificationModal from "./NotificationModal";
 
 const getInitials = (name: string) => {
   if (!name) return "U";
@@ -28,6 +30,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [businessData, setBusinessData] = useState({ name: "Loading...", industry: "" });
 
   useEffect(() => {
@@ -193,9 +196,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           
           <div className="flex items-center gap-3 md:gap-4">
-            <button className="p-2 text-gray-400 hover:bg-gray-50 rounded-full transition-colors hidden sm:block">
-              <BellIcon className="w-6 h-6" />
-            </button>
+            <NotificationDropdown onOpenModal={() => setIsNotificationModalOpen(true)} />
             <Link 
               href="/settings"
               className="flex items-center gap-3 sm:pl-4 sm:border-l border-gray-100 hover:bg-gray-50 p-1.5 rounded-2xl transition-all cursor-pointer group"
@@ -217,6 +218,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+
+      <NotificationModal 
+        isOpen={isNotificationModalOpen} 
+        onClose={() => setIsNotificationModalOpen(false)} 
+      />
     </div>
   );
 }
