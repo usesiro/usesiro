@@ -58,7 +58,7 @@ export default function Reconciliation() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const pendingItems = transactions.filter(t => t.vatStatus === 'MISSING_VAT' || !t.categoryId || (!t.document && t.source === 'MANUAL'));
+  const pendingItems = transactions.filter(t => t.vatStatus === 'MISSING_VAT' || !t.categoryId || !t.document);
 
   const filteredItems = pendingItems.filter(t => {
     const matchesSearch = t.description.toLowerCase().includes(filters.search.toLowerCase());
@@ -66,7 +66,7 @@ export default function Reconciliation() {
     let matchesStatus = true;
     if (filters.status === "Uncategorized") matchesStatus = !t.categoryId;
     if (filters.status === "Missing VAT") matchesStatus = t.vatStatus === "MISSING_VAT";
-    if (filters.status === "Missing Document") matchesStatus = !t.document && t.source === 'MANUAL';
+    if (filters.status === "Missing Document") matchesStatus = !t.document;
     return matchesSearch && matchesSource && matchesStatus;
   });
 
@@ -159,8 +159,8 @@ export default function Reconciliation() {
   const getPrimaryIssue = (t: any) => {
     if (!t.categoryId) return "Uncategorized";
     if (t.vatStatus === 'MISSING_VAT') return "VAT Missing Flags";
-    // ONLY flag as missing document if it is a manual transaction
-    if (!t.document && t.source === 'MANUAL') return "Missing Document";
+    // ANY transaction without a document needs documentation
+    if (!t.document) return "Missing Document";
     return "Review Required";
   };
 
@@ -174,7 +174,7 @@ export default function Reconciliation() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatCard title="Unmatched Transactions" count={transactions.filter(t => !t.categoryId).length} subtitle="To Review" trend="Needs Categorization" icon={<DocumentMagnifyingGlassIcon className="w-5 h-5 text-blue-500"/>} />
           <StatCard title="Missing VAT Tags" count={transactions.filter(t => t.vatStatus === 'MISSING_VAT').length} subtitle="Alerts" trend="High Compliance Risk" icon={<DocumentDuplicateIcon className="w-5 h-5 text-gray-500"/>} />
-          <StatCard title="Pending Documentation" count={transactions.filter(t => !t.document && t.source === 'MANUAL').length} subtitle="Pending" trend="Required for Audit" icon={<ExclamationTriangleIcon className="w-5 h-5 text-red-500"/>} isRed />
+          <StatCard title="Pending Documentation" count={transactions.filter(t => !t.document).length} subtitle="Items" trend="Requires Evidence" icon={<ExclamationTriangleIcon className="w-5 h-5 text-red-500"/>} isRed />
         </div>
 
         {/* --- MAIN TABLE SECTION --- */}
@@ -191,7 +191,7 @@ export default function Reconciliation() {
                   <input type="text" placeholder="Search..." value={filters.search} onChange={(e) => { setFilters({...filters, search: e.target.value}); setCurrentPage(1); }} className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary" />
                 </div>
                 <select value={filters.source} onChange={(e) => { setFilters({...filters, source: e.target.value}); setCurrentPage(1); }} className="w-full md:w-40 px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-gray-500">
-                  <option value="All Sources">Source</option><option value="MONO">Bank (Mono)</option><option value="MANUAL">Manual</option>
+                  <option value="All Sources">All Sources</option><option value="MONO">Bank Synced (Auto)</option><option value="MANUAL">Manual Entry</option>
                 </select>
                 <select value={filters.status} onChange={(e) => { setFilters({...filters, status: e.target.value}); setCurrentPage(1); }} className="w-full md:w-40 px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-gray-500">
                   <option value="All Statuses">Status</option><option value="Uncategorized">Uncategorized</option><option value="Missing VAT">Missing VAT</option><option value="Missing Document">Missing Document</option>
@@ -218,9 +218,15 @@ export default function Reconciliation() {
                     paginatedItems.map((item) => (
                       <tr key={item.id} className="hover:bg-gray-50/50 transition">
                         <td className="py-4 px-4 text-sm font-medium text-gray-700">{item.description}</td>
-                        <td className="py-4 px-4 text-sm font-medium text-gray-700">{formatCurrency(item.amount)}</td>
+                        <td className="py-4 px-4 text-sm font-bold">
+                          {item.type === 'INCOME' ? (
+                            <span className="text-green-600">+{formatCurrency(item.amount)}</span>
+                          ) : (
+                            <span className="text-red-500">-{formatCurrency(item.amount)}</span>
+                          )}
+                        </td>
                         <td className="py-4 px-4 text-sm text-gray-500">{new Date(item.date).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})}</td>
-                        <td className="py-4 px-4 text-sm text-gray-500">{item.source === 'MONO' ? 'Bank' : 'Manual'}</td>
+                        <td className="py-4 px-4 text-sm text-gray-500">{item.source === 'MONO' ? 'Bank Synced' : 'Manual Entry'}</td>
                         <td className="py-4 px-4">
                           <div className="flex items-center justify-between gap-4">
                             <span className="text-sm text-gray-600">{getPrimaryIssue(item)}</span>
@@ -257,7 +263,7 @@ export default function Reconciliation() {
                 <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <span className="font-bold text-gray-800">{selectedTransaction?.source === 'MONO' ? 'Bank Sync' : 'Manual Entry'}</span>
+                      <span className="font-bold text-gray-800">{selectedTransaction?.source === 'MONO' ? 'Bank Synced (Auto)' : 'Manual Entry'}</span>
                       <span className="text-gray-500 text-sm ml-2">- {new Date(selectedTransaction?.date).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})}</span>
                       <p className="text-sm font-medium text-gray-600 mt-1">{selectedTransaction?.description}</p>
                     </div>

@@ -13,6 +13,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useNotification } from "@/context/NotificationContext";
 import TableSkeleton from "@/components/TableSkeleton";
+import TransactionImportModal from "@/components/TransactionImportModal";
 
 const ITEMS_PER_PAGE = 15; // Set pagination limit
 
@@ -20,6 +21,7 @@ export default function Transactions() {
   const { showNotification } = useNotification();
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -521,7 +523,14 @@ export default function Transactions() {
               >
                 <ArrowDownTrayIcon className="w-4 h-4" /> Export Report
               </button>
-              <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"><PlusIcon className="w-4 h-4" /> Add Transaction</button>
+              <button 
+                onClick={() => setIsImportModalOpen(true)} 
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-primary text-primary rounded-lg text-sm font-medium hover:bg-blue-50 transition"
+              >
+                <TableCellsIcon className="w-4 h-4 text-primary" /> 
+                Upload Records
+              </button>
+              <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-black transition"><PlusIcon className="w-4 h-4" /> Add Transaction</button>
             </div>
           </div>
 
@@ -774,6 +783,13 @@ export default function Transactions() {
             </div>
           </div>
         )}
+
+        {/* IMPORT MODAL */}
+        <TransactionImportModal 
+          isOpen={isImportModalOpen} 
+          onClose={() => setIsImportModalOpen(false)} 
+          onSuccess={() => fetchData()} 
+        />
 
       </div>
     </DashboardLayout>

@@ -30,6 +30,7 @@ enum TransactionType {
 enum TransactionSource {
   MANUAL
   MONO
+  FILE_UPLOAD
 }
 
 enum VatStatus {
@@ -71,6 +72,7 @@ model Business {
   updatedAt     DateTime @updatedAt
 
   transactions  Transaction[] 
+  savedMappings SavedMapping[]
 }
 
 model Category {
@@ -167,4 +169,18 @@ model AuditLog {
   @@index([userId])
   @@index([action])
   @@index([createdAt])
+}
+
+model SavedMapping {
+  id          String   @id @default(uuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  headerHash  String   // A hash of the sorted column names to identify this specific file format
+  mapping     Json     // { "date": "Date", "description": "Narration", ... }
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([businessId, headerHash])
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
+import { recordAuditLog } from "@/lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -79,6 +80,16 @@ export async function PATCH(request: Request) {
         }
       });
     }
+
+    // --- NEW: Record Audit Log ---
+    await recordAuditLog({
+      userId,
+      action: "PROFILE.UPDATE",
+      status: "SUCCESS",
+      details: { 
+        updatedFields: Object.keys(body)
+      }
+    });
 
     // Send a success response back to the frontend
     return NextResponse.json({ success: true });

@@ -103,7 +103,7 @@ export default function Dashboard() {
       const amt = Number(t.amount);
       const m = months[new Date(t.date).getMonth()];
       
-      if (t.document || t.documentUrl || t.hasReceipt) documented++;
+      if (t.document) documented++;
       if (t.source === 'MONO') automated++; // Track synced transactions
       
       if (t.type === 'INCOME') { inc += amt; monthlyMap[m].income += amt / 1000; } 
@@ -123,7 +123,7 @@ export default function Dashboard() {
       readinessScore: calculateTaxReadinessScore(transactions),
       docRate: Math.round((documented / total) * 100),
       automationRate: Math.round((automated / total) * 100),
-      pendingCount: transactions.filter(t => t.vatStatus === 'MISSING_VAT' || !t.categoryId).length,
+      pendingCount: transactions.filter(t => t.vatStatus === 'MISSING_VAT' || !t.categoryId || !t.document).length,
       recentActivity: recent
     };
   }, [transactions]);
