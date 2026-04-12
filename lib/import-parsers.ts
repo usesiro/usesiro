@@ -7,6 +7,11 @@
  * commas, dots, or dashes common in Nigerian spreadsheets.
  * Handles: DD,MM,YYYY | DD-MM-YYYY | DD/MM/YYYY | MM/DD/YYYY | ISO
  */
+/**
+ * Parses a date string from various common formats, especially those with 
+ * commas, dots, or dashes common in Nigerian spreadsheets.
+ * Handles: DD,MM,YYYY | DD-MM-YYYY | DD/MM/YYYY | MM/DD/YYYY | ISO | "Jan 3"
+ */
 export function parseFlexibleDate(val: any): Date | null {
   if (!val) return null;
   
@@ -27,15 +32,32 @@ export function parseFlexibleDate(val: any): Date | null {
     }
   }
 
-  // 2. Try standard Date constructor next
+  // 2. Handle Month names (e.g. "Jan 3" or "3-Feb-2025")
+  const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+  const sLower = s.toLowerCase();
+  
+  const hasMonthName = months.some(m => sLower.includes(m));
+  if (hasMonthName) {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      // If year is missing (e.g. "Jan 3"), JS might default to 2001 or current year.
+      // We assume current year for "messy" entries without year if they are recent.
+      if (d.getFullYear() < 2000) {
+         d.setFullYear(new Date().getFullYear());
+      }
+      return d;
+    }
+  }
+
+  // 3. Try standard Date constructor next
   let d = new Date(s);
   if (!isNaN(d.getTime())) return d;
 
-  // 2. Handle common "messy" separators: commas and dots
+  // 4. Handle common "messy" separators: commas and dots
   // 8,04,2020 -> 8/04/2020
   s = s.replace(/[,.]/g, '/');
 
-  // 3. Try parsing DD/MM/YYYY specifically (Common in many parts of the world)
+  // 5. Try parsing DD/MM/YYYY specifically (Common in many parts of the world)
   const parts = s.split('/');
   if (parts.length === 3) {
     const p1 = parseInt(parts[0]);
@@ -49,7 +71,7 @@ export function parseFlexibleDate(val: any): Date | null {
     } else {
       // Assume DD/MM/YYYY
       // Note: JavaScript Date treats year < 100 specially, so we handle it
-      const year = p3 < 100 ? 2000 + p3 : p3;
+      const year = p3 < 100 ? (p3 > 50 ? 1900 + p3 : 2000 + p3) : p3;
       d = new Date(year, p2 - 1, p1);
     }
 
@@ -61,18 +83,25 @@ export function parseFlexibleDate(val: any): Date | null {
 
 /**
  * Parses a numeric value from a string, handling currency symbols, 
- * commas, and spaces.
+ * commas, spaces, and accounting parentheses.
  */
 export function parseFlexibleAmount(val: any): number {
   if (val === undefined || val === null || val === "") return 0;
   
-  const s = String(val).trim();
+  let s = String(val).trim();
   if (!s) return 0;
 
-  // Remove everything except numbers, dots, and minus signs
-  // e.g. "NGN 400,000.00" -> "400000.00"
-  const cleaned = s.replace(/[^\d.-]/g, '');
+  // Handle accounting parentheses: (40,000) -> -40000
+  let isNegative = false;
+  if (s.startsWith('(') && s.endsWith(')')) {
+    isNegative = true;
+    s = s.substring(1, s.length - 1);
+  }
+
+  // Remove everything except numbers and dots
+  const cleaned = s.replace(/[^\d.]/g, '');
   const parsed = parseFloat(cleaned);
   
-  return isNaN(parsed) ? 0 : parsed;
+  if (isNaN(parsed)) return 0;
+  return isNegative ? -parsed : parsed;
 }

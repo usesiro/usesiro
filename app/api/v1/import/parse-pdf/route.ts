@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { PDFParse } from "pdf-parse";
 
 /**
- * Heuristic PDF parser for bank statements.
- * Extracts rows that look like transactions using regex patterns.
+ * AI-Powered PDF parser for bank statements.
+ * Extracts text and uses Clearsheet AI to structure it into tabular data.
  */
 export async function POST(request: Request) {
   try {
@@ -22,59 +22,57 @@ export async function POST(request: Request) {
     const pdfData = await parser.getText();
     const text = pdfData.text;
 
-    // 2. Heuristic Row Extraction
-    // We look for lines that contain a Date and a Currency-like amount.
-    const lines = text.split('\n');
-    const extractedRows: any[] = [];
-    
-    // Pattern for Dates (DD/MM/YYYY, DD-MM-YYYY, or YYYY/MM/DD)
-    const datePattern = /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})|(\d{4}[/-]\d{1,2}[/-]\d{1,2})|([a-zA-Z]{3}\s\d{1,2},?\s\d{4})/;
-    
-    // Pattern for Amounts (e.g. 1,234.56 or -1,234.56 or 1234)
-    // We target numbers that look like currency (presence of comma or decimal)
-    const amountPattern = /(-?\d{1,3}(,\d{3})+(\.\d{2})?)|(-?\d+(\.\d{2}))/;
-
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-      if (!trimmedLine) continue;
-
-      const dateMatch = trimmedLine.match(datePattern);
-      const amountMatch = trimmedLine.match(amountPattern);
-
-      // If a line has both a date and an amount, it's highly likely a transaction row
-      if (dateMatch && amountMatch) {
-        // We push a "virtual row" where we try to separate components
-        const segments = trimmedLine.split(/\s{2,}/).filter((s: string) => s.trim().length > 0);
-        
-        // If splitting by multiple spaces doesn't yield much, try single spaces
-        const finalSegments = segments.length > 2 ? segments : trimmedLine.split(/\s+/);
-
-        const rowObj: any = {};
-        finalSegments.forEach((seg: string, i: number) => {
-          rowObj[`Column ${i + 1}`] = seg;
-        });
-
-        extractedRows.push(rowObj);
-      }
+    if (!text || text.trim().length < 10) {
+      throw new Error("The PDF appears to be empty or an unreadable image scan.");
     }
 
-    if (extractedRows.length === 0) {
-      return NextResponse.json({ 
-        error: "We couldn't find any transaction-like data in this PDF. Please try a CSV or Excel version if possible." 
-      }, { status: 422 });
+    // 2. AI Table Extraction
+    // We send a substantial chunk of text (first ~4000 chars) to get the main table structure
+    const systemPrompt = `You are a financial document parser. 
+Take the raw text from a bank statement and extract the transaction table as a JSON array of objects.
+Each object should represent a row in the table. Use generic keys like "Column 1", "Column 2", etc.
+
+Ignore headers/footers outside the main table. Return valid JSON ONLY.`;
+
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "llama-3.1-8b-instant", // Use faster/cheaper model for PDF text restructure
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: "Raw text:\n" + text.slice(0, 6000) }
+        ],
+        temperature: 0,
+        response_format: { type: "json_object" }
+      })
+    });
+
+    if (!response.ok) throw new Error("AI PDF extraction failed");
+
+    const groqData = await response.json();
+    const content = JSON.parse(groqData.choices[0].message.content);
+    
+    // Result might be wrapped in a key like "rows" or "data"
+    const extractedRows = Array.isArray(content) ? content : (content.rows || content.transactions || Object.values(content)[0]);
+
+    if (!Array.isArray(extractedRows) || extractedRows.length === 0) {
+       throw new Error("We couldn't structure the data in this PDF. Please try an Excel version.");
     }
 
-    // Generate virtual headers for the mapping step
-    const maxCols = Math.max(...extractedRows.map(r => Object.keys(r).length));
-    const headers = Array.from({ length: maxCols }, (_, i) => `Column ${i + 1}`);
+    // 3. Generate virtual headers
+    const headers = Object.keys(extractedRows[0]);
 
     return NextResponse.json({ 
       headers, 
       data: extractedRows 
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("PDF Parse Error:", error);
-    return NextResponse.json({ error: "Failed to parse PDF statement" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Failed to parse PDF statement" }, { status: 500 });
   }
 }
