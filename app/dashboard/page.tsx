@@ -163,26 +163,28 @@ export default function Dashboard() {
 
       <div className="space-y-6">
         {/* Top Financials */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
           <StatCard title="Total Income" value={formatCurrency(stats.totalIncome)} icon={<WalletIcon className="w-5 h-5 text-blue-500"/>} />
           <StatCard title="Total Expenses" value={formatCurrency(stats.totalExpense)} icon={<CreditCardIcon className="w-5 h-5 text-red-500"/>} />
-          <StatCard title="Net Balance" value={formatCurrency(stats.netBalance)} icon={<ScaleIcon className="w-5 h-5 text-green-500"/>} />
+          <div className="col-span-2 md:col-span-1">
+            <StatCard title="Net Balance" value={formatCurrency(stats.netBalance)} icon={<ScaleIcon className="w-5 h-5 text-green-500"/>} />
+          </div>
         </div>
 
         {/* 4-Column KPI Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           <ProgressCard title="Tax Readiness" percentage={readinessScore} icon={<CheckCircleIcon className="w-5 h-5 text-primary"/>} />
           <ProgressCard title="Bank Automation" percentage={automationRate} icon={<BoltIcon className="w-5 h-5 text-yellow-500"/>} />
           <ProgressCard title="Doc Coverage" percentage={docRate} icon={<DocumentDuplicateIcon className="w-5 h-5 text-orange-500"/>} />
           
-          <div className="bg-white p-5 rounded-xl border border-gray-100 flex flex-col justify-between h-32">
+          <div className="bg-white/80 backdrop-blur-md p-4 md:p-5 rounded-2xl border border-gray-100 flex flex-col justify-between h-32 shadow-sm transition-all hover:shadow-md group">
             <div className="flex justify-between items-center">
-              <span className="text-gray-400 text-xs font-bold uppercase">Compliance Issues</span>
-              <ExclamationTriangleIcon className="w-5 h-5 text-red-500"/>
+              <span className="text-gray-400 text-[10px] md:text-xs font-black uppercase tracking-wider">Compliance</span>
+              <ExclamationTriangleIcon className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform"/>
             </div>
             <div className="flex justify-between items-end">
-              <span className="text-2xl font-bold text-gray-600">{pendingCount}</span>
-              <a href="/reconciliation" className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
+              <span className="text-xl md:text-2xl font-black text-gray-900 leading-none">{pendingCount}</span>
+              <a href="/reconciliation" className="text-[10px] font-black text-primary hover:underline flex items-center gap-1 uppercase tracking-tight">
                 Fix <ChevronRightIcon className="w-3 h-3"/>
               </a>
             </div>
@@ -238,29 +240,32 @@ export default function Dashboard() {
 
 function StatCard({ title, value, icon }: any) {
   return (
-    <div className="bg-white p-6 rounded-xl border border-gray-100 flex flex-col justify-between h-32 shadow-none">
+    <div className="bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-2xl border border-gray-100 flex flex-col justify-between h-32 md:h-36 shadow-sm hover:shadow-md transition-all group">
       <div className="flex justify-between items-start">
-        <span className="text-gray-400 text-xs font-bold uppercase">{title}</span>
-        {icon}
+        <span className="text-gray-400 text-[10px] md:text-xs font-black uppercase tracking-wider">{title}</span>
+        <div className="p-2 bg-gray-50 rounded-xl group-hover:scale-110 transition-transform">{icon}</div>
       </div>
-      <div className="text-2xl font-bold text-gray-600">{value}</div>
+      <div className="text-lg md:text-2xl font-black text-gray-900 leading-none truncate">{value}</div>
     </div>
   );
 }
 
 function ProgressCard({ title, percentage, icon }: any) {
   return (
-    <div className="bg-white p-6 rounded-xl border border-gray-100 h-32 flex flex-col justify-between shadow-none">
+    <div className="bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-2xl border border-gray-100 h-32 md:h-36 flex flex-col justify-between shadow-sm hover:shadow-md transition-all group">
       <div className="flex justify-between items-center">
-        <span className="text-gray-400 text-xs font-bold uppercase">{title}</span>
+        <span className="text-gray-400 text-[10px] md:text-xs font-black uppercase tracking-wider">{title}</span>
         {icon}
       </div>
       <div>
-        <div className="flex justify-between items-end mb-1">
-          <span className="text-2xl font-bold text-gray-600">{percentage}%</span>
+        <div className="flex justify-between items-end mb-1.5 md:mb-2 text-gray-900 font-black">
+          <span className="text-lg md:text-2xl leading-none">{percentage}%</span>
         </div>
-        <div className="w-full h-1.5 bg-gray-50 rounded-full">
-          <div className={`h-full ${percentage > 80 ? 'bg-green-500' : percentage > 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${percentage}%` }}></div>
+        <div className="w-full h-1.5 md:h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div 
+            className={`h-full transition-all duration-1000 ease-out ${percentage > 80 ? 'bg-green-500' : percentage > 50 ? 'bg-yellow-500' : 'bg-red-500'}`} 
+            style={{ width: `${percentage}%` }}
+          />
         </div>
       </div>
     </div>

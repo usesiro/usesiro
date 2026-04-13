@@ -182,65 +182,66 @@ export default function TaxReadiness() {
       <div className="space-y-6">
 
         {/* --- ROW 1: CORE STATS & COMPLIANCE --- */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* --- ROW 1: CORE STATS & COMPLIANCE --- */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           
           {/* Expenses Card */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between" style={{ minHeight: '180px' }}>
+          <div className="bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-32 md:h-44 hover:shadow-md transition-all group">
             <div className="flex justify-between items-start">
-              <span className="text-gray-500 text-sm font-medium">Expenses Categorized</span>
-              <div className="p-2 bg-red-50 text-red-500 rounded-lg">
-                <TagIcon className="w-6 h-6" />
+              <span className="text-gray-400 text-[10px] md:text-sm font-black uppercase tracking-wider">Expenses</span>
+              <div className="p-2 bg-gray-50 rounded-xl group-hover:scale-110 transition-transform">
+                <TagIcon className="w-5 h-5 text-red-500" />
               </div>
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-1">{formatCurrency(categorizedExpenses)}</h3>
-              <p className="text-xs text-red-500 font-medium">Expenses assigned to valid categories</p>
+              <h3 className="text-lg md:text-2xl font-black text-gray-900 leading-none truncate">{formatCurrency(categorizedExpenses)}</h3>
+              <p className="text-[10px] text-red-500 font-bold mt-2 uppercase tracking-tight">Categorized</p>
             </div>
           </div>
 
           {/* Compliance Checklist Card */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col" style={{ height: '180px' }}>
-            <div className="flex justify-between items-start mb-4">
-              <span className="text-gray-500 text-sm font-medium">Compliance Checklist</span>
-              <div className="p-2 bg-blue-50 text-blue-500 rounded-lg">
-                <ClipboardDocumentCheckIcon className="w-5 h-5" />
+          <div className="bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-32 md:h-44 hover:shadow-md transition-all group overflow-hidden">
+            <div className="flex justify-between items-start mb-2 md:mb-4">
+              <span className="text-gray-400 text-[10px] md:text-sm font-black uppercase tracking-wider">Checklist</span>
+              <div className="p-2 bg-gray-50 rounded-xl group-hover:scale-110 transition-transform">
+                <ClipboardDocumentCheckIcon className="w-5 h-5 text-blue-500" />
               </div>
             </div>
-            {/* Invisible Scroll Container */}
-            <div className="flex-1 overflow-y-auto no-scrollbar space-y-3 pr-1">
-              <div className="flex items-center gap-3 text-sm">
+            <div className="flex-1 overflow-y-auto no-scrollbar space-y-1.5 md:space-y-3 pr-1">
+              <div className="flex items-center gap-2 text-[10px] md:text-xs">
                 {uncategorizedCount === 0
-                  ? <CheckCircleIcon className="w-5 h-5 text-green-500 shrink-0" />
-                  : <XCircleIcon className="w-5 h-5 text-red-500 shrink-0" />}
-                <span className="text-gray-700 font-medium">Income properly categorized</span>
+                  ? <CheckCircleIcon className="w-4 h-4 text-green-500 shrink-0" />
+                  : <XCircleIcon className="w-4 h-4 text-red-500 shrink-0" />}
+                <span className="text-gray-600 font-bold truncate">Categories</span>
               </div>
-              <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-2 text-[10px] md:text-xs">
                 {missingDocCount === 0
-                  ? <CheckCircleIcon className="w-5 h-5 text-green-500 shrink-0" />
-                  : <XCircleIcon className="w-5 h-5 text-red-500 shrink-0" />}
-                <span className="text-gray-700 font-medium">Transactions properly documented</span>
+                  ? <CheckCircleIcon className="w-4 h-4 text-green-500 shrink-0" />
+                  : <XCircleIcon className="w-4 h-4 text-red-500 shrink-0" />}
+                <span className="text-gray-600 font-bold truncate">Documents</span>
               </div>
-              <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-2 text-[10px] md:text-xs">
                 {missingVatCount === 0
-                  ? <CheckCircleIcon className="w-5 h-5 text-green-500 shrink-0" />
-                  : <XCircleIcon className="w-5 h-5 text-red-500 shrink-0" />}
-                <span className="text-gray-700 font-medium">Transactions properly VAT tagged</span>
+                  ? <CheckCircleIcon className="w-4 h-4 text-green-500 shrink-0" />
+                  : <XCircleIcon className="w-4 h-4 text-red-500 shrink-0" />}
+                <span className="text-gray-600 font-bold truncate">VAT Tags</span>
               </div>
-              {/* Future items can go here and will scroll */}
             </div>
           </div>
 
           {/* Tax Readiness Score Card */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between" style={{ minHeight: '180px' }}>
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-gray-500 text-xs font-bold uppercase tracking-widest">Tax Readiness Score</span>
-              <TagIcon className="w-5 h-5 text-red-400" />
+          <div className="col-span-2 lg:col-span-1 bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-32 md:h-44 hover:shadow-md transition-all group">
+            <div className="flex justify-between items-center mb-2 md:mb-4">
+              <span className="text-gray-400 text-[10px] md:text-sm font-black uppercase tracking-wider">Score</span>
+              <div className="p-2 bg-gray-50 rounded-xl group-hover:scale-110 transition-transform">
+                <CheckCircleIcon className="w-5 h-5 text-primary" />
+              </div>
             </div>
             <div>
-              <h3 className="text-3xl font-black text-gray-800 mb-3">{score}%</h3>
-              <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+              <h3 className="text-xl md:text-3xl font-black text-gray-900 mb-2 md:mb-3">{score}%</h3>
+              <div className="w-full h-2 md:h-3 bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-green-600 rounded-full transition-all duration-1000"
+                  className={`h-full transition-all duration-1000 ${score > 80 ? 'bg-green-500' : score > 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
                   style={{ width: `${score}%` }}
                 ></div>
               </div>
@@ -249,32 +250,33 @@ export default function TaxReadiness() {
         </div>
 
         {/* --- ROW 2: VAT SUMMARY (From Transactions Page) --- */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-indigo-50/50 p-6 rounded-2xl border border-indigo-100 shadow-sm">
+        {/* --- ROW 2: VAT SUMMARY --- */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <div className="bg-indigo-50/50 p-4 md:p-6 rounded-2xl border border-indigo-100 shadow-sm transition-all hover:shadow-md group">
             <div className="flex justify-between items-start mb-2">
-              <span className="text-indigo-600 font-bold text-sm">Output VAT (Collected)</span>
-              <ArrowUpRightIcon className="w-6 h-6 text-indigo-400" />
+              <span className="text-indigo-600 font-black text-[10px] md:text-sm uppercase tracking-wider">Output VAT</span>
+              <ArrowUpRightIcon className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform" />
             </div>
-            <h3 className="text-2xl font-black text-indigo-900">{formatCurrency(outputVat)}</h3>
-            <p className="text-[10px] text-indigo-400 font-bold uppercase mt-2 tracking-widest">7.5% Tax Item</p>
+            <h3 className="text-lg md:text-2xl font-black text-indigo-900 leading-none truncate">{formatCurrency(outputVat)}</h3>
+            <p className="text-[10px] text-indigo-400 font-bold uppercase mt-2 tracking-widest">Collected</p>
           </div>
 
-          <div className="bg-orange-50/50 p-6 rounded-2xl border border-orange-100 shadow-sm">
+          <div className="bg-orange-50/50 p-4 md:p-6 rounded-2xl border border-orange-100 shadow-sm transition-all hover:shadow-md group">
             <div className="flex justify-between items-start mb-2">
-              <span className="text-orange-600 font-bold text-sm">Input VAT (Paid)</span>
-              <ReceiptRefundIcon className="w-6 h-6 text-orange-400" />
+              <span className="text-orange-600 font-black text-[10px] md:text-sm uppercase tracking-wider">Input VAT</span>
+              <ReceiptRefundIcon className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
             </div>
-            <h3 className="text-2xl font-black text-orange-900">{formatCurrency(inputVat)}</h3>
-            <p className="text-[10px] text-orange-400 font-bold uppercase mt-2 tracking-widest">Recoverable Tax</p>
+            <h3 className="text-lg md:text-2xl font-black text-orange-900 leading-none truncate">{formatCurrency(inputVat)}</h3>
+            <p className="text-[10px] text-orange-400 font-bold uppercase mt-2 tracking-widest">Paid</p>
           </div>
 
-          <div className="bg-primary/10 p-6 rounded-2xl border border-primary/20 shadow-sm">
+          <div className="col-span-2 lg:col-span-1 bg-primary/10 p-4 md:p-6 rounded-2xl border border-primary/20 shadow-sm transition-all hover:shadow-md group">
             <div className="flex justify-between items-start mb-2">
-              <span className="text-primary font-black text-sm">Net VAT Payable</span>
-              <DocumentChartBarIcon className="w-6 h-6 text-primary" />
+              <span className="text-primary font-black text-[10px] md:text-sm uppercase tracking-wider">Net Payable</span>
+              <DocumentChartBarIcon className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
             </div>
-            <h3 className="text-2xl font-black text-primary">{formatCurrency(vatPayable)}</h3>
-            <p className="text-[10px] text-primary/60 font-bold uppercase mt-2 tracking-widest">Estimated Liability</p>
+            <h3 className="text-lg md:text-2xl font-black text-primary leading-none truncate">{formatCurrency(vatPayable)}</h3>
+            <p className="text-[10px] text-primary/60 font-bold uppercase mt-2 tracking-widest">Liability</p>
           </div>
         </div>
       </div>
@@ -320,8 +322,47 @@ export default function TaxReadiness() {
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto rounded-xl">
-            <table className="w-full text-left border-collapse">
+          <div className="relative min-h-[300px]">
+            {/* MOBILE LIST VIEW */}
+            <div className="md:hidden space-y-4">
+              {transactions.length === 0 ? (
+                <p className="text-center py-8 text-gray-500 font-medium uppercase text-[10px] tracking-widest">No matching records</p>
+              ) : (
+                transactions.map((t) => (
+                  <div key={t.id} className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 pr-4">
+                        <p className="text-sm font-black text-gray-900 leading-tight">{t.description}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                          {formatDate(t.date)} • {t.source === 'MONO' ? 'POS' : 'Manual'}
+                        </p>
+                      </div>
+                      <div className={`text-sm font-black whitespace-nowrap ${t.type === 'INCOME' ? 'text-green-600' : 'text-gray-900'}`}>
+                        {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100/50">
+                      <div className="flex items-center gap-2">
+                        <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tight shadow-sm ${
+                          t.vatStatus === "TAGGED" ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-600 border border-red-100"
+                        }`}>
+                          {t.vatStatus === "TAGGED" ? "VAT Tagged" : "Missing VAT"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-tight text-gray-400">
+                        {t.document ? <CheckIcon className="w-3.5 h-3.5 text-green-500" /> : <XMarkIcon className="w-3.5 h-3.5 text-red-500" />}
+                        <span>Document</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* DESKTOP TABLE VIEW */}
+            <div className="hidden md:block overflow-x-auto rounded-xl">
+              <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 text-gray-500 text-[11px] font-black uppercase tracking-widest border-b border-gray-100">
                   <th className="py-5 px-6">Description</th>
@@ -365,7 +406,8 @@ export default function TaxReadiness() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         </div>
 

@@ -184,3 +184,18 @@ model SavedMapping {
 
   @@unique([businessId, headerHash])
 }
+
+// --- BOOKING SYSTEM ---
+model Booking {
+  id           String   @id @default(uuid())
+  fullName     String
+  email        String
+  companyName  String?
+  notes        String?
+  startTime    DateTime @unique // Handles race conditions at DB level
+  endTime      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([startTime])
+}

@@ -25,7 +25,7 @@ export default async function RevenuePage() {
     { name: "Churn Rate", value: "7%", trend: "100% from last month", showTrendIcon: true, trendColor: "text-red-500" }, // Kept mock
   ];
 
-  const payments = recentTransactions.map(t => ({
+  const payments = recentTransactions.map((t: any) => ({
     id: t.id,
     business: t.business.name,
     amount: new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(Number(t.amount) || 0),
@@ -38,7 +38,7 @@ export default async function RevenuePage() {
       
       {/* --- TOP METRICS CARDS --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
+        {stats.map((stat: any, i: number) => (
           <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
             <div className="flex items-start justify-between mb-4">
               <p className="text-sm font-medium text-gray-500">{stat.name}</p>
@@ -103,7 +103,7 @@ export default async function RevenuePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100/80">
-              {payments.map((payment) => (
+              {payments.map((payment: any) => (
                 <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="py-5">
                     <p className="text-[14px] font-bold text-gray-900">{payment.business}</p>

@@ -81,13 +81,13 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
 
   const NavContent = () => (
     <div className="flex-1 py-6 overflow-y-auto">
-      {navigation.map((group, index) => (
+      {navigation.map((group: any, index: number) => (
         <div key={group.section} className={index !== 0 ? "mt-8" : ""}>
           <h3 className="px-6 mb-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider">
             {group.section}
           </h3>
           <div className="space-y-1">
-            {group.items.map((item) => {
+            {group.items.map((item: any) => {
               const isActive = pathname === item.href;
               return (
                 <Link 

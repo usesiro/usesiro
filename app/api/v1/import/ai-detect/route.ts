@@ -47,12 +47,12 @@ export async function POST(request: Request) {
     });
 
     // 4. Build Groq Payload
-    // We strictly instruct Llama 3 to output raw JSON mapped to our exact SiroField set.
+    // We strictly instruct Clearsheet AI to output raw JSON mapped to our exact SiroField set.
     const systemPrompt = `You are a strict financial data mapper API.
 Your job is to look at the user's custom bank statement headers and a few rows of sample data, and map them to our internal system columns.
 
 Our system columns MUST BE exactly one of these (case sensitive):
-[${SIRO_FIELDS.map(f => `"${f}"`).join(', ')}]
+[${SIRO_FIELDS.map((f: any) => `"${f}"`).join(', ')}]
 
 Rules:
 1. Return ONLY a raw JSON object. No markdown formatting, no backticks, no explanations.

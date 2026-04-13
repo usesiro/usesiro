@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useBookingModal } from "./booking/BookingProvider";
 
 export default function CallToAction() {
+  const { openBookingModal } = useBookingModal();
   return (
     <section 
       id="get-started" 
@@ -42,11 +44,12 @@ export default function CallToAction() {
             </button>
           </Link>
           
-          <Link href="/demo">
-            <button className="w-full sm:w-auto px-10 py-4 bg-transparent text-white border-2 border-white rounded-xl font-bold text-sm hover:bg-white hover:text-primary transition active:scale-95">
-              Book a Demo
-            </button>
-          </Link>
+          <button 
+            onClick={openBookingModal}
+            className="w-full sm:w-auto px-10 py-4 bg-transparent text-white border-2 border-white rounded-xl font-bold text-sm hover:bg-white hover:text-primary transition active:scale-95"
+          >
+            Book a Demo
+          </button>
         </div>
 
       </div>

@@ -171,10 +171,12 @@ export default function Reconciliation() {
       <div className="space-y-8">
         
         {/* --- STAT CARDS --- */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatCard title="Unmatched Transactions" count={transactions.filter(t => !t.categoryId).length} subtitle="To Review" trend="Needs Categorization" icon={<DocumentMagnifyingGlassIcon className="w-5 h-5 text-blue-500"/>} />
-          <StatCard title="Missing VAT Tags" count={transactions.filter(t => t.vatStatus === 'MISSING_VAT').length} subtitle="Alerts" trend="High Compliance Risk" icon={<DocumentDuplicateIcon className="w-5 h-5 text-gray-500"/>} />
-          <StatCard title="Pending Documentation" count={transactions.filter(t => !t.document).length} subtitle="Items" trend="Requires Evidence" icon={<ExclamationTriangleIcon className="w-5 h-5 text-red-500"/>} isRed />
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <StatCard title="Unmatched" count={transactions.filter(t => !t.categoryId).length} subtitle="Review" trend="Needs Category" icon={<DocumentMagnifyingGlassIcon className="w-5 h-5 text-blue-500"/>} />
+          <StatCard title="VAT Tags" count={transactions.filter(t => t.vatStatus === 'MISSING_VAT').length} subtitle="Alerts" trend="Compliance Risk" icon={<DocumentDuplicateIcon className="w-5 h-5 text-gray-500"/>} />
+          <div className="col-span-2 lg:col-span-1">
+            <StatCard title="Documentation" count={transactions.filter(t => !t.document).length} subtitle="Missing" trend="Requires Evidence" icon={<ExclamationTriangleIcon className="w-5 h-5 text-red-500"/>} isRed />
+          </div>
         </div>
 
         {/* --- MAIN TABLE SECTION --- */}
@@ -199,9 +201,47 @@ export default function Reconciliation() {
               </div>
             </div>
 
-            <div className="overflow-x-auto relative min-h-[300px]">
-              {isLoading && <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10 text-gray-500 font-medium">Loading items...</div>}
-              <table className="w-full text-left border-collapse">
+            <div className="relative min-h-[300px]">
+              {isLoading && <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10 text-gray-500 font-bold uppercase text-[10px] tracking-widest">Loading...</div>}
+              
+              {/* MOBILE LIST VIEW */}
+              <div className="md:hidden space-y-4">
+                {paginatedItems.length === 0 && !isLoading ? (
+                  <p className="text-center py-10 text-gray-500 font-bold uppercase text-[10px] tracking-widest">No pending items</p>
+                ) : (
+                  paginatedItems.map((item) => (
+                    <div key={item.id} className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 space-y-4 transition active:scale-[0.98]">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 pr-4">
+                          <p className="text-sm font-black text-gray-900 leading-tight">{item.description}</p>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                            {new Date(item.date).toLocaleDateString('en-GB')} • {item.source === 'MONO' ? 'Bank' : 'Manual'}
+                          </p>
+                        </div>
+                        <div className={`text-sm font-black whitespace-nowrap ${item.type === 'INCOME' ? 'text-green-600' : 'text-gray-900'}`}>
+                          {item.type === 'INCOME' ? '+' : '-'}{formatCurrency(item.amount)}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100/50">
+                        <span className="text-[10px] font-black text-red-500 uppercase tracking-tight bg-red-50 px-3 py-1 rounded-full border border-red-100">
+                          {getPrimaryIssue(item)}
+                        </span>
+                        <button 
+                          onClick={() => handleFixClick(item)} 
+                          className="px-6 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-100 hover:bg-blue-600 transition"
+                        >
+                          Fix Now
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* DESKTOP TABLE VIEW */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50/50 text-gray-500 text-xs font-bold border-b border-gray-100">
                     <th className="py-4 px-4 rounded-tl-lg">Description</th>
@@ -244,6 +284,7 @@ export default function Reconciliation() {
               <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:text-gray-600 disabled:opacity-50"><ChevronLeftIcon className="w-4 h-4" /></button>
               <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-700 text-sm font-bold">{currentPage}</div>
               <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:text-gray-600 disabled:opacity-50"><ChevronRightIcon className="w-4 h-4" /></button>
+            </div>
             </div>
           </div>
         </div>
@@ -351,17 +392,17 @@ export default function Reconciliation() {
 
 function StatCard({ title, count, subtitle, trend, icon, isRed }: any) {
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <span className="text-gray-500 text-sm font-medium">{title}</span>
-          <h3 className="text-3xl font-black text-gray-600 mt-2 flex items-baseline gap-2">
-            {count} <span className="text-lg font-bold text-gray-500">{subtitle}</span>
-          </h3>
-        </div>
-        <div className={`p-2 rounded-full border ${isRed ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>{icon}</div>
+    <div className="bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-32 md:h-40 hover:shadow-md transition-all group overflow-hidden">
+      <div className="flex justify-between items-start">
+        <span className="text-gray-400 text-[10px] md:text-sm font-black uppercase tracking-wider">{title}</span>
+        <div className={`p-2 rounded-xl transition-transform group-hover:scale-110 ${isRed ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'}`}>{icon}</div>
       </div>
-      <p className={`text-xs font-bold mt-6 ${isRed ? 'text-red-500' : 'text-primary'}`}>{trend}</p>
+      <div>
+        <h3 className="text-lg md:text-3xl font-black text-gray-900 leading-none truncate">
+          {count} <span className="text-xs md:text-lg font-bold text-gray-400 ml-1">{subtitle}</span>
+        </h3>
+        <p className={`text-[10px] font-black mt-2 uppercase tracking-tight ${isRed ? 'text-red-500' : 'text-primary'}`}>{trend}</p>
+      </div>
     </div>
   );
 }
