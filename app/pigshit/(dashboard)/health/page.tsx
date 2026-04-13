@@ -28,7 +28,7 @@ export default function PlatformHealthPage() {
       
       {/* --- TOP METRICS CARDS --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
+        {stats.map((stat: any, i: number) => (
           <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
             <div className="flex items-start justify-between mb-4">
               <p className="text-sm font-medium text-gray-500">{stat.name}</p>
@@ -94,7 +94,7 @@ export default function PlatformHealthPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100/80">
-              {apiLogs.map((log) => (
+              {apiLogs.map((log: any) => (
                 <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="py-5">
                     <p className="text-[14px] font-bold text-gray-900">{log.endpoint}</p>

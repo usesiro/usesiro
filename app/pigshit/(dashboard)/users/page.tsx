@@ -8,7 +8,7 @@ export default async function AllUsersPage() {
     orderBy: { createdAt: 'desc' }
   });
 
-  const users = businesses.map(b => ({
+  const users = businesses.map((b: any) => ({
     id: b.id,
     name: b.name,
     email: b.user.email,
@@ -65,7 +65,7 @@ export default async function AllUsersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100/80">
-              {users.map((user, index) => (
+              {users.map((user: any, index: number) => (
                 <tr key={index} className="hover:bg-gray-50/50 transition-colors group">
                   <td className="py-5">
                     <p className="text-[14px] font-bold text-gray-900">{user.name}</p>

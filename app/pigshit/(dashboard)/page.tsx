@@ -90,7 +90,7 @@ export default async function AdminOverviewPage() {
       
       {/* --- TOP METRICS CARDS --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
+        {stats.map((stat: any, i: number) => (
           <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
             <div className="flex items-start justify-between mb-4">
               <p className="text-sm font-medium text-gray-500">{stat.name}</p>
@@ -135,7 +135,7 @@ export default async function AdminOverviewPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {recentSignups.map((user) => (
+                {recentSignups.map((user: any) => (
                   <tr key={user.id}>
                     <td className="py-4">
                       <p className="text-sm font-bold text-gray-900">{user.name}</p>
@@ -197,7 +197,7 @@ export default async function AdminOverviewPage() {
             
             {/* Minimal Bar Chart */}
             <div className="h-32 flex items-end justify-between gap-1 border-b border-gray-100 pb-2 relative">
-              {barHeights.map((h, i) => (
+              {barHeights.map((h: any, i: number) => (
                 <div key={i} className="w-full bg-primary rounded-t-sm hover:opacity-80 transition-opacity" style={{ height: `${h}%` }}></div>
               ))}
               <div className="absolute -bottom-6 left-0 text-xs text-gray-400">Feb</div>
@@ -218,7 +218,7 @@ export default async function AdminOverviewPage() {
             <Link href="/pigshit/logs" className="text-sm font-semibold text-primary hover:underline">View logs</Link>
           </div>
           <div className="flex-1 space-y-6">
-            {platformHealth.map((item) => (
+            {platformHealth.map((item: any) => (
               <div key={item.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full ${item.status === "good" ? "bg-green-500" : "bg-red-500"}`} />
@@ -242,7 +242,7 @@ export default async function AdminOverviewPage() {
           <p className="text-xs text-gray-400 mb-6">All end points responding</p>
           
           <div className="flex-1 space-y-5">
-            {churnRisk.map((user) => (
+            {churnRisk.map((user: any) => (
               <div key={user.initials} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center font-bold text-gray-900 text-sm">
