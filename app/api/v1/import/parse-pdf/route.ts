@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PDFParse } from "pdf-parse";
+import pdf from "pdf-parse";
 
 /**
  * AI-Powered PDF parser for bank statements.
@@ -18,8 +18,8 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(arrayBuffer);
 
     // 1. Extract raw text from PDF
-    const parser = new PDFParse({ data: buffer });
-    const pdfData = await parser.getText();
+    // Using simple functional call which is more stable on Vercel
+    const pdfData = await pdf(buffer);
     const text = pdfData.text;
 
     if (!text || text.trim().length < 10) {
