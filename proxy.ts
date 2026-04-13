@@ -74,7 +74,8 @@ export default async function middleware(request: NextRequest) {
     if (
       pathname.startsWith('/api/v1/auth') || 
       pathname.startsWith('/api/v1/waitlist') ||
-      pathname.startsWith('/api/v1/contact')
+      pathname.startsWith('/api/v1/contact') ||
+      pathname.startsWith('/api/v1/bookings')
     ) {
       return NextResponse.next();
     }

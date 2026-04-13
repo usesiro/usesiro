@@ -5,6 +5,7 @@ import { AOSInit } from "@/components/AOSInit";
 import { Analytics } from "@vercel/analytics/react"; 
 import { GoogleAnalytics } from "@next/third-parties/google"; 
 import { NotificationProvider } from "@/context/NotificationContext";
+import { BookingProvider } from "@/components/booking/BookingProvider";
 
 // Setup Poppins
 const poppins = Poppins({
@@ -87,7 +88,9 @@ export default function RootLayout({
       <body className={`${poppins.variable} ${fraunces.variable} font-sans`}>
         <AOSInit />
         <NotificationProvider>
-          {children}
+          <BookingProvider>
+            {children}
+          </BookingProvider>
         </NotificationProvider>
         
         {/* --- INJECTED TRACKING SCRIPTS --- */}

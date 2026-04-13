@@ -13,11 +13,11 @@ const globalForPrisma = global as unknown as {
 const pool = globalForPrisma.pool ?? new Pool({ 
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false // Industry-standard way to handle Neon/RDS certificates in Node.js
+    rejectUnauthorized: false
   },
-  max: 5, // Limit development pool size to prevent exhausting Neon free-tier limits
-  connectionTimeoutMillis: 30000, // 30s timeout to allow for Neon "wake-up" and slowing networks
-  idleTimeoutMillis: 30000, // Close idle connections after 30s
+  max: 10, // Increased for concurrent bookings
+  connectionTimeoutMillis: 30000,
+  idleTimeoutMillis: 30000,
 });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.pool = pool;
@@ -27,13 +27,19 @@ const adapter = globalForPrisma.adapter ?? new PrismaPg(pool);
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.adapter = adapter;
 
-// 3. Singleton pattern for the PrismaClient
-// Providing the adapter resolves the 'Using engine type "client" requires adapter' error.
+/**
+ * 3. Singleton pattern for the PrismaClient
+ * IMPORTANT: We using a unique global key prefix ('__siro_v4_') to ensure 
+ * that the Next.js dev server refreshes the client when new models are added.
+ */
+const globalPrismaKey = '__siro_v4_prisma__';
+const globalObj = global as any;
+
 export const prisma =
-  globalForPrisma.prisma ??
+  globalObj[globalPrismaKey] ??
   new PrismaClient({ 
     adapter,
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   });
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== 'production') globalObj[globalPrismaKey] = prisma;

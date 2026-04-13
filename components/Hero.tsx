@@ -3,8 +3,10 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { getCalApi } from "@calcom/embed-react";
+import { useBookingModal } from "./booking/BookingProvider";
 
 export default function Hero() {
+  const { openBookingModal } = useBookingModal();
   
   // Initialize the Cal.com popup
   useEffect(() => {
@@ -48,11 +50,9 @@ export default function Hero() {
             </button>
           </Link>
           
-          {/* UPDATED: This button triggers the Cal.com modal */}
           <button 
-            data-cal-link="use-siro/30min"
-            data-cal-config='{"layout":"month_view"}'
-            className="w-full sm:w-auto px-8 py-3 bg-white text-primary border border-primary/20 rounded-lg font-bold text-sm hover:bg-blue-50 transition-colors"
+            onClick={openBookingModal}
+            className="w-full sm:w-auto px-8 py-3 bg-white text-primary border border-primary/20 rounded-lg font-bold text-sm hover:bg-blue-50 transition-colors shadow-sm"
           >
             Book a Demo
           </button>

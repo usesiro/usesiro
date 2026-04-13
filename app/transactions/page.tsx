@@ -33,8 +33,6 @@ export default function Transactions() {
   const [stats, setStats] = useState({ totalIncome: 0, totalExpense: 0, netBalance: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
-  // VAT ENGINE (Calculates based on ALL filtered transactions, not just the page)
-  const { totalOutputVat, totalInputVat, netVatPayable } = useVatCalculator(transactions);
 
   // Bulk Categorization State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -411,61 +409,14 @@ export default function Transactions() {
         </div>
         
         {/* TOP STATS ROW */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-gray-500 text-sm">Total Income</span>
-              <div className="p-1.5 bg-blue-50 text-blue-500 rounded-lg"><WalletIcon className="w-5 h-5" /></div>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-600 mb-1">{formatCurrency(stats.totalIncome)}</h3>
-             <p className="text-xs text-gray-400 font-medium mt-2">All integrated & manual income</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-gray-500 text-sm">Total Expense</span>
-              <div className="p-1.5 bg-red-50 text-red-500 rounded-lg"><CreditCardIcon className="w-5 h-5" /></div>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-600 mb-1">{formatCurrency(stats.totalExpense)}</h3>
-             <p className="text-xs text-gray-400 font-medium mt-2">All integrated & manual expenses</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-gray-500 text-sm">Net Balance</span>
-              <div className="p-1.5 bg-blue-50 text-blue-500 rounded-lg"><ScaleIcon className="w-5 h-5" /></div>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-600 mb-1">{formatCurrency(stats.netBalance)}</h3>
-            <p className="text-xs text-gray-400 font-medium mt-2">Operating capital</p>
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <StatCard title="Total Income" amount={stats.totalIncome} subtitle="Integrated & Manual" icon={<WalletIcon className="w-5 h-5 text-blue-500" />} />
+          <StatCard title="Total Expense" amount={stats.totalExpense} subtitle="Integrated & Manual" icon={<CreditCardIcon className="w-5 h-5 text-red-500" />} isRed />
+          <div className="col-span-2 lg:col-span-1">
+            <StatCard title="Net Balance" amount={stats.netBalance} subtitle="Operating Capital" icon={<ScaleIcon className="w-5 h-5 text-blue-500" />} />
           </div>
         </div>
 
-        {/* LIVE VAT SUMMARY ROW */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-indigo-50/50 p-5 rounded-2xl border border-indigo-100">
-            <div className="flex justify-between items-start mb-1">
-              <span className="text-indigo-600 font-medium text-sm">Output VAT (Collected)</span>
-              <ArrowUpRightIcon className="w-5 h-5 text-indigo-400" />
-            </div>
-            <h3 className="text-xl font-bold text-indigo-900">{formatCurrency(totalOutputVat)}</h3>
-          </div>
-
-          <div className="bg-orange-50/50 p-5 rounded-2xl border border-orange-100">
-            <div className="flex justify-between items-start mb-1">
-              <span className="text-orange-600 font-medium text-sm">Input VAT (Paid)</span>
-              <ReceiptRefundIcon className="w-5 h-5 text-orange-400" />
-            </div>
-            <h3 className="text-xl font-bold text-orange-900">{formatCurrency(totalInputVat)}</h3>
-          </div>
-
-          <div className="bg-primary/10 p-5 rounded-2xl border border-primary/20">
-            <div className="flex justify-between items-start mb-1">
-              <span className="text-primary font-bold text-sm">Net VAT Payable</span>
-              <DocumentChartBarIcon className="w-5 h-5 text-primary" />
-            </div>
-            <h3 className="text-xl font-black text-primary">{formatCurrency(netVatPayable)}</h3>
-          </div>
-        </div>
 
         {/* MAIN TABLE SECTION */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
@@ -563,14 +514,48 @@ export default function Transactions() {
           )}
 
           {/* TABLE */}
-          <div className="overflow-x-auto relative min-h-[300px]">
-            {isLoading ? (
-               <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] flex items-center justify-center z-10">
-                 <div className="text-gray-500 animate-pulse">Filtering...</div>
-               </div>
-            ) : null}
-            
-            <table className="w-full text-left border-collapse">
+          <div className="relative min-h-[300px]">
+            {/* MOBILE LIST VIEW */}
+            <div className="md:hidden space-y-4">
+              {paginatedTransactions.length === 0 ? (
+                <p className="text-center py-8 text-gray-500">No transactions found.</p>
+              ) : (
+                paginatedTransactions.map((t) => (
+                  <div key={t.id} className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 pr-4">
+                        <p className="text-sm font-black text-gray-900 leading-tight">{t.description}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                          {formatDate(t.date)} • {t.source === 'MONO' ? 'Bank' : 'Manual'}
+                        </p>
+                      </div>
+                      <div className={`text-sm font-black whitespace-nowrap ${t.type === 'INCOME' ? 'text-green-600' : 'text-gray-900'}`}>
+                        {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100/50">
+                      <span className="bg-white border border-gray-100 text-gray-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight">
+                        {t.category?.name || 'Uncategorized'}
+                      </span>
+                      <select 
+                        value={t.vatStatus || 'MISSING_VAT'}
+                        onChange={(e) => handleVatStatusChange(t.id, e.target.value)}
+                        className={`px-3 py-1 text-[10px] font-black uppercase tracking-tight rounded-full border focus:outline-none appearance-none text-center min-w-[80px] shadow-sm ${getVatStatusStyles(t.vatStatus || 'MISSING_VAT')}`}
+                      >
+                        <option value="MISSING_VAT">Missing</option>
+                        <option value="TAGGED">Tagged</option>
+                        <option value="EXEMPT">Exempt</option>
+                      </select>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* DESKTOP TABLE VIEW */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50/50 text-gray-500 text-xs font-semibold tracking-wide border-b border-gray-100">
                   <th className="py-4 px-4 rounded-tl-lg w-12">
@@ -631,7 +616,8 @@ export default function Transactions() {
                     ))
                 )}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
 
           {/* --- NEW PAGINATION CONTROLS --- */}
@@ -793,5 +779,33 @@ export default function Transactions() {
 
       </div>
     </DashboardLayout>
+  );
+}
+
+// --- EXTRA COMPONENTS ---
+function StatCard({ title, amount, subtitle, icon, isRed, isIndigo, isOrange, isPrimary }: any) {
+  const formatCurrency = (amt: number) => {
+    return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amt);
+  };
+
+  const getIconBg = () => {
+    if (isRed) return 'bg-red-50 text-red-500';
+    if (isIndigo) return 'bg-indigo-50 text-indigo-500';
+    if (isOrange) return 'bg-orange-50 text-orange-500';
+    if (isPrimary) return 'bg-blue-50 text-blue-500';
+    return 'bg-blue-50 text-blue-500';
+  };
+
+  return (
+    <div className="bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-32 md:h-40 hover:shadow-md transition-all group overflow-hidden">
+      <div className="flex justify-between items-start">
+        <span className="text-gray-400 text-[10px] md:text-sm font-black uppercase tracking-wider">{title}</span>
+        <div className={`p-2 rounded-xl transition-transform group-hover:scale-110 ${getIconBg()}`}>{icon}</div>
+      </div>
+      <div>
+        <h3 className={`text-lg md:text-2xl font-black leading-none truncate ${amount < 0 ? 'text-red-500' : 'text-gray-900'}`}>{formatCurrency(amount)}</h3>
+        <p className="text-[10px] md:text-xs font-bold text-gray-400 mt-2 uppercase tracking-tight">{subtitle}</p>
+      </div>
+    </div>
   );
 }
