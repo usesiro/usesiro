@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     // 3. Send the email alert to info@usesiro.com via Resend
     try {
       await resend.emails.send({
-        from: 'Siro System <onboarding@resend.dev>', // Keep testing email for now
+        from: 'Siro System <info@usesiro.com>',
         to: 'info@usesiro.com', // Change to your actual email if testing restrictions apply
         subject: `New Contact Message: ${topic} from ${fullName}`,
         html: `

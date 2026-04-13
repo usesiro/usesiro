@@ -76,7 +76,7 @@ export async function POST(req: Request) {
         console.log(`[BOOKING] Triggering Resend for ${email}`);
         
         const emailResult = await resend.emails.send({
-          from: 'Siro Booking <onboarding@resend.dev>',
+          from: 'Siro Booking <info@usesiro.com>',
           to: 'info@usesiro.com',
           subject: `New Demo Booking: ${fullName} (${companyName || 'N/A'})`,
           html: `
