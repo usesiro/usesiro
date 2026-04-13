@@ -70,12 +70,12 @@ export async function GET(request: Request) {
 
     // Stats will now dynamically reflect the current filter
     const totalIncome = transactions
-      .filter(t => t.type === 'INCOME')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .filter((t: any) => t.type === 'INCOME')
+      .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
       
     const totalExpense = transactions
-      .filter(t => t.type === 'EXPENSE')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .filter((t: any) => t.type === 'EXPENSE')
+      .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
 
     const netBalance = totalIncome - totalExpense;
 
