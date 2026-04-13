@@ -45,7 +45,7 @@ export async function GET(request: Request) {
 
     // 3. Format Unified Notifications
     const notifications = [
-      ...logs.map(log => ({
+      ...logs.map((log: any) => ({
         id: `log-${log.id}`,
         type: 'activity',
         title: formatAction(log.action),
@@ -53,7 +53,7 @@ export async function GET(request: Request) {
         time: log.createdAt,
         status: log.status,
       })),
-      ...pendingTransactions.map(t => ({
+      ...pendingTransactions.map((t: any) => ({
         id: `pending-${t.id}`,
         type: 'action',
         title: 'Action Required',
