@@ -9,7 +9,7 @@ import {
   ArrowUpRightIcon, WalletIcon, CreditCardIcon, ScaleIcon,
   MagnifyingGlassIcon, ArrowDownTrayIcon, PlusIcon,
   ChevronLeftIcon, ChevronRightIcon, XMarkIcon, CheckCircleIcon,
-  ReceiptRefundIcon, DocumentChartBarIcon, DocumentTextIcon, TableCellsIcon, ArrowPathIcon
+  ReceiptRefundIcon, DocumentChartBarIcon, DocumentTextIcon, TableCellsIcon, ArrowPathIcon, TrashIcon
 } from "@heroicons/react/24/outline";
 import { useNotification } from "@/context/NotificationContext";
 import TableSkeleton from "@/components/TableSkeleton";
@@ -26,13 +26,13 @@ export default function Transactions() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
 
   // Dynamic Data State
   const [transactions, setTransactions] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalIncome: 0, totalExpense: 0, netBalance: 0 });
   const [isLoading, setIsLoading] = useState(true);
-
 
   // Bulk Categorization State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -47,6 +47,13 @@ export default function Transactions() {
     startDate: "",
     endDate: ""
   });
+
+  // Deletion Modal State
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    type: "SINGLE" | "BULK" | "CLEAR_ALL";
+    ids: string[];
+  }>({ isOpen: false, type: "SINGLE", ids: [] });
 
   // Export Modal State
   const [exportParams, setExportParams] = useState({
@@ -81,6 +88,7 @@ export default function Transactions() {
         const data = await res.json();
         setTransactions(data.transactions);
         setStats(data.stats);
+        setLastSyncedAt(data.lastSyncedAt);
         setCurrentPage(1); // Reset to page 1 whenever filters change
         setSelectedIds([]); // Clear selection on new fetch
       }
@@ -195,6 +203,43 @@ export default function Transactions() {
       setIsBulkUpdating(false);
     }
   };
+
+  const handleDeleteTransactions = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch("/api/v1/transactions/bulk", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("siro_access_token")}`
+        },
+        body: JSON.stringify({
+          transactionIds: deleteModal.ids,
+          deleteAll: deleteModal.type === "CLEAR_ALL"
+        }),
+      });
+
+      if (res.ok) {
+        showNotification(
+          deleteModal.type === "CLEAR_ALL" ? "All records cleared successfully" : "Deletion successful", 
+          "success"
+        );
+        await fetchData(); 
+        setSelectedIds([]);
+        setDeleteModal({ isOpen: false, type: "SINGLE", ids: [] });
+      } else {
+        const errData = await res.json();
+        showNotification(errData.error || "Failed to delete transactions", "error");
+      }
+    } catch (error: any) {
+      showNotification("Network error during deletion", "error");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Add this state
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleVatStatusChange = async (transactionId: string, newVatStatus: string) => {
     setTransactions(prevTransactions => 
@@ -390,21 +435,44 @@ export default function Transactions() {
   // Helper check for "Select All" based on the current page
   const isAllCurrentPageSelected = paginatedTransactions.length > 0 && paginatedTransactions.every(t => selectedIds.includes(t.id));
 
+  const getCanSync = () => {
+    if (!lastSyncedAt) return true;
+    const lastSync = new Date(lastSyncedAt);
+    const diffMs = Date.now() - lastSync.getTime();
+    return diffMs >= 24 * 60 * 60 * 1000;
+  };
+
+  const canSync = getCanSync();
+
   if (isLoading && transactions.length === 0) return <TableSkeleton />;
 
   return (
     <DashboardLayout>
       <div className="space-y-6 relative">
 
-        {/* --- MOVED SYNC BUTTON HERE --- */}
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800">Transactions</h1>
           <button 
-            onClick={async () => { setIsSyncing(true); await fetch("/api/v1/mono/sync", { method: "POST", headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` } }); window.location.reload(); }} 
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition shadow-none"
+            disabled={!canSync || isSyncing}
+            onClick={async () => { 
+                setIsSyncing(true); 
+                const res = await fetch("/api/v1/mono/sync", { 
+                    method: "POST", 
+                    headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` } 
+                }); 
+                if (res.ok) {
+                    showNotification("Sync successful", "success");
+                    fetchData();
+                } else {
+                    const err = await res.json();
+                    showNotification(err.details || err.error || "Sync failed", "error");
+                }
+                setIsSyncing(false);
+            }} 
+            className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium transition shadow-none ${!canSync ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
           >
-            <ArrowPathIcon className={`w-4 h-4 text-primary ${isSyncing ? 'animate-spin' : ''}`} />
-            {isSyncing ? "Syncing..." : "Sync Bank"}
+            <ArrowPathIcon className={`w-4 h-4 ${!canSync ? 'text-gray-300' : 'text-primary'} ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? "Syncing..." : !canSync ? "Synced Today" : "Sync Bank"}
           </button>
         </div>
         
@@ -467,21 +535,29 @@ export default function Transactions() {
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"><svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg></div>
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-2 md:flex md:items-center gap-3 w-full md:w-auto">
+              <button 
+                onClick={() => setDeleteModal({ isOpen: true, type: "CLEAR_ALL", ids: [] })}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 border border-red-100 rounded-lg text-sm font-medium text-red-400 hover:bg-red-50 transition"
+              >
+                <TrashIcon className="w-4 h-4" /> Clear All
+              </button>
               <button 
                 onClick={() => setIsExportModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
               >
                 <ArrowDownTrayIcon className="w-4 h-4" /> Export Report
               </button>
               <button 
                 onClick={() => setIsImportModalOpen(true)} 
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-primary text-primary rounded-lg text-sm font-medium hover:bg-blue-50 transition"
+                className="col-span-2 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-primary text-primary rounded-lg text-sm font-medium hover:bg-blue-50 transition"
               >
                 <TableCellsIcon className="w-4 h-4 text-primary" /> 
                 Upload Records
               </button>
-              <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-black transition"><PlusIcon className="w-4 h-4" /> Add Transaction</button>
+              <button onClick={() => setIsAddModalOpen(true)} className="col-span-2 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-black transition">
+                <PlusIcon className="w-4 h-4" /> Add Transaction
+              </button>
             </div>
           </div>
 
@@ -508,6 +584,12 @@ export default function Transactions() {
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
                 >
                   {isBulkUpdating ? "Applying..." : "Apply Category"}
+                </button>
+                <button 
+                  onClick={() => setDeleteModal({ isOpen: true, type: "BULK", ids: selectedIds })}
+                  className="px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-lg text-sm font-bold hover:bg-red-100 transition"
+                >
+                  Delete Selected
                 </button>
               </div>
             </div>
@@ -571,7 +653,8 @@ export default function Transactions() {
                   <th className="py-4 px-4">Date</th>
                   <th className="py-4 px-4">Source</th>
                   <th className="py-4 px-4">Category</th>
-                  <th className="py-4 px-4 rounded-tr-lg">VAT Status</th> 
+                  <th className="py-4 px-4">VAT Status</th> 
+                  <th className="py-4 px-4 rounded-tr-lg w-10"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -611,6 +694,14 @@ export default function Transactions() {
                             <option value="TAGGED">Tagged</option>
                             <option value="EXEMPT">Exempt</option>
                           </select>
+                        </td>
+                        <td className="py-4 px-4 text-right">
+                          <button 
+                            onClick={() => setDeleteModal({ isOpen: true, type: "SINGLE", ids: [t.id] })}
+                            className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                          </button>
                         </td>
                     </tr>
                     ))
@@ -776,6 +867,61 @@ export default function Transactions() {
           onClose={() => setIsImportModalOpen(false)} 
           onSuccess={() => fetchData()} 
         />
+
+        {/* --- DELETE CONFIRMATION MODAL --- */}
+        {deleteModal.isOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity" onClick={() => !isDeleting && setDeleteModal({...deleteModal, isOpen: false})}></div>
+            <div className="relative bg-white rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+              
+              <div className="p-8 text-center">
+                <div className="w-20 h-20 bg-red-50 text-red-500 rounded-[24px] flex items-center justify-center mx-auto mb-6">
+                  <TrashIcon className="w-10 h-10" />
+                </div>
+                
+                <h3 className="text-2xl font-black text-gray-900 leading-tight">
+                  {deleteModal.type === "CLEAR_ALL" ? "Clear All Records?" : "Confirm Deletion"}
+                </h3>
+                
+                <p className="text-gray-500 mt-3 font-medium text-sm px-4">
+                  {deleteModal.type === "CLEAR_ALL" 
+                    ? "This will permanently delete EVERY transaction in your account. This action cannot be undone."
+                    : `Are you sure you want to delete ${deleteModal.type === "BULK" ? deleteModal.ids.length + " selected" : "this"} transaction${deleteModal.type === "SINGLE" ? "" : "s"}?`}
+                </p>
+
+                <div className="grid grid-cols-2 gap-4 mt-8">
+                  <button 
+                    disabled={isDeleting}
+                    onClick={() => setDeleteModal({...deleteModal, isOpen: false})}
+                    className="py-4 px-6 bg-gray-50 text-gray-500 rounded-2xl font-black text-sm hover:bg-gray-100 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    disabled={isDeleting}
+                    onClick={handleDeleteTransactions}
+                    className="py-4 px-6 bg-red-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-red-200 hover:bg-red-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      deleteModal.type === "CLEAR_ALL" ? "Yes, Clear All" : "Confirm Delete"
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {deleteModal.type === "CLEAR_ALL" && (
+                <div className="bg-red-50 py-3 px-8 text-[10px] font-black text-red-400 uppercase tracking-widest text-center border-t border-red-100">
+                  Critical Danger Zone
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
       </div>
     </DashboardLayout>

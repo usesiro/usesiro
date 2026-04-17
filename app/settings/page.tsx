@@ -34,6 +34,10 @@ export default function Settings() {
 
   // --- PREFERENCES STATE ---
   const [preferences, setPreferences] = useState({ emailNotifications: true, loginAlerts: true });
+  const { isMuted, toggleMute } = useNotification();
+
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [isLogsLoading, setIsLogsLoading] = useState(false);
 
   const tabs = ["Personal Info", "Business Info", "Automation", "Notification", "Security", "Audit Logs"];
 
@@ -64,8 +68,24 @@ export default function Settings() {
     }
   };
 
+  const fetchAuditLogs = async () => {
+    setIsLogsLoading(true);
+    try {
+      const res = await fetch("/api/v1/audit-logs", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAuditLogs(data.logs);
+      }
+    } finally {
+      setIsLogsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
+    fetchAuditLogs();
   }, []);
 
   if (loading) return <SettingsSkeleton />;
@@ -280,6 +300,12 @@ export default function Settings() {
                   checked={preferences.loginAlerts} 
                   onChange={() => setPreferences(prev => ({ ...prev, loginAlerts: !prev.loginAlerts }))} 
                 />
+                <Toggle 
+                  label="Sound Notifications" 
+                  description="Play a subtle sound when a high-priority action is required."
+                  checked={!isMuted} 
+                  onChange={toggleMute} 
+                />
               </div>
             </div>
           )}
@@ -361,21 +387,47 @@ export default function Settings() {
                   <thead className="bg-gray-50/50 border-b border-gray-100">
                     <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                       <th className="px-8 py-4">Action</th>
-                      <th className="px-8 py-4">User</th>
-                      <th className="px-8 py-4">Date</th>
+                      <th className="px-8 py-4">Status</th>
+                      <th className="px-8 py-4 text-right">Date & Time</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    <tr className="text-sm hover:bg-gray-50/50 transition">
-                      <td className="px-8 py-5 font-bold text-gray-600">Bank Synced (Mono)</td>
-                      <td className="px-8 py-5 text-gray-500">Admin</td>
-                      <td className="px-8 py-5 text-gray-400">Today, 10:45 AM</td>
-                    </tr>
-                    <tr className="text-sm hover:bg-gray-50/50 transition">
-                      <td className="px-8 py-5 font-bold text-gray-600">Logged In</td>
-                      <td className="px-8 py-5 text-gray-500">Admin</td>
-                      <td className="px-8 py-5 text-gray-400">Today, 09:00 AM</td>
-                    </tr>
+                    {isLogsLoading ? (
+                      <tr>
+                        <td colSpan={3} className="px-8 py-10 text-center text-gray-400 animate-pulse font-bold uppercase tracking-widest text-xs">
+                          Syncing Secure Logs...
+                        </td>
+                      </tr>
+                    ) : auditLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={3} className="px-8 py-10 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">
+                          No audit entries found
+                        </td>
+                      </tr>
+                    ) : (
+                      auditLogs.map((log) => (
+                        <tr key={log.id} className="text-sm hover:bg-gray-50/50 transition group">
+                          <td className="px-8 py-5">
+                            <div className="font-bold text-gray-800">{formatAuditAction(log.action)}</div>
+                            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
+                              {log.ip || "System Action"}
+                            </div>
+                          </td>
+                          <td className="px-8 py-5">
+                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest 
+                              ${log.status === 'SUCCESS' ? 'bg-green-50 text-green-500' : 'bg-red-50 text-red-500'}`}>
+                              {log.status}
+                            </span>
+                          </td>
+                          <td className="px-8 py-5 text-gray-400 font-bold text-right text-xs">
+                            {new Date(log.createdAt).toLocaleString('en-GB', {
+                              day: '2-digit', month: 'short', year: 'numeric',
+                              hour: '2-digit', minute: '2-digit'
+                            })}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -388,6 +440,23 @@ export default function Settings() {
 }
 
 // --- HELPER COMPONENTS ---
+
+function formatAuditAction(action: string) {
+  const map: Record<string, string> = {
+    "AUTH.LOGIN_SUCCESS": "User Login",
+    "AUTH.LOGIN_FAILURE": "Failed Login Attempt",
+    "AUTH.SIGNUP": "New Account Created",
+    "TRANSACTION.CREATE": "Transaction Created",
+    "TRANSACTION.BULK_UPDATE": "Bulk Transaction Update",
+    "TRANSACTION.BULK_DELETE": "Transactions Deleted",
+    "TRANSACTION.CLEAR_ALL": "Transaction History Cleared",
+    "TRANSACTION.VAT_UPDATE": "VAT Status Modified",
+    "DOCUMENT.UPLOAD": "Document Uploaded",
+    "PROFILE.UPDATE": "Business Profile Updated",
+    "AUTH.PASSWORD_UPDATE": "Password Changed"
+  };
+  return map[action] || action.replace(/[._]/g, ' ');
+}
 
 function Field({ label, value }: { label: string, value: string }) {
   return (

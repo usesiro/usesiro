@@ -42,6 +42,19 @@ export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean
     }
   };
 
+  const markAllAsRead = async () => {
+    try {
+      const res = await fetch("/api/v1/notifications/mark-read", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` }
+      });
+      if (res.ok) {
+        // Just refresh to update UI if needed, though dropdown handles the badge
+        fetchNotifications();
+      }
+    } catch (err) { console.error(err); }
+  };
+
   useEffect(() => {
     if (isOpen) fetchNotifications();
   }, [isOpen]);
@@ -131,9 +144,12 @@ export default function NotificationModal({ isOpen, onClose }: { isOpen: boolean
 
         {/* FOOTER */}
         <div className="p-6 border-t border-gray-100 flex justify-between items-center bg-gray-50/30">
-           <p className="text-xs text-gray-400 font-medium">Logged securely via Audit Intelligence</p>
-           <button className="flex items-center gap-2 text-xs font-bold text-red-400 hover:text-red-500 transition-colors">
-             <TrashIcon className="w-4 h-4" /> Clear History
+           <p className="text-xs text-gray-400 font-medium font-black uppercase tracking-widest">Audit Intelligence Active</p>
+           <button 
+             onClick={markAllAsRead}
+             className="flex items-center gap-2 text-xs font-black text-primary hover:text-blue-600 transition-colors uppercase tracking-widest"
+           >
+             Mark all as read
            </button>
         </div>
 

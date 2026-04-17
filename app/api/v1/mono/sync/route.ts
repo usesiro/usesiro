@@ -23,6 +23,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No bank account linked" }, { status: 400 });
     }
 
+    // --- 2.1: 24h Rate Limit Check ---
+    if (business.lastSyncedAt) {
+      const lastSync = new Date(business.lastSyncedAt);
+      const diffMs = Date.now() - lastSync.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+
+      if (diffHours < 24) {
+        const remainingHours = Math.ceil(24 - diffHours);
+        return NextResponse.json({ 
+          error: "API Limit Reached", 
+          details: `You can only sync once every 24 hours. Please try again in about ${remainingHours} hours.`,
+          nextAvailableAt: new Date(lastSync.getTime() + 24 * 60 * 60 * 1000)
+        }, { status: 429 });
+      }
+    }
+
     // 3. Fetch Transactions from Mono
     const monoResponse = await fetch(`https://api.withmono.com/v2/accounts/${business.monoAccountId}/transactions`, {
       method: "GET",
@@ -75,6 +91,12 @@ export async function POST(request: Request) {
         savedCount++;
       }
     }
+
+    // 6. Update Last Sync Time
+    await prisma.business.update({
+      where: { id: business.id },
+      data: { lastSyncedAt: new Date() }
+    });
 
     return NextResponse.json({ message: `Successfully synced ${savedCount} new transactions!` });
 

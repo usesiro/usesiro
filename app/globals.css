@@ -42,3 +42,15 @@
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* --- NOTIFICATION BELL ANIMATION --- */
+@keyframes bell-ring {
+  0%, 100% { transform: rotate(0deg); }
+  20%, 60% { transform: rotate(15deg); }
+  40%, 80% { transform: rotate(-15deg); }
+}
+
+.animate-bell-ring {
+  animation: bell-ring 0.6s ease-in-out infinite;
+  transform-origin: top center;
+}

@@ -81,7 +81,8 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       transactions,
-      stats: { totalIncome, totalExpense, netBalance }
+      stats: { totalIncome, totalExpense, netBalance },
+      lastSyncedAt: business.lastSyncedAt
     });
 
   } catch (error) {

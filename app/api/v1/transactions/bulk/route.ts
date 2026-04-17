@@ -61,3 +61,62 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const authHeader = request.headers.get("authorization");
+    const token = authHeader?.split(" ")[1];
+    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const { payload } = await jwtVerify(token, secret);
+    const userId = payload.userId as string;
+
+    const business = await prisma.business.findUnique({
+      where: { userId },
+    });
+
+    if (!business) {
+      return NextResponse.json({ error: "Business not found" }, { status: 404 });
+    }
+
+    const { transactionIds, deleteAll } = await request.json();
+
+    let deleted;
+    if (deleteAll) {
+      deleted = await prisma.transaction.deleteMany({
+        where: { businessId: business.id }
+      });
+    } else {
+      if (!transactionIds || !Array.isArray(transactionIds) || transactionIds.length === 0) {
+        return NextResponse.json({ error: "No transactions selected for deletion." }, { status: 400 });
+      }
+      deleted = await prisma.transaction.deleteMany({
+        where: {
+          id: { in: transactionIds },
+          businessId: business.id
+        }
+      });
+    }
+
+    // --- Audit Log ---
+    await recordAuditLog({
+      userId,
+      action: deleteAll ? "TRANSACTION.CLEAR_ALL" : "TRANSACTION.BULK_DELETE",
+      status: "SUCCESS",
+      details: { 
+        count: deleted.count,
+        transactionIds: deleteAll ? "ALL" : transactionIds.slice(0, 5)
+      }
+    });
+
+    return NextResponse.json({ 
+      message: deleteAll ? "All transactions cleared successfully!" : `Successfully deleted ${deleted.count} transactions!`,
+      count: deleted.count
+    }, { status: 200 });
+
+  } catch (error) {
+    console.error("Bulk Delete Error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
