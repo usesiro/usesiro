@@ -5,11 +5,14 @@
 /* ADD THIS SECTION */
 @layer base {
   html {
-    /* Default is usually 16px (100%). 
-       Setting it to 90% (approx 14.4px) mimics the browser zoom you liked.
-       This shrinks text, buttons, and spacing globally.
-    */
     font-size: 90%; 
+  }
+  
+  /* Fix for iOS Safari auto-zoom on focus */
+  @media screen and (max-width: 768px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
   }
 }
 
