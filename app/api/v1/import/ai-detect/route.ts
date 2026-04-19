@@ -20,6 +20,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid data format provided." }, { status: 400 });
     }
 
+    if (!process.env.CEREBRAS_API_KEY) {
+      console.error("CRITICAL: CEREBRAS_API_KEY is missing from environment variables.");
+      return NextResponse.json({ error: "Server Configuration Error: Missing API Key on Vercel." }, { status: 500 });
+    }
+
     // 3. Rate Limiting Check (Max 10 AI Mapping attempts per hour per user)
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const attemptCount = await prisma.auditLog.count({

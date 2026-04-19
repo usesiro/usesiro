@@ -13,6 +13,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ rows: [] });
     }
 
+    if (!process.env.CEREBRAS_API_KEY) {
+      console.error("CRITICAL: CEREBRAS_API_KEY is missing from environment variables.");
+      return NextResponse.json({ error: "Server Configuration Error: Missing API Key on Vercel." }, { status: 500 });
+    }
+
     const systemPrompt = `You are a high-precision financial data extraction agent. 
 Your task is to take raw text from a bank statement and extract EVERY transaction row into a JSON array.
 

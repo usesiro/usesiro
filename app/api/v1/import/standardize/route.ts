@@ -15,8 +15,14 @@ export async function POST(request: Request) {
 
     // 2. Body
     const { headers, data } = await request.json();
-    if (!headers || !data) {
-      return NextResponse.json({ error: "Missing data" }, { status: 400 });
+
+    if (!headers || !Array.isArray(headers) || !data || !Array.isArray(data)) {
+      return NextResponse.json({ error: "Invalid data format" }, { status: 400 });
+    }
+
+    if (!process.env.CEREBRAS_API_KEY) {
+      console.error("CRITICAL: CEREBRAS_API_KEY is missing from environment variables.");
+      return NextResponse.json({ error: "Server Configuration Error: Missing API Key on Vercel." }, { status: 500 });
     }
 
     // 3. Rate Limit & Audit
