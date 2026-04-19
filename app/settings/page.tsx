@@ -176,7 +176,7 @@ export default function Settings() {
         <div className="bg-gray-100/50 p-1.5 rounded-xl flex flex-nowrap overflow-x-auto no-scrollbar gap-2 mb-8 w-full md:w-fit border border-gray-100 shadow-none scroll-smooth">
           {tabs.map((tab) => (
             <button key={tab} onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200
+              className={`px-3 md:px-6 py-2 md:py-2.5 rounded-lg text-[11px] md:text-sm font-bold md:font-semibold transition-all duration-200 whitespace-nowrap
                 ${activeTab === tab ? "bg-white text-gray-800 border border-gray-100 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}>
               {tab}
             </button>

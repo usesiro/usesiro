@@ -1,133 +1,93 @@
 import { NextResponse } from "next/server";
-import pdf from "pdf-parse";
 
 /**
- * AI-Powered PDF parser for bank statements.
- * Extracts text and uses Clearsheet AI to structure it into tabular data.
+ * AI-Powered Text Chunk Parser.
+ * Takes a slice of bank statement text and returns structured rows.
+ * Part of the Progressive Import Pipeline.
  */
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
-    const file = formData.get("file") as File;
+    const { text } = await request.json();
 
-    if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+    if (!text || text.trim().length < 5) {
+      return NextResponse.json({ rows: [] });
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const systemPrompt = `You are a high-precision financial data extraction agent. 
+Your task is to take raw text from a bank statement and extract EVERY transaction row into a JSON array.
 
-    // 1. Extract raw text from PDF
-    const pdfData = await pdf(buffer);
-    const text = pdfData.text;
+STRICT ACCURACY RULES:
+1. COUNT BEFORE RESPONDING: Count the number of transactions in the input FIRST. Your array MUST match this count.
+2. HEADER METADATA: Look for "Opening Balance", "Initial Balance", "Start Balance", or "Currency" in the header text. If found, return them.
+3. DO NOT SUMMARIZE: Do not skip ANY rows. If it looks like a transaction, extract it.
+4. BE EXHAUSTIVE: Even if there are many rows, capture every single one in this text chunk.
+5. DATA FIELDS: Extract "date", "description", "amount", "type" (INCOME/EXPENSE), "balance", and "reference".
+6. JSON FORMAT ONLY: Respond with a JSON object.
 
-    if (!text || text.trim().length < 10) {
-      throw new Error("The PDF appears to be empty or an unreadable image scan.");
-    }
+Schema: { "count": number, "rows": [...], "openingBalance": number|null, "currency": string|null }`;
 
-    // 2. AI Table Extraction with Overlapping Chunks
-    const chunkSize = 8000;
-    const overlap = 1500;
-    const chunks: string[] = [];
-    
-    if (text.length <= chunkSize) {
-      chunks.push(text);
-    } else {
-      for (let i = 0; i < text.length; i += (chunkSize - overlap)) {
-        chunks.push(text.slice(i, i + chunkSize));
-        if (i + chunkSize >= text.length) break;
-      }
-    }
-
-    const systemPrompt = `You are a professional financial data extractor. 
-Take the raw text from a bank statement and extract the transaction table as a JSON array.
-Each object should represent a row.
-
-CRITICAL INSTRUCTIONS:
-1. Capture every single row.
-2. If available, ALWAYS extract: "Date", "Description/Narration", "Amount", "Balance" (Running/Account balance), and "Transaction ID/Reference".
-3. Use standardized keys: "date", "description", "amount", "balance", "reference".
-4. If a row appears truncated, still extract what you see.
-5. Return valid JSON ONLY. 
-
-Format: { "rows": [{...}] }`;
-
-    // Process chunks with a concurrency limit to avoid Groq rate limits
-    const processChunk = async (chunk: string) => {
+    const processWithRetry = async (prompt: string, chunk: string, attempt = 1): Promise<any> => {
       try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        const response = await fetch("https://api.cerebras.ai/v1/chat/completions", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+            "Authorization": `Bearer ${process.env.CEREBRAS_API_KEY}`,
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
+            model: "llama3.1-8b",
             messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: "Extract records from this text:\n" + chunk }
+              { role: "system", content: prompt },
+              { role: "user", content: "Extract records from this text. Remember to count them first so you don't miss any:\n" + chunk }
             ],
             temperature: 0,
+            max_tokens: 8192,
             response_format: { type: "json_object" }
           })
         });
 
-        if (!response.ok) return [];
+        if (!response.ok) {
+          if ((response.status === 429 || response.status === 503) && attempt < 6) {
+            const delay = attempt * 2000; 
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return processWithRetry(prompt, chunk, attempt + 1);
+          }
+          const errorBody = await response.text();
+          throw new Error(`AI Request Failed: ${response.status} ${response.statusText} - ${errorBody}`);
+        }
 
-        const groqData = await response.json();
-        const content = JSON.parse(groqData.choices[0].message.content);
-        const rows = content.rows || content.transactions || (Array.isArray(content) ? content : Object.values(content).find(Array.isArray)) || [];
-        return rows;
-      } catch (e) {
-        console.error("Chunk processing error:", e);
-        return [];
+        const cerebrasData = await response.json();
+        const rawContent = cerebrasData.choices[0].message.content;
+        
+        try {
+          const content = JSON.parse(rawContent);
+          const rows = content.rows || content.transactions || (Array.isArray(content) ? content : Object.values(content).find(Array.isArray)) || [];
+          return { 
+            rows, 
+            openingBalance: content.openingBalance || null, 
+            currency: content.currency || null 
+          };
+        } catch (parseError) {
+          console.error("JSON Parse Error. Raw content snippet:", rawContent.substring(0, 500), "...");
+          if (cerebrasData.choices[0].finish_reason === "length") {
+             throw new Error("AI response was too long and got truncated. Try a smaller chunk size.");
+          }
+          throw parseError;
+        }
+      } catch (e: any) {
+        if (attempt < 3) {
+           await new Promise(resolve => setTimeout(resolve, 2000));
+           return processWithRetry(prompt, chunk, attempt + 1);
+        }
+        throw e;
       }
     };
 
-    // Process in parallel batches to prevent timeouts/rate limits
-    const results = [];
-    const batchSize = 4;
-    for (let i = 0; i < chunks.length; i += batchSize) {
-      const batch = chunks.slice(i, i + batchSize);
-      const batchResults = await Promise.all(batch.map(processChunk));
-      results.push(...batchResults);
-    }
-
-    // 3. Smart Boundary Merging (De-duplicate AI Overlaps)
-    let allRows: any[] = [];
-    results.forEach((rows: any[]) => {
-      if (allRows.length === 0) {
-        allRows = rows;
-        return;
-      }
-
-      // We compare the start of the new chunk's rows with the end of the existing rows
-      // to identify duplicates caused by the 1500 char overlap.
-      let duplicateCount = 0;
-      const recentRows = allRows.slice(-8).map(r => JSON.stringify(r));
-      
-      for (let j = 0; j < Math.min(rows.length, 8); j++) {
-        if (recentRows.includes(JSON.stringify(rows[j]))) {
-          duplicateCount = j + 1;
-        } else {
-          // If we find a non-matching row after potential matches, stop
-          // but we take the latest duplicateCount found.
-        }
-      }
-
-      allRows.push(...rows.slice(duplicateCount));
-    });
-
-    if (allRows.length === 0) {
-       throw new Error("Clearsheet AI couldn't structure this PDF. Please try an Excel version.");
-    }
-
-    const headers = Object.keys(allRows[0]);
-
-    return NextResponse.json({ headers, data: allRows });
+    const result = await processWithRetry(systemPrompt, text);
+    return NextResponse.json(result);
 
   } catch (error: any) {
-    console.error("PDF Parse Error:", error);
-    return NextResponse.json({ error: error.message || "Failed to parse PDF statement" }, { status: 500 });
+    console.error("Text Chunk Parse Error:", error);
+    return NextResponse.json({ error: error.message || "Failed to parse text chunk" }, { status: 500 });
   }
 }

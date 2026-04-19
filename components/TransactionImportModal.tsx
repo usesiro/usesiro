@@ -17,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { SparklesIcon } from '@heroicons/react/24/solid';
 import { SIRO_FIELDS, SiroField } from '@/lib/bank-mappings';
+import { extractTransactionRegions, chunkByLines } from '@/lib/import-parsers';
 
 interface TransactionImportModalProps {
   isOpen: boolean;
@@ -40,12 +41,33 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
   // Confirmation states
   const [confirmedRate, setConfirmedRate] = useState<number | null>(null);
   const [applyOpeningBalance, setApplyOpeningBalance] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
+  const [currentBatchText, setCurrentBatchText] = useState("");
+  const [importStage, setImportStage] = useState<'IDLE' | 'READING' | 'EXTRACTING' | 'CLEANING' | 'REVIEW'>('IDLE');
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 20;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Reset internal state when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setStep('UPLOAD');
+      setFileData([]);
+      setStandardizedData(null);
+      setEditableTransactions([]);
+      setHeaders([]);
+      setMapping({});
+      setIsUploading(false);
+      setImportResult(null);
+      setError(null);
+      setConfirmedRate(null);
+      setApplyOpeningBalance(false);
+      setCurrentPage(1);
+    }
+  }, [isOpen]);
 
   const paginatedTransactions = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
@@ -56,28 +78,71 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
 
   if (!isOpen) return null;
 
-  const handleStandardize = async (rawHeaders: string[], rawData: any[]) => {
+  const handleStandardize = async (
+    rawHeaders: string[], 
+    rawData: any[], 
+    fallbackBalance: number | null = null, 
+    fallbackCurrency: string | null = null
+  ) => {
     setStep('STANDARDIZING');
-    try {
-      const response = await fetch('/api/v1/import/standardize', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('siro_access_token')}`
-        },
-        body: JSON.stringify({ headers: rawHeaders, data: rawData }),
-      });
+    setImportStage('CLEANING');
+    setImportProgress(rawData.length > 250 ? 50 : 0); // Start at 50% if following Extraction
+    setError(null);
 
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Standardization failed");
+    const BATCH_SIZE = 25;
+    const batches = [];
+    for (let i = 0; i < rawData.length; i += BATCH_SIZE) {
+      batches.push(rawData.slice(i, i + BATCH_SIZE));
+    }
+
+    let allTransactions: any[] = [];
+    let initialBalance = null;
+    let currency = "NGN";
+    let exchangeRate = null;
+
+    try {
+      for (let i = 0; i < batches.length; i++) {
+        setCurrentBatchText(`AI Structuring: Records ${i * BATCH_SIZE + 1} to ${Math.min((i + 1) * BATCH_SIZE, rawData.length)}...`);
+        
+        const response = await fetch('/api/v1/import/standardize', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('siro_access_token')}`
+          },
+          body: JSON.stringify({ headers: rawHeaders, data: batches[i] }),
+        });
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || `Failed at batch ${i + 1}`);
+
+        allTransactions = [...allTransactions, ...(result.transactions || [])];
+        
+        if (i === 0) {
+          initialBalance = result.openingBalance;
+          currency = result.detectedCurrency;
+          exchangeRate = result.suggestedRate;
+        }
+
+        const baseProgress = rawData.length > 250 ? 50 : 0;
+        const progressMultiplier = rawData.length > 250 ? 0.5 : 1;
+        setImportProgress(Math.round(baseProgress + ((i + 1) / batches.length) * 100 * progressMultiplier));
+        setEditableTransactions([...allTransactions]);
+        
+        if (batches.length > 1) await new Promise(r => setTimeout(r, 4500)); // Stay under 30 RPM
+      }
+
+      setStandardizedData({ 
+        openingBalance: initialBalance || fallbackBalance, 
+        detectedCurrency: currency || fallbackCurrency || "NGN", 
+        suggestedRate: exchangeRate 
+      });
       
-      setStandardizedData(result);
-      setEditableTransactions(result.transactions || []);
-      if (result.suggestedRate) setConfirmedRate(result.suggestedRate);
-      
-      // Only show confirmation step if there's something to confirm (balance or rate)
-      const hasOpeningBalance = !!result.openingBalance;
-      const hasForeignCurrency = result.detectedCurrency && result.detectedCurrency !== 'NGN';
+      if (exchangeRate) setConfirmedRate(exchangeRate);
+      setImportStage('REVIEW');
+
+      const hasOpeningBalance = !!(initialBalance || fallbackBalance);
+      const hasForeignCurrency = (currency || fallbackCurrency) && (currency || fallbackCurrency) !== 'NGN';
       
       if (hasOpeningBalance || hasForeignCurrency) {
         setStep('CONFIRM_CLEANUP');
@@ -85,8 +150,9 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
         setStep('REVIEW');
       }
     } catch (err: any) {
-      setError(err.message || "AI failed to clean the data.");
+      setError(err.message || "Clearsheet AI failed to process some records.");
       setStep('UPLOAD');
+      setImportStage('IDLE');
     }
   };
 
@@ -96,46 +162,112 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
 
     setIsUploading(true);
     setError(null);
+    setEditableTransactions([]);
+    setImportProgress(0);
 
     const isPdf = file.name.toLowerCase().endsWith('.pdf');
 
     try {
-      let fileHeaders: string[] = [];
-      let data: any[] = [];
-
       if (isPdf) {
+        // --- STAGE 1: RAW TEXT EXTRACTION ---
+        setImportStage('READING');
+        setCurrentBatchText("Extracting raw text from PDF...");
         const formData = new FormData();
         formData.append('file', file);
         
-        const response = await fetch('/api/v1/import/parse-pdf', {
+        const extractRes = await fetch('/api/v1/import/extract-text', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('siro_access_token')}` },
           body: formData,
         });
 
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "Failed to parse PDF");
+        const extractResult = await extractRes.json();
+        if (!extractRes.ok) throw new Error(extractResult.error || "Failed to read PDF");
         
-        fileHeaders = result.headers;
-        data = result.data;
+        const rawText = extractResult.text;
+        
+        // --- STAGE 2: AI RECORD EXTRACTION (CHUNKED BY LINES WITH 2-LINE OVERLAP) ---
+        setImportStage('EXTRACTING');
+        const transactionLines = extractTransactionRegions(rawText);
+        
+        // Target 40 lines per chunk to stay within Cerebras output limits
+        const lineChunks = chunkByLines(transactionLines, 40, 2);
+
+        let allExtractedRows: any[] = [];
+        const seenRows = new Set<string>(); // For de-duplication
+        let detectedOpeningBalance = null;
+        let detectedCurrency = null;
+
+        for (let i = 0; i < lineChunks.length; i++) {
+          setCurrentBatchText(`AI Reading: Section ${i + 1} of ${lineChunks.length}...`);
+          const parseRes = await fetch('/api/v1/import/parse-pdf', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('siro_access_token')}` 
+            },
+            // Send chunk joined by newlines
+            body: JSON.stringify({ text: lineChunks[i].join('\n') }),
+          });
+
+          const parseResult = await parseRes.json();
+          if (!parseRes.ok) throw new Error(parseResult.error || `Failed to read section ${i + 1}`);
+          
+          const newRows = parseResult.rows || [];
+          
+          // Capture Metadata from the first chunk
+          if (i === 0) {
+            detectedOpeningBalance = parseResult.openingBalance;
+            detectedCurrency = parseResult.currency;
+          }
+          
+          // Smart De-duplication using composite key
+          newRows.forEach((row: any) => {
+            const rowKey = `${row.date}_${row.description}_${row.amount}`.toLowerCase().replace(/\s+/g, '');
+            if (!seenRows.has(rowKey)) {
+              seenRows.add(rowKey);
+              allExtractedRows.push(row);
+            }
+          });
+
+          setImportProgress(Math.round(((i + 1) / lineChunks.length) * 50));
+          if (lineChunks.length > 1) await new Promise(r => setTimeout(r, 4500)); 
+        }
+
+        if (allExtractedRows.length === 0) throw new Error("No transactions found in this PDF.");
+        
+        // --- STAGE 3: AI STANDARDIZATION ---
+        setFileData(allExtractedRows);
+        setHeaders(Object.keys(allExtractedRows[0] || {}));
+        
+        // Pass detected metadata to standardize or use as fallback
+        await handleStandardize(
+          Object.keys(allExtractedRows[0] || {}), 
+          allExtractedRows,
+          detectedOpeningBalance,
+          detectedCurrency
+        );
+
       } else {
+        // XLSX/CSV Logic
         const bstr = await file.arrayBuffer();
         const wb = XLSX.read(bstr, { type: 'array' });
         const wsname = wb.SheetNames[0];
         const ws = wb.Sheets[wsname];
-        data = XLSX.utils.sheet_to_json(ws, { defval: "" });
+        const data = XLSX.utils.sheet_to_json(ws, { defval: "" });
         
         if (data.length === 0) throw new Error("The file is empty.");
-        fileHeaders = Object.keys(data[0] as object);
+        const fileHeaders = Object.keys(data[0] as object);
+        
+        setFileData(data);
+        setHeaders(fileHeaders);
+        await handleStandardize(fileHeaders, data);
       }
-
-      setFileData(data);
-      setHeaders(fileHeaders);
-      await handleStandardize(fileHeaders, data);
       
     } catch (err: any) {
       setError(err.message || "Failed to process file.");
       setIsUploading(false);
+      setImportStage('IDLE');
     }
   };
 
@@ -240,8 +372,29 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
                 <div className="w-24 h-24 border-4 border-purple-100 border-t-purple-600 rounded-full animate-spin"></div>
                 <SparklesIcon className="w-10 h-10 text-purple-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
               </div>
-              <h3 className="text-xl font-black text-gray-800 mt-8">Clearsheet AI is Cleaning Up</h3>
-              <p className="text-sm text-gray-500 mt-2 max-w-sm">Almost there! We're structuring your data and identifying transactions...</p>
+              <h3 className="text-xl font-black text-gray-800 mt-8">
+                {importStage === 'READING' && 'Reading Document'}
+                {importStage === 'EXTRACTING' && 'AI Parsing Table'}
+                {importStage === 'CLEANING' && 'AI Finalizing Cleanup'}
+                {importStage === 'IDLE' && 'Clearsheet AI is Processing'}
+              </h3>
+              <div className="w-full max-w-xs bg-gray-100 h-2 rounded-full mt-6 overflow-hidden">
+                <div 
+                  className="bg-purple-600 h-full transition-all duration-700 ease-in-out" 
+                  style={{ width: `${importProgress}%` }}
+                ></div>
+              </div>
+              <p className="text-xs font-bold text-purple-600 mt-3">{importProgress}% Complete</p>
+              <p className="text-[11px] text-gray-800 mt-2 font-bold">{currentBatchText}</p>
+              <p className="text-sm text-gray-500 mt-8 max-w-sm">
+                {importStage === 'READING' && "We're extracting the raw text from your PDF file..."}
+                {importStage === 'EXTRACTING' && "Clearsheet AI is identifying transaction rows from the document..."}
+                {importStage === 'CLEANING' && "Almost there! We're structuring the records into your ledger format..."}
+              </p>
+              <div className="mt-8 flex gap-2 items-center justify-center p-3 bg-blue-50 rounded-2xl border border-blue-100 max-w-xs">
+                 <VariableIcon className="w-4 h-4 text-blue-500" />
+                 <p className="text-[10px] text-blue-700 font-bold">This is a long document. We're processing it in chunks to ensure 100% accuracy.</p>
+              </div>
             </div>
           )}
 
@@ -339,7 +492,7 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
                   <thead className="sticky top-0 bg-gray-50 border-b border-gray-100 z-10">
                     <tr>
                       <th className="px-4 py-3 font-black text-gray-400 text-[10px] uppercase tracking-wider w-[140px]">Date</th>
-                      <th className="px-4 py-3 font-black text-gray-400 text-[10px] uppercase tracking-wider">Description</th>
+                      <th className="px-4 py-3 font-black text-gray-400 text-[10px] uppercase tracking-wider min-w-[200px] max-w-[300px]">Description</th>
                       <th className="px-4 py-3 font-black text-gray-400 text-[10px] uppercase tracking-wider w-[120px]">Type</th>
                       <th className="px-4 py-3 font-black text-gray-400 text-[10px] uppercase tracking-wider w-[140px] text-right">Amount</th>
                       <th className="px-4 py-3 w-[50px]"></th>
@@ -358,12 +511,13 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
                               className="w-full bg-transparent border-none focus:ring-0 p-0 font-medium text-gray-600 text-xs"
                             />
                           </td>
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-2 max-w-[300px]">
                             <input 
                               type="text" 
                               value={t.description} 
+                              title={t.description}
                               onChange={(e) => updateEditableField(globalIndex, 'description', e.target.value)}
-                              className="w-full bg-transparent border-none focus:ring-0 p-0 font-bold text-gray-800 text-xs"
+                              className="w-full bg-transparent border-none focus:ring-0 p-0 font-bold text-gray-800 text-xs truncate"
                             />
                           </td>
                           <td className="px-4 py-2">

@@ -611,24 +611,34 @@ export default function Transactions() {
                           {formatDate(t.date)} • {t.source === 'MONO' ? 'Bank' : 'Manual'}
                         </p>
                       </div>
-                      <div className={`text-sm font-black whitespace-nowrap ${t.type === 'INCOME' ? 'text-green-600' : 'text-gray-900'}`}>
-                        {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
+                      <div className="flex flex-col items-end gap-2">
+                        <div className={`text-sm font-black whitespace-nowrap ${t.type === 'INCOME' ? 'text-green-600' : 'text-gray-900'}`}>
+                          {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
+                        </div>
+                        <button 
+                          onClick={() => setDeleteModal({ isOpen: true, type: "SINGLE", ids: [t.id] })}
+                          className="p-1.5 text-gray-300 hover:text-red-500 bg-gray-50 rounded-lg transition-all"
+                        >
+                          <TrashIcon className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                     
                     <div className="flex items-center justify-between pt-2 border-t border-gray-100/50">
-                      <span className="bg-white border border-gray-100 text-gray-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight">
+                      <span className="bg-white border border-gray-100 text-gray-500 px-3 h-6 inline-flex items-center rounded-full text-[9px] font-black uppercase tracking-tight">
                         {t.category?.name || 'Uncategorized'}
                       </span>
-                      <select 
-                        value={t.vatStatus || 'MISSING_VAT'}
-                        onChange={(e) => handleVatStatusChange(t.id, e.target.value)}
-                        className={`px-3 py-1 text-[10px] font-black uppercase tracking-tight rounded-full border focus:outline-none appearance-none text-center min-w-[80px] shadow-sm ${getVatStatusStyles(t.vatStatus || 'MISSING_VAT')}`}
-                      >
-                        <option value="MISSING_VAT">Missing</option>
-                        <option value="TAGGED">Tagged</option>
-                        <option value="EXEMPT">Exempt</option>
-                      </select>
+                      <div className="relative">
+                        <select 
+                          value={t.vatStatus || 'MISSING_VAT'}
+                          onChange={(e) => handleVatStatusChange(t.id, e.target.value)}
+                          className={`px-3 h-6 inline-flex items-center text-[9px] font-black uppercase tracking-tight rounded-full border focus:outline-none appearance-none text-center min-w-[85px] leading-none shadow-sm ${getVatStatusStyles(t.vatStatus || 'MISSING_VAT')}`}
+                        >
+                          <option value="MISSING_VAT">Missing</option>
+                          <option value="TAGGED">Tagged</option>
+                          <option value="EXEMPT">Exempt</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -843,7 +853,16 @@ export default function Transactions() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-600 mb-1">Date</label>
-                      <input type="date" name="date" required value={formData.date} onChange={handleInputChange} className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary outline-none"/>
+                      <div className="relative">
+                        <input 
+                          type="date" 
+                          name="date" 
+                          required 
+                          value={formData.date} 
+                          onChange={handleInputChange} 
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-primary outline-none bg-gray-50/50"
+                        />
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-600 mb-1">Description</label>

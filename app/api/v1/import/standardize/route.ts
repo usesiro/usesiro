@@ -29,109 +29,78 @@ export async function POST(request: Request) {
       }
     });
 
-    // 4. Batch Processing Configuration
-    const batchSize = 50;
-    const batches: any[][] = [];
-    for (let i = 0; i < data.length; i += batchSize) {
-      batches.push(data.slice(i, i + batchSize));
-    }
+    // 4. Single Batch Processing (Client-side now handles the loop)
+    const systemPrompt = `You are a professional financial auditor.
+Extract EVERY transaction from this chunk of data.
 
-    const systemPromptMain = `You are a financial data cleanup expert. 
-Your goal is to take an array of rows from a spreadsheet and identify the actual transactions.
-
-Rules:
-1. Ignore header rows, summary/total rows, and metadata notes.
-2. For each transaction row, extract: date, description, amount, type (INCOME/EXPENSE), balance (running balance), and reference (ID/Reference).
-3. If there are split Debit/Credit columns, merge them into a single amount and determine the type.
-4. Also look for "Opening Balance" notes or row and currency conversion notes (e.g. "rate: 1550").
-
-Output valid JSON ONLY:
-{
-  "transactions": [{ "date": string, "description": string, "amount": number, "type": "INCOME" | "EXPENSE", "balance": number | string | null, "reference": string | null }],
-  "openingBalance": number | null,
-  "detectedCurrency": string,
-  "suggestedRate": number | null
-}`;
-
-    const systemPromptSecondary = `You are a financial data cleanup expert. 
-Extract transactions from this chunk of data. Use the same logic as before.
-Make sure to extract "balance" and "reference" for every transaction if they are available in the data.
-
-Output valid JSON ONLY:
-{ "transactions": [{ "date": string, "description": string, "amount": number, "type": "INCOME" | "EXPENSE", "balance": number | string | null, "reference": string | null }] }`;
+RULES:
+1. COUNT BEFORE RESPONDING: Count the records in the input FIRST. Your result MUST match this count.
+2. IDENTIFY ALL TRANSACTIONS: Date, description, amount, type (INCOME/EXPENSE), balance, and reference.
+3. TYPE DETECTION: 
+   - Debit/Withdrawal -> EXPENSE.
+   - Credit/Deposit -> INCOME.
+   - Negative amount -> EXPENSE.
+4. CURRENCY: Look for opening balances and exchange rates (only applies if this is the start of the file).
+5. JSON ONLY: { "count": number, "transactions": [...], "openingBalance": number?, "detectedCurrency": string?, "suggestedRate": number? }`;
 
     const processWithRetry = async (prompt: string, userMsg: string, attempt = 1): Promise<any> => {
       try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        const response = await fetch("https://api.cerebras.ai/v1/chat/completions", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+            "Authorization": `Bearer ${process.env.CEREBRAS_API_KEY}`,
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
+            model: "llama3.1-8b",
             messages: [
               { role: "system", content: prompt },
-              { role: "user", content: "Data to clean:\n" + userMsg }
+              { role: "user", content: "Data to clean. Remember to count them first so you don't miss any:\n" + userMsg }
             ],
             temperature: 0,
+            max_tokens: 8192,
             response_format: { type: "json_object" }
           })
         });
 
         if (!response.ok) {
-          if (response.status === 429 && attempt < 3) {
-            // Rate limit - wait and retry
+          if ((response.status === 429 || response.status === 503) && attempt < 6) {
             const delay = attempt * 2000;
             await new Promise(resolve => setTimeout(resolve, delay));
             return processWithRetry(prompt, userMsg, attempt + 1);
           }
-          return null;
+          const errorBody = await response.text();
+          throw new Error(`AI Request Failed: ${response.status} ${response.statusText} - ${errorBody}`);
         }
 
-        const groqData = await response.json();
-        return JSON.parse(groqData.choices[0].message.content);
-      } catch (e) {
+        const cerebrasData = await response.json();
+        const rawContent = cerebrasData.choices[0].message.content;
+        try {
+          return JSON.parse(rawContent);
+        } catch (parseError) {
+          console.error("JSON Parse Error. Raw content snippet:", rawContent.substring(0, 500), "...");
+          if (cerebrasData.choices[0].finish_reason === "length") {
+            throw new Error("AI response was too long and got truncated. Try a smaller chunk size.");
+          }
+          throw parseError;
+        }
+      } catch (e: any) {
         if (attempt < 3) {
-           await new Promise(resolve => setTimeout(resolve, 1000));
+           await new Promise(resolve => setTimeout(resolve, 2000));
            return processWithRetry(prompt, userMsg, attempt + 1);
         }
-        return null;
+        throw e;
       }
     };
 
-    const processBatch = async (batch: any[], index: number) => {
-      const prompt = index === 0 ? systemPromptMain : systemPromptSecondary;
-      const userMsg = JSON.stringify({ headers, rows: batch });
-      return processWithRetry(prompt, userMsg);
-    };
-
-    // Process all batches in parallel (Promise.all is safe here because of retry logic)
-    const results = await Promise.all(batches.map((batch, i) => processBatch(batch, i)));
-
-    // Merge Results
-    let finalTransactions: any[] = [];
-    let openingBalance = null;
-    let detectedCurrency = "NGN";
-    let suggestedRate = null;
-
-    results.forEach((res, i) => {
-      if (!res) return;
-      if (Array.isArray(res.transactions)) {
-        finalTransactions = finalTransactions.concat(res.transactions);
-      }
-      if (i === 0) {
-        openingBalance = res.openingBalance ?? null;
-        detectedCurrency = res.detectedCurrency ?? "NGN";
-        suggestedRate = res.suggestedRate ?? null;
-      }
-    });
+    const userMsg = JSON.stringify({ headers, rows: data });
+    const result = await processWithRetry(systemPrompt, userMsg);
 
     return NextResponse.json({
-      transactions: finalTransactions,
-      openingBalance,
-      detectedCurrency,
-      suggestedRate
+      transactions: result.transactions || [],
+      openingBalance: result.openingBalance || null,
+      detectedCurrency: result.detectedCurrency || "NGN",
+      suggestedRate: result.suggestedRate || null
     });
 
   } catch (err: any) {
