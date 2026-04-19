@@ -66,19 +66,19 @@ Rules:
       sampleData: sampleRows.slice(0, 3) // Hard limit to top 3 rows for token economy and privacy
     });
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const response = await fetch("https://api.cerebras.ai/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+        "Authorization": `Bearer ${process.env.CEREBRAS_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile", // Use the massive Meta Llama 3.3 70B for high logic accuracy
+        model: "llama3.1-8b", 
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: "Data to map:\n" + userMessage }
         ],
-        temperature: 0, // Zero creativity, strict deterministic output
+        temperature: 0, 
         max_tokens: 300,
         response_format: { type: "json_object" }
       })
