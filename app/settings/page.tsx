@@ -11,7 +11,7 @@ import SettingsSkeleton from "@/components/SettingsSkeleton";
 export default function Settings() {
   const router = useRouter();
   const { showNotification } = useNotification();
-  const [activeTab, setActiveTab] = useState("Personal Info");
+  const [activeTab, setActiveTab] = useState<"Personal Info" | "Business Info" | "Automation" | "Notification" | "Security" | "Audit Logs">("Personal Info");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -155,7 +155,7 @@ export default function Settings() {
         {/* TABS */}
         <div className="bg-gray-100/50 p-1.5 rounded-xl flex flex-nowrap overflow-x-auto no-scrollbar gap-2 mb-8 w-full md:w-fit border border-gray-100 shadow-none scroll-smooth">
           {tabs.map((tab) => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
+            <button key={tab} onClick={() => setActiveTab(tab as any)}
               className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200
                 ${activeTab === tab ? "bg-white text-gray-800 border border-gray-100 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}>
               {tab}
@@ -230,14 +230,12 @@ export default function Settings() {
                   <EditField label="Business Name" name="businessName" value={formData.businessName} onChange={handleInputChange} />
                   <EditField label="Industry" name="industry" value={formData.industry} onChange={handleInputChange} />
                   <EditField label="Business Type" name="type" value="Sole Business" disabled={true} note="Contact support to upgrade entity type" />
-                  <EditField label="TIN Status" name="tin" value="Verified" disabled={true} />
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <Field label="Business Name" value={data?.name} />
                   <Field label="Industry" value={data?.industry} />
                   <Field label="Type" value="Sole Business" />
-                  <Field label="TIN" value="Verified" />
                 </div>
               )}
             </div>

@@ -3,7 +3,11 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout"; 
 import { useNotification } from "@/context/NotificationContext";
-import { ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { 
+  ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon,
+  RocketLaunchIcon, BuildingLibraryIcon, WrenchScrewdriverIcon,
+  LinkIcon, DocumentArrowDownIcon, PlusCircleIcon
+} from "@heroicons/react/24/outline";
 
 // --- DUMMY DATA ---
 const faqs = {
@@ -22,15 +26,36 @@ const faqs = {
   ]
 };
 
+const getCategoryIcon = (category: string) => {
+  if (category === "Getting Started") return <RocketLaunchIcon className="w-5 h-5 text-blue-500" />;
+  if (category === "Connecting your Bank Account") return <BuildingLibraryIcon className="w-5 h-5 text-blue-500" />;
+  if (category === "Troubleshooting") return <WrenchScrewdriverIcon className="w-5 h-5 text-blue-500" />;
+  return null;
+};
+
 const tabs = ["All Topics", "Getting Started", "Connecting Bank Account", "Troubleshooting"];
 
 export default function HelpCenterPage() {
   const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState("All Topics");
   const [openFaq, setOpenFaq] = useState<string | null>("Getting Started-0"); 
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Form State
+  const [contactForm, setContactForm] = useState({ name: "", email: "", topic: "Enquiries", message: "" });
 
   const toggleFaq = (id: string) => {
     setOpenFaq(openFaq === id ? null : id);
+  };
+
+  const handleContactSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactForm.name || !contactForm.message) {
+      showNotification("Please fill out the required fields.", "error");
+      return;
+    }
+    showNotification("Message Sent! We'll get back to you shortly.", "success");
+    setContactForm({ name: "", email: "", topic: "Enquiries", message: "" }); // Reset form
   };
 
   return (
@@ -38,7 +63,7 @@ export default function HelpCenterPage() {
       <div className="pb-12 max-w-7xl mx-auto">
         
         {/* --- BLUE SEARCH BANNER --- */}
-        <div className="bg-[#4F75FF] rounded-3xl p-10 md:p-14 text-center mb-8 shadow-sm">
+        <div className="bg-primary rounded-3xl p-10 md:p-14 text-center mb-8 shadow-sm">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">
             How can we help you?
           </h2>
@@ -52,10 +77,12 @@ export default function HelpCenterPage() {
             </div>
             <input 
               type="text" 
-              placeholder="e.g How do i connect my bank account?" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="e.g How do I connect my bank account?" 
               className="w-full px-4 py-3 bg-transparent focus:outline-none text-gray-700 text-sm"
             />
-            <button className="bg-[#4F75FF] text-white px-8 py-3 rounded-lg font-medium text-sm hover:bg-blue-600 transition-colors">
+            <button className="bg-primary text-white px-8 py-3 rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors">
               Search
             </button>
           </div>
@@ -66,10 +93,10 @@ export default function HelpCenterPage() {
           {tabs.map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => { setActiveTab(tab); setSearchQuery(""); }}
               className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-colors border ${
                 activeTab === tab 
-                  ? "bg-[#4F75FF] text-white border-[#4F75FF]" 
+                  ? "bg-primary text-white border-primary shadow-md" 
                   : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
               }`}
             >
@@ -84,25 +111,34 @@ export default function HelpCenterPage() {
           {/* LEFT COLUMN: FAQ Sections */}
           <div className="lg:col-span-8 space-y-10">
             {Object.entries(faqs).map(([category, items]) => {
+              // Handle Tabs Filter
               if (activeTab !== "All Topics" && !category.includes(activeTab.split(' ')[0])) return null;
+
+              // Handle Search Filter
+              const filteredItems = items.filter(faq => 
+                faq.question.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
+              );
+
+              if (filteredItems.length === 0) return null;
 
               return (
                 <div key={category}>
-                  {/* Category Header */}
                   <div className="flex items-center gap-3 mb-5">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100"></div>
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+                      {getCategoryIcon(category)}
+                    </div>
                     <h3 className="font-bold text-gray-800 text-lg">{category}</h3>
                   </div>
 
-                  {/* FAQ Items */}
                   <div className="space-y-3">
-                    {items.map((faq, index) => {
+                    {filteredItems.map((faq, index) => {
                       const id = `${category}-${index}`;
                       const isOpen = openFaq === id;
                       return (
                         <div 
                           key={index} 
-                          className="bg-white border border-gray-100 rounded-2xl p-5 cursor-pointer hover:border-gray-200 transition-colors"
+                          className="bg-white border border-gray-100 rounded-2xl p-5 cursor-pointer hover:border-gray-200 transition-colors shadow-sm"
                           onClick={() => toggleFaq(id)}
                         >
                           <div className="flex justify-between items-center gap-4">
@@ -114,7 +150,7 @@ export default function HelpCenterPage() {
                             )}
                           </div>
                           {isOpen && (
-                            <p className="mt-4 text-sm text-gray-500 leading-relaxed pr-8 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <p className="mt-4 text-sm text-gray-500 leading-relaxed pr-8 animate-fade-in-up">
                               {faq.answer}
                             </p>
                           )}
@@ -125,6 +161,13 @@ export default function HelpCenterPage() {
                 </div>
               );
             })}
+            
+            {/* Empty State for Search */}
+            {searchQuery && !Object.values(faqs).some(items => items.some(faq => faq.question.toLowerCase().includes(searchQuery.toLowerCase()) || faq.answer.toLowerCase().includes(searchQuery.toLowerCase()))) && (
+              <div className="text-center py-12 text-gray-500 font-medium">
+                No help articles found for "{searchQuery}". Please try a different term or contact support.
+              </div>
+            )}
           </div>
 
           {/* RIGHT COLUMN: Contact Form & Quick Actions */}
@@ -136,19 +179,35 @@ export default function HelpCenterPage() {
                 Can't find what you're looking for? Send us a message and we'll get back to you.
               </p>
 
-              <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); showNotification("Message Sent! We'll get back to you shortly.", "success"); }}>
+              <form className="space-y-5" onSubmit={handleContactSubmit}>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
-                  <input type="text" placeholder="Enter Full Name" className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-[#4F75FF] focus:bg-white transition-colors" />
+                  <input 
+                    type="text" 
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm({...contactForm, name: e.target.value})}
+                    placeholder="Enter Full Name" 
+                    className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white transition-colors" 
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-                  <input type="email" placeholder="Enter Email" className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-[#4F75FF] focus:bg-white transition-colors" />
+                  <input 
+                    type="email" 
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
+                    placeholder="Enter Email" 
+                    className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white transition-colors" 
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Topic</label>
                   <div className="relative">
-                    <select className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-[#4F75FF] focus:bg-white transition-colors appearance-none text-gray-500">
+                    <select 
+                      value={contactForm.topic}
+                      onChange={(e) => setContactForm({...contactForm, topic: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white transition-colors appearance-none text-gray-600"
+                    >
                       <option>Enquiries</option>
                       <option>Technical Support</option>
                     </select>
@@ -157,9 +216,15 @@ export default function HelpCenterPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Your Message</label>
-                  <textarea rows={4} placeholder="How Can We Help" className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-[#4F75FF] focus:bg-white transition-colors resize-none"></textarea>
+                  <textarea 
+                    rows={4} 
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm({...contactForm, message: e.target.value})}
+                    placeholder="How Can We Help" 
+                    className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white transition-colors resize-none"
+                  ></textarea>
                 </div>
-                <button type="submit" className="w-full bg-[#4F75FF] text-white py-3.5 rounded-xl text-sm font-bold hover:bg-blue-600 transition-colors mt-2">
+                <button type="submit" className="w-full bg-primary text-white py-3.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors mt-2 shadow-md shadow-blue-100">
                   Submit
                 </button>
               </form>
@@ -168,16 +233,28 @@ export default function HelpCenterPage() {
             <div className="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 shadow-sm">
               <h3 className="font-bold text-lg text-gray-800 mb-6">Common Quick Actions</h3>
               <div className="space-y-4">
-                {[
-                  "Connect Bank Account",
-                  "Export VAT Report",
-                  "Add Manual Transaction"
-                ].map((action, idx) => (
-                  <div key={idx} className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-2 -ml-2 rounded-xl transition-colors group">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex-shrink-0 group-hover:bg-blue-100 transition-colors"></div>
-                    <span className="text-sm font-bold text-gray-800">{action}</span>
+                
+                <div className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-2 -ml-2 rounded-xl transition-colors group">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
+                    <LinkIcon className="w-5 h-5 text-blue-500" />
                   </div>
-                ))}
+                  <span className="text-sm font-bold text-gray-800">Connect Bank Account</span>
+                </div>
+                
+                <div className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-2 -ml-2 rounded-xl transition-colors group">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
+                    <DocumentArrowDownIcon className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <span className="text-sm font-bold text-gray-800">Export VAT Report</span>
+                </div>
+
+                <div className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-2 -ml-2 rounded-xl transition-colors group">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
+                    <PlusCircleIcon className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <span className="text-sm font-bold text-gray-800">Add Manual Transaction</span>
+                </div>
+
               </div>
             </div>
 
