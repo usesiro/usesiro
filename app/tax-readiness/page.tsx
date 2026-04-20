@@ -17,9 +17,13 @@ import {
   ChevronDownIcon,
   ArrowDownTrayIcon,
   DocumentTextIcon, 
-  TableCellsIcon
+  TableCellsIcon,
+  ArrowUpRightIcon,
+  ReceiptRefundIcon,
+  DocumentChartBarIcon
 } from "@heroicons/react/24/outline";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
+import TableSkeleton from "@/components/TableSkeleton";
 
 export default function TaxReadiness() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -169,160 +173,113 @@ export default function TaxReadiness() {
     return new Date(dateString).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
-  if (isLoading) return <DashboardLayout><div className="p-10 text-center text-gray-500">Loading Tax Data...</div></DashboardLayout>;
+  if (isLoading) return <TableSkeleton />;
 
   return (
     <DashboardLayout>
       <div className="space-y-10">
 
-        {/* --- TOP SECTION: 12-col grid --- */}
-        <div className="grid grid-cols-12 gap-6">
+      <div className="space-y-6">
 
-          {/* LEFT: 8/12 cols — always 2-column 2x2 grid */}
-          <div className="col-span-12 lg:col-span-8 grid grid-cols-2 gap-6">
-
-            {/* Income Card */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between" style={{ minHeight: '150px' }}>
-              <div className="flex justify-between items-start">
-                <span className="text-gray-500 text-sm font-medium">Income Recorded</span>
-                <div className="p-2 bg-blue-50 text-blue-500 rounded-lg">
-                  <WalletIcon className="w-6 h-6" />
-                </div>
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-1">{formatCurrency(totalIncome)}</h3>
-                <p className="text-xs text-blue-500 font-medium">All income captured</p>
+        {/* --- ROW 1: CORE STATS & COMPLIANCE --- */}
+        {/* --- ROW 1: CORE STATS & COMPLIANCE --- */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          
+          {/* Expenses Card */}
+          <div className="bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-32 md:h-44 hover:shadow-md transition-all group">
+            <div className="flex justify-between items-start">
+              <span className="text-gray-400 text-[10px] md:text-sm font-black uppercase tracking-wider">Expenses</span>
+              <div className="p-2 bg-gray-50 rounded-xl group-hover:scale-110 transition-transform">
+                <TagIcon className="w-5 h-5 text-red-500" />
               </div>
             </div>
+            <div>
+              <h3 className="text-lg md:text-2xl font-black text-gray-900 leading-none truncate">{formatCurrency(categorizedExpenses)}</h3>
+              <p className="text-[10px] text-red-500 font-bold mt-2 uppercase tracking-tight">Categorized</p>
+            </div>
+          </div>
 
-            {/* Expense Card */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between" style={{ minHeight: '150px' }}>
-              <div className="flex justify-between items-start">
-                <span className="text-gray-500 text-sm font-medium">Expenses Categorized</span>
-                <div className="p-2 bg-red-50 text-red-500 rounded-lg">
-                  <TagIcon className="w-6 h-6" />
-                </div>
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-800 mb-1">{formatCurrency(categorizedExpenses)}</h3>
-                <p className="text-xs text-red-500 font-medium">Expenses assigned to valid categories</p>
+          {/* Compliance Checklist Card */}
+          <div className="bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col h-32 md:h-44 hover:shadow-md transition-all group overflow-hidden">
+            <div className="flex justify-between items-start mb-2 md:mb-4">
+              <span className="text-gray-400 text-[10px] md:text-sm font-black uppercase tracking-wider">Checklist</span>
+              <div className="p-2 bg-gray-50 rounded-xl group-hover:scale-110 transition-transform">
+                <ClipboardDocumentCheckIcon className="w-5 h-5 text-blue-500" />
               </div>
             </div>
-
-            {/* VAT Breakdown Card */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between" style={{ minHeight: '200px' }}>
-              <div className="flex justify-between items-start">
-                <span className="text-gray-500 text-sm font-medium">VAT Breakdown</span>
-                <div className="p-2 bg-blue-50 text-blue-500 rounded-lg">
-                  <ReceiptPercentIcon className="w-6 h-6" />
-                </div>
+            <div className="flex-1 overflow-y-auto no-scrollbar space-y-1.5 md:space-y-3 pr-1">
+              <div className="flex items-center gap-2 text-[10px] md:text-xs">
+                {uncategorizedCount === 0
+                  ? <CheckCircleIcon className="w-4 h-4 text-green-500 shrink-0" />
+                  : <XCircleIcon className="w-4 h-4 text-red-500 shrink-0" />}
+                <span className="text-gray-600 font-bold truncate">Categories</span>
               </div>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-600 font-medium">VAT Payable</span>
-                  <span className={`font-bold text-lg ${vatPayable > 0 ? 'text-red-500' : 'text-green-600'}`}>
-                    - {formatCurrency(Math.abs(vatPayable))}
-                  </span>
-                </div>
-                <div className="border-t border-gray-50 pt-3">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-500">Output VAT</span>
-                    <span className="font-semibold text-gray-700">- {formatCurrency(outputVat)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Input VAT</span>
-                    <span className="font-semibold text-gray-700">- {formatCurrency(inputVat)}</span>
-                  </div>
-                </div>
+              <div className="flex items-center gap-2 text-[10px] md:text-xs">
+                {missingDocCount === 0
+                  ? <CheckCircleIcon className="w-4 h-4 text-green-500 shrink-0" />
+                  : <XCircleIcon className="w-4 h-4 text-red-500 shrink-0" />}
+                <span className="text-gray-600 font-bold truncate">Documents</span>
               </div>
-            </div>
-
-            {/* Compliance Checklist Card */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between" style={{ minHeight: '200px' }}>
-              <div className="flex justify-between items-start">
-                <span className="text-gray-500 text-sm font-medium">Compliance Checklist</span>
-                <div className="p-2 bg-blue-50 text-blue-500 rounded-lg">
-                  <ClipboardDocumentCheckIcon className="w-6 h-6" />
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 text-sm">
-                  {uncategorizedCount === 0
-                    ? <CheckCircleIcon className="w-5 h-5 text-green-500 shrink-0" />
-                    : <XCircleIcon className="w-5 h-5 text-red-500 shrink-0" />}
-                  <span className="text-gray-700 font-medium">Income properly categorized</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  {missingDocCount === 0
-                    ? <CheckCircleIcon className="w-5 h-5 text-green-500 shrink-0" />
-                    : <XCircleIcon className="w-5 h-5 text-red-500 shrink-0" />}
-                  <span className="text-gray-700 font-medium">Transactions properly documented</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  {missingVatCount === 0
-                    ? <CheckCircleIcon className="w-5 h-5 text-green-500 shrink-0" />
-                    : <XCircleIcon className="w-5 h-5 text-red-500 shrink-0" />}
-                  <span className="text-gray-700 font-medium">Transactions properly VAT tagged</span>
-                </div>
+              <div className="flex items-center gap-2 text-[10px] md:text-xs">
+                {missingVatCount === 0
+                  ? <CheckCircleIcon className="w-4 h-4 text-green-500 shrink-0" />
+                  : <XCircleIcon className="w-4 h-4 text-red-500 shrink-0" />}
+                <span className="text-gray-600 font-bold truncate">VAT Tags</span>
               </div>
             </div>
           </div>
 
-          {/* RIGHT: 4/12 cols — Tax Gaps + Score stacked */}
-          <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
-
-            {/* Tax Gaps Card — flex-1 so it stretches to match left height */}
-            <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm flex-1 flex flex-col">
-              <div className="flex justify-between items-start mb-6">
-                <span className="text-gray-500 text-sm font-medium uppercase tracking-wider">Tax Gaps</span>
-                <div className="p-2 bg-gray-50 text-gray-400 rounded-full">
-                  <ExclamationCircleIcon className="w-6 h-6" />
-                </div>
-              </div>
-              <h3 className="text-4xl font-black text-gray-800 mb-8">{totalIssues} Issues</h3>
-              <div className="space-y-5">
-                {missingVatCount > 0 && (
-                  <div className="flex items-center gap-3 text-sm text-gray-600 font-medium">
-                    <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0"></span>
-                    {missingVatCount} Missing VAT tag
-                  </div>
-                )}
-                {uncategorizedCount > 0 && (
-                  <div className="flex items-center gap-3 text-sm text-gray-600 font-medium">
-                    <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0"></span>
-                    {uncategorizedCount} Expense not categorized
-                  </div>
-                )}
-                {missingDocCount > 0 && (
-                  <div className="flex items-center gap-3 text-sm text-gray-600 font-medium">
-                    <span className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0"></span>
-                    {missingDocCount} Missing documentation
-                  </div>
-                )}
-                {totalIssues === 0 && (
-                  <div className="text-green-600 font-bold">No gaps found!</div>
-                )}
+          {/* Tax Readiness Score Card */}
+          <div className="col-span-2 lg:col-span-1 bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-32 md:h-44 hover:shadow-md transition-all group">
+            <div className="flex justify-between items-center mb-2 md:mb-4">
+              <span className="text-gray-400 text-[10px] md:text-sm font-black uppercase tracking-wider">Score</span>
+              <div className="p-2 bg-gray-50 rounded-xl group-hover:scale-110 transition-transform">
+                <CheckCircleIcon className="w-5 h-5 text-primary" />
               </div>
             </div>
-
-            {/* Tax Readiness Score Card — fixed at bottom */}
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between" style={{ minHeight: '130px' }}>
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-gray-500 text-xs font-bold uppercase tracking-widest">Tax Readiness Score</span>
-                <TagIcon className="w-5 h-5 text-red-400" />
-              </div>
-              <div>
-                <h3 className="text-3xl font-black text-gray-800 mb-3">{score}%</h3>
-                <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-green-600 rounded-full transition-all duration-1000"
-                    style={{ width: `${score}%` }}
-                  ></div>
-                </div>
+            <div>
+              <h3 className="text-xl md:text-3xl font-black text-gray-900 mb-2 md:mb-3">{score}%</h3>
+              <div className="w-full h-2 md:h-3 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-1000 ${score > 80 ? 'bg-green-500' : score > 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                  style={{ width: `${score}%` }}
+                ></div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* --- ROW 2: VAT SUMMARY (From Transactions Page) --- */}
+        {/* --- ROW 2: VAT SUMMARY --- */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <div className="bg-indigo-50/50 p-4 md:p-6 rounded-2xl border border-indigo-100 shadow-sm transition-all hover:shadow-md group">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-indigo-600 font-black text-[10px] md:text-sm uppercase tracking-wider">Output VAT</span>
+              <ArrowUpRightIcon className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform" />
+            </div>
+            <h3 className="text-lg md:text-2xl font-black text-indigo-900 leading-none truncate">{formatCurrency(outputVat)}</h3>
+            <p className="text-[10px] text-indigo-400 font-bold uppercase mt-2 tracking-widest">Collected</p>
+          </div>
+
+          <div className="bg-orange-50/50 p-4 md:p-6 rounded-2xl border border-orange-100 shadow-sm transition-all hover:shadow-md group">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-orange-600 font-black text-[10px] md:text-sm uppercase tracking-wider">Input VAT</span>
+              <ReceiptRefundIcon className="w-5 h-5 text-orange-400 group-hover:scale-110 transition-transform" />
+            </div>
+            <h3 className="text-lg md:text-2xl font-black text-orange-900 leading-none truncate">{formatCurrency(inputVat)}</h3>
+            <p className="text-[10px] text-orange-400 font-bold uppercase mt-2 tracking-widest">Paid</p>
+          </div>
+
+          <div className="col-span-2 lg:col-span-1 bg-primary/10 p-4 md:p-6 rounded-2xl border border-primary/20 shadow-sm transition-all hover:shadow-md group">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-primary font-black text-[10px] md:text-sm uppercase tracking-wider">Net Payable</span>
+              <DocumentChartBarIcon className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+            </div>
+            <h3 className="text-lg md:text-2xl font-black text-primary leading-none truncate">{formatCurrency(vatPayable)}</h3>
+            <p className="text-[10px] text-primary/60 font-bold uppercase mt-2 tracking-widest">Liability</p>
+          </div>
+        </div>
+      </div>
 
         {/* --- SUMMARY TABLE SECTION --- */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
@@ -365,8 +322,47 @@ export default function TaxReadiness() {
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto rounded-xl">
-            <table className="w-full text-left border-collapse">
+          <div className="relative min-h-[300px]">
+            {/* MOBILE LIST VIEW */}
+            <div className="md:hidden space-y-4">
+              {transactions.length === 0 ? (
+                <p className="text-center py-8 text-gray-500 font-medium uppercase text-[10px] tracking-widest">No matching records</p>
+              ) : (
+                transactions.map((t) => (
+                  <div key={t.id} className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 pr-4">
+                        <p className="text-sm font-black text-gray-900 leading-tight">{t.description}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                          {formatDate(t.date)} • {t.source === 'MONO' ? 'POS' : 'Manual'}
+                        </p>
+                      </div>
+                      <div className={`text-sm font-black whitespace-nowrap ${t.type === 'INCOME' ? 'text-green-600' : 'text-gray-900'}`}>
+                        {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100/50">
+                      <div className="flex items-center gap-2">
+                        <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tight shadow-sm ${
+                          t.vatStatus === "TAGGED" ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-600 border border-red-100"
+                        }`}>
+                          {t.vatStatus === "TAGGED" ? "VAT Tagged" : "Missing VAT"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-tight text-gray-400">
+                        {t.document ? <CheckIcon className="w-3.5 h-3.5 text-green-500" /> : <XMarkIcon className="w-3.5 h-3.5 text-red-500" />}
+                        <span>Document</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* DESKTOP TABLE VIEW */}
+            <div className="hidden md:block overflow-x-auto rounded-xl">
+              <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50 text-gray-500 text-[11px] font-black uppercase tracking-widest border-b border-gray-100">
                   <th className="py-5 px-6">Description</th>
@@ -381,7 +377,13 @@ export default function TaxReadiness() {
                 {transactions.map((t) => (
                   <tr key={t.id} className="hover:bg-gray-50/50 transition duration-150">
                     <td className="py-5 px-6 text-sm font-medium text-gray-700">{t.description}</td>
-                    <td className="py-5 px-6 text-sm font-bold text-gray-800">{formatCurrency(t.amount)}</td>
+                    <td className="py-5 px-6 text-sm font-bold">
+                      {t.type === 'INCOME' ? (
+                        <span className="text-green-600">+{formatCurrency(t.amount)}</span>
+                      ) : (
+                        <span className="text-red-500">-{formatCurrency(t.amount)}</span>
+                      )}
+                    </td>
                     <td className="py-5 px-6 text-sm text-gray-500">{formatDate(t.date)}</td>
                     <td className="py-5 px-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">
                       {t.source === 'MONO' ? 'POS' : 'Manual'}
@@ -404,7 +406,8 @@ export default function TaxReadiness() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         </div>
 

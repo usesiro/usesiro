@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout"; 
+import { useNotification } from "@/context/NotificationContext";
 import { ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
 // --- DUMMY DATA ---
@@ -24,6 +25,7 @@ const faqs = {
 const tabs = ["All Topics", "Getting Started", "Connecting Bank Account", "Troubleshooting"];
 
 export default function HelpCenterPage() {
+  const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState("All Topics");
   const [openFaq, setOpenFaq] = useState<string | null>("Getting Started-0"); 
 
@@ -134,7 +136,7 @@ export default function HelpCenterPage() {
                 Can't find what you're looking for? Send us a message and we'll get back to you.
               </p>
 
-              <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); alert("Message Sent!"); }}>
+              <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); showNotification("Message Sent! We'll get back to you shortly.", "success"); }}>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
                   <input type="text" placeholder="Enter Full Name" className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-[#4F75FF] focus:bg-white transition-colors" />

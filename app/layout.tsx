@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { Poppins, Fraunces } from "next/font/google"; 
 import "./globals.css";
 import { AOSInit } from "@/components/AOSInit";
-import { Analytics } from "@vercel/analytics/react"; // <-- IMPORTED VERCEL ANALYTICS
-import { GoogleAnalytics } from "@next/third-parties/google"; // <-- IMPORTED GOOGLE ANALYTICS
+import { Analytics } from "@vercel/analytics/react"; 
+import { GoogleAnalytics } from "@next/third-parties/google"; 
+import { NotificationProvider } from "@/context/NotificationContext";
+import { BookingProvider } from "@/components/booking/BookingProvider";
 
 // Setup Poppins
 const poppins = Poppins({
@@ -67,7 +69,12 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/icon.svg', 
+    icon: [
+      { url: '/logo.png', type: 'image/png' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/logo.png',
+    apple: '/logo.png',
   },
 };
 
@@ -77,10 +84,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${poppins.variable} ${fraunces.variable} font-sans`}>
         <AOSInit />
-        {children}
+        <NotificationProvider>
+          <BookingProvider>
+            {children}
+          </BookingProvider>
+        </NotificationProvider>
         
         {/* --- INJECTED TRACKING SCRIPTS --- */}
         <Analytics /> 

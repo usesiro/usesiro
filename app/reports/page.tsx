@@ -7,12 +7,13 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { 
   WalletIcon, CreditCardIcon, ScaleIcon, ArrowUpRightIcon, ArrowDownTrayIcon,
-  XMarkIcon, DocumentTextIcon, TableCellsIcon 
+  XMarkIcon, DocumentTextIcon, TableCellsIcon, DocumentChartBarIcon
 } from "@heroicons/react/24/outline";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, PieChart, Pie, Cell 
 } from 'recharts';
+import DashboardSkeleton from "@/components/DashboardSkeleton";
 
 export default function Reports() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -182,6 +183,8 @@ export default function Reports() {
     setIsExportModalOpen(false); 
   };
 
+  if (isLoading) return <DashboardSkeleton />;
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -197,10 +200,12 @@ export default function Reports() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <StatCard title="Total Income" amount={formatCurrency(totalIncome)} icon={<WalletIcon className="w-5 h-5"/>} color="blue" />
           <StatCard title="Total Expense" amount={formatCurrency(totalExpense)} icon={<CreditCardIcon className="w-5 h-5"/>} color="red" />
-          <StatCard title="Net Balance" amount={formatCurrency(netBalance)} icon={<ScaleIcon className="w-5 h-5"/>} color="blue" />
+          <div className="col-span-2 lg:col-span-1">
+            <StatCard title="Net Balance" amount={formatCurrency(netBalance)} icon={<ScaleIcon className="w-5 h-5"/>} color="blue" />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -217,13 +222,18 @@ export default function Reports() {
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center h-[450px]">
-            <h2 className="text-gray-400 font-bold mb-4 uppercase tracking-widest text-sm">Tax Readiness Score</h2>
-            <span className="text-[120px] leading-none font-black text-gray-600 drop-shadow-sm">
-              {score}<span className="text-6xl text-gray-400 ml-1">%</span>
-            </span>
-            <p className="text-sm text-gray-500 font-medium mt-6 bg-white/60 px-5 py-2 rounded-full border border-gray-100 backdrop-blur-sm shadow-sm">
-              Current Compliance Level
+          <div className="bg-white/80 backdrop-blur-md p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center h-[400px] md:h-[450px] relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform">
+              <DocumentChartBarIcon className="w-32 h-32 text-primary" />
+            </div>
+            <h2 className="text-gray-400 font-black mb-4 uppercase tracking-widest text-[10px] md:text-sm">Tax Readiness</h2>
+            <div className="relative">
+              <span className="text-8xl md:text-[120px] leading-none font-black text-gray-900 drop-shadow-sm">
+                {score}<span className="text-3xl md:text-6xl text-gray-300 ml-1">%</span>
+              </span>
+            </div>
+            <p className="text-[10px] md:text-sm text-gray-500 font-black mt-6 bg-gray-50 px-5 py-2 rounded-full border border-gray-100 uppercase tracking-widest">
+              Compliance Level
             </p>
           </div>
         </div>
@@ -302,15 +312,17 @@ export default function Reports() {
 function StatCard({ title, amount, icon, color }: any) {
   const isRed = color === 'red';
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+    <div className="bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group h-32 md:h-36 flex flex-col justify-between">
       <div className="flex justify-between items-start mb-4">
-        <span className="text-gray-500 text-sm font-bold uppercase">{title}</span>
+        <span className="text-gray-400 text-[10px] md:text-xs font-black uppercase tracking-wider">{title}</span>
         <div className={`p-2 rounded-xl ${isRed ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'}`}>{icon}</div>
       </div>
-      <h3 className="text-2xl font-black text-gray-600">{amount}</h3>
-      <p className={`text-xs mt-2 ${isRed ? 'text-red-500' : 'text-blue-500'} font-bold flex items-center gap-1`}>
-        <ArrowUpRightIcon className="w-3 h-3" /> 100% <span className="text-gray-400 font-normal">from last month</span>
-      </p>
+      <div>
+        <h3 className="text-lg md:text-2xl font-black text-gray-900 leading-none truncate">{amount}</h3>
+        <p className={`text-[10px] mt-2 ${isRed ? 'text-red-500' : 'text-blue-500'} font-black flex items-center gap-1 uppercase tracking-tight`}>
+          <ArrowUpRightIcon className="w-3 h-3" /> 100% <span className="text-gray-400 font-bold ml-1">Growth</span>
+        </p>
+      </div>
     </div>
   );
 }

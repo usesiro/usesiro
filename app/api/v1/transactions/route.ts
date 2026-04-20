@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
 import { autoCategorize } from "@/lib/categorizer";
+import { recordAuditLog } from "@/lib/logger";
 
 // --- GET: Fetch all transactions ---
 export async function GET(request: Request) {
@@ -69,12 +70,12 @@ export async function GET(request: Request) {
 
     // Stats will now dynamically reflect the current filter
     const totalIncome = transactions
-      .filter(t => t.type === 'INCOME')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .filter((t: any) => t.type === 'INCOME')
+      .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
       
     const totalExpense = transactions
-      .filter(t => t.type === 'EXPENSE')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
+      .filter((t: any) => t.type === 'EXPENSE')
+      .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
 
     const netBalance = totalIncome - totalExpense;
 
@@ -133,6 +134,19 @@ export async function POST(request: Request) {
         source: "MANUAL",
         categoryId: matchedCategoryId, // Injects the matched category ID
         vatStatus: "MISSING_VAT", // Defaulting to missing so it flags in Tax Readiness
+      }
+    });
+
+    // --- NEW: Record Audit Log ---
+    await recordAuditLog({
+      userId,
+      action: "TRANSACTION.CREATE",
+      status: "SUCCESS",
+      details: { 
+        transactionId: newTransaction.id, 
+        amount, 
+        type, 
+        source: "MANUAL" 
       }
     });
 

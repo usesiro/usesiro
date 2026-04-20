@@ -1,16 +1,23 @@
 import { MagnifyingGlassIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 
-// --- MOCK DATA ---
-const users = [
-  { id: 1, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", plan: "Foundation", signedUp: "Mar 3", lastActive: "Today", bank: "Connected", status: "Active" },
-  { id: 2, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", plan: "Foundation", signedUp: "Mar 3", lastActive: "Today", bank: "Connected", status: "Active" },
-  { id: 3, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", plan: "Foundation", signedUp: "Mar 3", lastActive: "Today", bank: "Connected", status: "Active" },
-  { id: 4, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", plan: "Foundation", signedUp: "Mar 3", lastActive: "Today", bank: "Connected", status: "Active" },
-  { id: 5, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", plan: "Foundation", signedUp: "Mar 3", lastActive: "Today", bank: "Connected", status: "Active" },
-];
+export default async function AllUsersPage() {
+  const businesses = await prisma.business.findMany({
+    include: { user: true },
+    orderBy: { createdAt: 'desc' }
+  });
 
-export default function AllUsersPage() {
+  const users = businesses.map((b: any) => ({
+    id: b.id,
+    name: b.name,
+    email: b.user.email,
+    plan: "Foundation", // Default plan for now
+    signedUp: new Date(b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    lastActive: "Today", // Mock for now
+    bank: b.monoAccountId ? "Connected" : "Pending",
+    status: b.user.isVerified ? "Active" : "Pending"
+  }));
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 font-sans pb-10">
       
@@ -58,7 +65,7 @@ export default function AllUsersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100/80">
-              {users.map((user, index) => (
+              {users.map((user: any, index: number) => (
                 <tr key={index} className="hover:bg-gray-50/50 transition-colors group">
                   <td className="py-5">
                     <p className="text-[14px] font-bold text-gray-900">{user.name}</p>
@@ -82,7 +89,7 @@ export default function AllUsersPage() {
                     </span>
                   </td>
                   <td className="py-5 text-right pr-4">
-                    <Link href={`/admin/users/${user.id}`} className="text-[13px] font-bold text-primary hover:text-blue-800 transition-colors">
+                    <Link href={`/pigshit/users/${user.id}`} className="text-[13px] font-bold text-primary hover:text-blue-800 transition-colors">
                       View
                     </Link>
                   </td>

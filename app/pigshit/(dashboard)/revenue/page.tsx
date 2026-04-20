@@ -4,30 +4,41 @@ import {
   MagnifyingGlassIcon,
   ChevronDownIcon
 } from "@heroicons/react/24/outline";
+import { prisma } from "@/lib/prisma";
 
-// --- MOCK DATA ---
-const stats = [
-  { name: "MRR", value: "₦126,000.00", trend: "100% from last month", showTrendIcon: true, trendColor: "text-red-500" },
-  { name: "New this month", value: "₦27,000.00", trend: "3 new subscribers", showTrendIcon: true, trendColor: "text-red-500" },
-  { name: "Failed Payments", value: "2", trend: "₦18,000 at risk", showTrendIcon: false, trendColor: "text-gray-500" },
-  { name: "Churn Rate", value: "7%", trend: "100% from last month", showTrendIcon: true, trendColor: "text-red-500" },
-];
+export default async function RevenuePage() {
+  const activeSubscribers = await prisma.business.count({ where: { NOT: { monoAccountId: null } } });
+  const recentTransactions = await prisma.transaction.findMany({
+    where: { type: 'INCOME' },
+    take: 10,
+    orderBy: { date: 'desc' },
+    include: { business: true }
+  });
 
-const payments = [
-  { id: 1, business: "Olaitan Stores", amount: "₦9,000", date: "Mar 4", method: "Card", status: "Paid" },
-  { id: 2, business: "Olaitan Stores", amount: "₦9,000", date: "Mar 4", method: "Card", status: "Paid" },
-  { id: 3, business: "Olaitan Stores", amount: "₦9,000", date: "Mar 4", method: "Card", status: "Paid" },
-  { id: 4, business: "Olaitan Stores", amount: "₦9,000", date: "Mar 4", method: "Card", status: "Paid" },
-  { id: 5, business: "Olaitan Stores", amount: "₦9,000", date: "Mar 4", method: "Card", status: "Paid" },
-];
+  const mrrValue = activeSubscribers * 9000;
+  const formattedMRR = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(mrrValue);
+  
+  const stats = [
+    { name: "MRR", value: formattedMRR, trend: "Current", showTrendIcon: false, trendColor: "text-gray-500" },
+    { name: "New this month", value: "₦0.00", trend: "0 new subscribers", showTrendIcon: true, trendColor: "text-gray-500" },
+    { name: "Failed Payments", value: "0", trend: "₦0 at risk", showTrendIcon: false, trendColor: "text-gray-500" },
+    { name: "Churn Rate", value: "7%", trend: "100% from last month", showTrendIcon: true, trendColor: "text-red-500" }, // Kept mock
+  ];
 
-export default function RevenuePage() {
+  const payments = recentTransactions.map((t: any) => ({
+    id: t.id,
+    business: t.business.name,
+    amount: new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(Number(t.amount) || 0),
+    date: new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    method: "Card", // Default
+    status: "Paid"
+  }));
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 font-sans pb-10">
       
       {/* --- TOP METRICS CARDS --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
+        {stats.map((stat: any, i: number) => (
           <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
             <div className="flex items-start justify-between mb-4">
               <p className="text-sm font-medium text-gray-500">{stat.name}</p>
@@ -92,7 +103,7 @@ export default function RevenuePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100/80">
-              {payments.map((payment) => (
+              {payments.map((payment: any) => (
                 <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="py-5">
                     <p className="text-[14px] font-bold text-gray-900">{payment.business}</p>

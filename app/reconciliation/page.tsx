@@ -2,16 +2,19 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useNotification } from "@/context/NotificationContext";
 import { 
   DocumentMagnifyingGlassIcon, DocumentDuplicateIcon, ExclamationTriangleIcon,
   XMarkIcon, MagnifyingGlassIcon, ArrowDownTrayIcon, CalendarIcon,
   ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon, PlusIcon, DocumentIcon,
   TrashIcon
 } from "@heroicons/react/24/outline";
+import TableSkeleton from "@/components/TableSkeleton";
 
 const ITEMS_PER_PAGE = 10;
 
 export default function Reconciliation() {
+  const { showNotification } = useNotification();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -47,7 +50,7 @@ export default function Reconciliation() {
         setCategories(catData.categories || []);
       }
     } catch (err) {
-      console.error("Failed to load data", err);
+      showNotification("Failed to load data", "error");
     } finally {
       setIsLoading(false);
     }
@@ -55,7 +58,7 @@ export default function Reconciliation() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const pendingItems = transactions.filter(t => t.vatStatus === 'MISSING_VAT' || !t.categoryId || (!t.document && t.source === 'MANUAL'));
+  const pendingItems = transactions.filter(t => t.vatStatus === 'MISSING_VAT' || !t.categoryId || !t.document);
 
   const filteredItems = pendingItems.filter(t => {
     const matchesSearch = t.description.toLowerCase().includes(filters.search.toLowerCase());
@@ -63,7 +66,7 @@ export default function Reconciliation() {
     let matchesStatus = true;
     if (filters.status === "Uncategorized") matchesStatus = !t.categoryId;
     if (filters.status === "Missing VAT") matchesStatus = t.vatStatus === "MISSING_VAT";
-    if (filters.status === "Missing Document") matchesStatus = !t.document && t.source === 'MANUAL';
+    if (filters.status === "Missing Document") matchesStatus = !t.document;
     return matchesSearch && matchesSource && matchesStatus;
   });
 
@@ -135,17 +138,17 @@ export default function Reconciliation() {
       }
 
       if (hasUpdates) {
-        alert("Transaction resolved successfully!");
+        showNotification("Transaction resolved successfully!", "success");
         await fetchData(); // Refresh the list
         setIsDetailsModalOpen(false);
       } else {
-        alert("No changes were made.");
+        showNotification("No changes were made.", "info");
         setIsDetailsModalOpen(false);
       }
 
     } catch (err) {
       console.error("Update failed", err);
-      alert("Error saving updates. Check console.");
+      showNotification("Error saving updates. Please check your connection.", "error");
     } finally {
       setIsSaving(false);
     }
@@ -156,20 +159,24 @@ export default function Reconciliation() {
   const getPrimaryIssue = (t: any) => {
     if (!t.categoryId) return "Uncategorized";
     if (t.vatStatus === 'MISSING_VAT') return "VAT Missing Flags";
-    // ONLY flag as missing document if it is a manual transaction
-    if (!t.document && t.source === 'MANUAL') return "Missing Document";
+    // ANY transaction without a document needs documentation
+    if (!t.document) return "Missing Document";
     return "Review Required";
   };
+
+  if (isLoading) return <TableSkeleton />;
 
   return (
     <DashboardLayout>
       <div className="space-y-8">
         
         {/* --- STAT CARDS --- */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatCard title="Unmatched Transactions" count={transactions.filter(t => !t.categoryId).length} subtitle="To Review" trend="Needs Categorization" icon={<DocumentMagnifyingGlassIcon className="w-5 h-5 text-blue-500"/>} />
-          <StatCard title="Missing VAT Tags" count={transactions.filter(t => t.vatStatus === 'MISSING_VAT').length} subtitle="Alerts" trend="High Compliance Risk" icon={<DocumentDuplicateIcon className="w-5 h-5 text-gray-500"/>} />
-          <StatCard title="Pending Documentation" count={transactions.filter(t => !t.document && t.source === 'MANUAL').length} subtitle="Pending" trend="Required for Audit" icon={<ExclamationTriangleIcon className="w-5 h-5 text-red-500"/>} isRed />
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <StatCard title="Unmatched" count={transactions.filter(t => !t.categoryId).length} subtitle="Review" trend="Needs Category" icon={<DocumentMagnifyingGlassIcon className="w-5 h-5 text-blue-500"/>} />
+          <StatCard title="VAT Tags" count={transactions.filter(t => t.vatStatus === 'MISSING_VAT').length} subtitle="Alerts" trend="Compliance Risk" icon={<DocumentDuplicateIcon className="w-5 h-5 text-gray-500"/>} />
+          <div className="col-span-2 lg:col-span-1">
+            <StatCard title="Documentation" count={transactions.filter(t => !t.document).length} subtitle="Missing" trend="Requires Evidence" icon={<ExclamationTriangleIcon className="w-5 h-5 text-red-500"/>} isRed />
+          </div>
         </div>
 
         {/* --- MAIN TABLE SECTION --- */}
@@ -186,7 +193,7 @@ export default function Reconciliation() {
                   <input type="text" placeholder="Search..." value={filters.search} onChange={(e) => { setFilters({...filters, search: e.target.value}); setCurrentPage(1); }} className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary" />
                 </div>
                 <select value={filters.source} onChange={(e) => { setFilters({...filters, source: e.target.value}); setCurrentPage(1); }} className="w-full md:w-40 px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-gray-500">
-                  <option value="All Sources">Source</option><option value="MONO">Bank (Mono)</option><option value="MANUAL">Manual</option>
+                  <option value="All Sources">All Sources</option><option value="MONO">Bank Synced (Auto)</option><option value="MANUAL">Manual Entry</option>
                 </select>
                 <select value={filters.status} onChange={(e) => { setFilters({...filters, status: e.target.value}); setCurrentPage(1); }} className="w-full md:w-40 px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-gray-500">
                   <option value="All Statuses">Status</option><option value="Uncategorized">Uncategorized</option><option value="Missing VAT">Missing VAT</option><option value="Missing Document">Missing Document</option>
@@ -194,9 +201,47 @@ export default function Reconciliation() {
               </div>
             </div>
 
-            <div className="overflow-x-auto relative min-h-[300px]">
-              {isLoading && <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10 text-gray-500 font-medium">Loading items...</div>}
-              <table className="w-full text-left border-collapse">
+            <div className="relative min-h-[300px]">
+              {isLoading && <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10 text-gray-500 font-bold uppercase text-[10px] tracking-widest">Loading...</div>}
+              
+              {/* MOBILE LIST VIEW */}
+              <div className="md:hidden space-y-4">
+                {paginatedItems.length === 0 && !isLoading ? (
+                  <p className="text-center py-10 text-gray-500 font-bold uppercase text-[10px] tracking-widest">No pending items</p>
+                ) : (
+                  paginatedItems.map((item) => (
+                    <div key={item.id} className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 space-y-4 transition active:scale-[0.98]">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 pr-4">
+                          <p className="text-sm font-black text-gray-900 leading-tight">{item.description}</p>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                            {new Date(item.date).toLocaleDateString('en-GB')} • {item.source === 'MONO' ? 'Bank' : 'Manual'}
+                          </p>
+                        </div>
+                        <div className={`text-sm font-black whitespace-nowrap ${item.type === 'INCOME' ? 'text-green-600' : 'text-gray-900'}`}>
+                          {item.type === 'INCOME' ? '+' : '-'}{formatCurrency(item.amount)}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100/50">
+                        <span className="text-[10px] font-black text-red-500 uppercase tracking-tight bg-red-50 px-3 py-1 rounded-full border border-red-100">
+                          {getPrimaryIssue(item)}
+                        </span>
+                        <button 
+                          onClick={() => handleFixClick(item)} 
+                          className="px-6 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg shadow-blue-100 hover:bg-blue-600 transition"
+                        >
+                          Fix Now
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* DESKTOP TABLE VIEW */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50/50 text-gray-500 text-xs font-bold border-b border-gray-100">
                     <th className="py-4 px-4 rounded-tl-lg">Description</th>
@@ -213,9 +258,15 @@ export default function Reconciliation() {
                     paginatedItems.map((item) => (
                       <tr key={item.id} className="hover:bg-gray-50/50 transition">
                         <td className="py-4 px-4 text-sm font-medium text-gray-700">{item.description}</td>
-                        <td className="py-4 px-4 text-sm font-medium text-gray-700">{formatCurrency(item.amount)}</td>
+                        <td className="py-4 px-4 text-sm font-bold">
+                          {item.type === 'INCOME' ? (
+                            <span className="text-green-600">+{formatCurrency(item.amount)}</span>
+                          ) : (
+                            <span className="text-red-500">-{formatCurrency(item.amount)}</span>
+                          )}
+                        </td>
                         <td className="py-4 px-4 text-sm text-gray-500">{new Date(item.date).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})}</td>
-                        <td className="py-4 px-4 text-sm text-gray-500">{item.source === 'MONO' ? 'Bank' : 'Manual'}</td>
+                        <td className="py-4 px-4 text-sm text-gray-500">{item.source === 'MONO' ? 'Bank Synced' : 'Manual Entry'}</td>
                         <td className="py-4 px-4">
                           <div className="flex items-center justify-between gap-4">
                             <span className="text-sm text-gray-600">{getPrimaryIssue(item)}</span>
@@ -233,6 +284,7 @@ export default function Reconciliation() {
               <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:text-gray-600 disabled:opacity-50"><ChevronLeftIcon className="w-4 h-4" /></button>
               <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-700 text-sm font-bold">{currentPage}</div>
               <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:text-gray-600 disabled:opacity-50"><ChevronRightIcon className="w-4 h-4" /></button>
+            </div>
             </div>
           </div>
         </div>
@@ -252,7 +304,7 @@ export default function Reconciliation() {
                 <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <span className="font-bold text-gray-800">{selectedTransaction?.source === 'MONO' ? 'Bank Sync' : 'Manual Entry'}</span>
+                      <span className="font-bold text-gray-800">{selectedTransaction?.source === 'MONO' ? 'Bank Synced (Auto)' : 'Manual Entry'}</span>
                       <span className="text-gray-500 text-sm ml-2">- {new Date(selectedTransaction?.date).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})}</span>
                       <p className="text-sm font-medium text-gray-600 mt-1">{selectedTransaction?.description}</p>
                     </div>
@@ -340,17 +392,17 @@ export default function Reconciliation() {
 
 function StatCard({ title, count, subtitle, trend, icon, isRed }: any) {
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <span className="text-gray-500 text-sm font-medium">{title}</span>
-          <h3 className="text-3xl font-black text-gray-600 mt-2 flex items-baseline gap-2">
-            {count} <span className="text-lg font-bold text-gray-500">{subtitle}</span>
-          </h3>
-        </div>
-        <div className={`p-2 rounded-full border ${isRed ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100'}`}>{icon}</div>
+    <div className="bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between h-32 md:h-40 hover:shadow-md transition-all group overflow-hidden">
+      <div className="flex justify-between items-start">
+        <span className="text-gray-400 text-[10px] md:text-sm font-black uppercase tracking-wider">{title}</span>
+        <div className={`p-2 rounded-xl transition-transform group-hover:scale-110 ${isRed ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'}`}>{icon}</div>
       </div>
-      <p className={`text-xs font-bold mt-6 ${isRed ? 'text-red-500' : 'text-primary'}`}>{trend}</p>
+      <div>
+        <h3 className="text-lg md:text-3xl font-black text-gray-900 leading-none truncate">
+          {count} <span className="text-xs md:text-lg font-bold text-gray-400 ml-1">{subtitle}</span>
+        </h3>
+        <p className={`text-[10px] font-black mt-2 uppercase tracking-tight ${isRed ? 'text-red-500' : 'text-primary'}`}>{trend}</p>
+      </div>
     </div>
   );
 }

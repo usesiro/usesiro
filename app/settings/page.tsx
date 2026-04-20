@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useNotification } from "@/context/NotificationContext";
 import MonoButton from "@/components/mono/MonoButton";
 import { PencilSquareIcon, PhotoIcon, ChevronRightIcon, PlusIcon } from "@heroicons/react/24/outline";
+import SettingsSkeleton from "@/components/SettingsSkeleton";
 
 export default function Settings() {
+  const router = useRouter();
+  const { showNotification } = useNotification();
   const [activeTab, setActiveTab] = useState("Personal Info");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +54,10 @@ export default function Settings() {
           businessName: fetchedData?.name || "",
           industry: fetchedData?.industry || "",
         });
+        setPreferences({
+          emailNotifications: fetchedData?.owner?.marketingEmails,
+          loginAlerts: fetchedData?.owner?.twoFactorEnabled
+        });
       }
     } finally { 
       setLoading(false); 
@@ -58,6 +67,8 @@ export default function Settings() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  if (loading) return <SettingsSkeleton />;
 
   // --- HANDLERS ---
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,12 +95,16 @@ export default function Settings() {
       if (res.ok) {
         await fetchData(); // Refresh data from server
         section === "personal" ? setIsEditingPersonal(false) : setIsEditingBusiness(false);
+        showNotification("Profile updated successfully", "success");
       } else {
         const err = await res.json();
-        alert(err.error || `Failed to update ${section} info`);
+        showNotification(err.error || `Failed to update ${section} info`, "error");
       }
-    } catch (error) {
-      alert("Network error. Please try again.");
+    } catch (error: any) {
+      const msg = error.message === "Failed to fetch" || error.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : error.message || "Network error. Please try again.";
+      showNotification(msg, "error");
     } finally {
       setIsSaving(false);
     }
@@ -97,7 +112,7 @@ export default function Settings() {
 
   const handleUpdatePassword = async () => {
     if (passwords.newPassword !== passwords.confirmPassword) {
-      alert("Passwords do not match!");
+      showNotification("Passwords do not match!", "error");
       return;
     }
     setIsSaving(true);
@@ -112,11 +127,16 @@ export default function Settings() {
       });
 
       if (res.ok) {
-        alert("Password updated successfully!");
+        showNotification("Password updated successfully!", "success");
         setPasswords({ newPassword: "", confirmPassword: "" });
       } else {
-        alert("Failed to update password.");
+        showNotification("Failed to update password.", "error");
       }
+    } catch (error: any) {
+      const msg = error.message === "Failed to fetch" || error.name === "TypeError"
+        ? "Your connection has been cut off. Please check your internet and try again later."
+        : "Failed to update password.";
+      showNotification(msg, "error");
     } finally {
       setIsSaving(false);
     }
@@ -133,7 +153,7 @@ export default function Settings() {
       <div className="max-w-6xl mx-auto">
         
         {/* TABS */}
-        <div className="bg-gray-100/50 p-1.5 rounded-xl flex flex-wrap gap-2 mb-8 w-fit border border-gray-100 shadow-none">
+        <div className="bg-gray-100/50 p-1.5 rounded-xl flex flex-nowrap overflow-x-auto no-scrollbar gap-2 mb-8 w-full md:w-fit border border-gray-100 shadow-none scroll-smooth">
           {tabs.map((tab) => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200
@@ -225,14 +245,18 @@ export default function Settings() {
 
           {/* --- AUTOMATION TAB --- */}
           {activeTab === "Automation" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up">
-              <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm text-center">
-                <div className={`w-16 h-16 mx-auto rounded-2xl mb-4 flex items-center justify-center ${data?.monoAccountId ? 'bg-green-50 text-green-500' : 'bg-gray-50 text-gray-400'}`}>
-                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up">
+              <div className="bg-white/80 backdrop-blur-md p-8 rounded-[2.5rem] border border-gray-100 shadow-sm text-center group hover:shadow-md transition-all">
+                <div className={`w-20 h-20 mx-auto rounded-3xl mb-6 flex items-center justify-center transition-transform group-hover:scale-110 ${data?.monoAccountId ? 'bg-green-50 text-green-500' : 'bg-gray-50 text-gray-400'}`}>
+                  <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
                 </div>
-                <h3 className="font-bold text-gray-800 text-lg mb-1">Bank Sync</h3>
-                <p className="text-sm font-medium text-gray-400 mb-6">Status: <span className={data?.monoAccountId ? "text-green-500 font-bold" : "text-gray-500"}>{data?.monoAccountId ? "Active & Linked" : "Disconnected"}</span></p>
-                <MonoButton label={data?.monoAccountId ? "Reconnect Bank" : "Connect Bank"} className="w-full bg-primary text-white py-3 rounded-xl text-sm font-bold shadow-lg shadow-blue-100 hover:bg-blue-600 transition" onSuccess={() => window.location.reload()} />
+                <h3 className="font-black text-gray-900 text-xl mb-1">Bank Sync</h3>
+                <p className="text-xs font-black text-gray-400 mb-8 uppercase tracking-widest leading-loose">
+                  Status: <span className={data?.monoAccountId ? "text-green-500" : "text-gray-500"}>
+                    {data?.monoAccountId ? "Active & Linked" : "Disconnected"}
+                  </span>
+                </p>
+                <MonoButton label={data?.monoAccountId ? "Reconnect Bank" : "Connect Bank"} className="w-full bg-primary text-white py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-blue-100 hover:bg-blue-600 transition" onSuccess={() => window.location.reload()} />
               </div>
             </div>
           )}
@@ -306,27 +330,55 @@ export default function Settings() {
               <div className="p-6 border-b border-gray-50">
                 <h2 className="text-lg font-bold text-gray-800">Recent Activity</h2>
               </div>
-              <table className="w-full text-left">
-                <thead className="bg-gray-50/50 border-b border-gray-100">
-                  <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    <th className="px-8 py-4">Action</th>
-                    <th className="px-8 py-4">User</th>
-                    <th className="px-8 py-4">Date</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  <tr className="text-sm hover:bg-gray-50/50 transition">
-                    <td className="px-8 py-5 font-bold text-gray-600">Bank Synced (Mono)</td>
-                    <td className="px-8 py-5 text-gray-500">Admin</td>
-                    <td className="px-8 py-5 text-gray-400">Today, 10:45 AM</td>
-                  </tr>
-                  <tr className="text-sm hover:bg-gray-50/50 transition">
-                    <td className="px-8 py-5 font-bold text-gray-600">Logged In</td>
-                    <td className="px-8 py-5 text-gray-500">Admin</td>
-                    <td className="px-8 py-5 text-gray-400">Today, 09:00 AM</td>
-                  </tr>
-                </tbody>
-              </table>
+              
+              {/* MOBILE LIST VIEW */}
+              <div className="md:hidden divide-y divide-gray-50">
+                <div className="p-6 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-black text-gray-900 uppercase">Bank Synced</span>
+                    <span className="text-[10px] font-bold text-gray-400">10:45 AM</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    <span>Admin</span>
+                    <span>Today</span>
+                  </div>
+                </div>
+                <div className="p-6 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-black text-gray-900 uppercase">Logged In</span>
+                    <span className="text-[10px] font-bold text-gray-400">09:00 AM</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    <span>Admin</span>
+                    <span>Today</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* DESKTOP TABLE VIEW */}
+              <div className="hidden md:block">
+                <table className="w-full text-left">
+                  <thead className="bg-gray-50/50 border-b border-gray-100">
+                    <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      <th className="px-8 py-4">Action</th>
+                      <th className="px-8 py-4">User</th>
+                      <th className="px-8 py-4">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    <tr className="text-sm hover:bg-gray-50/50 transition">
+                      <td className="px-8 py-5 font-bold text-gray-600">Bank Synced (Mono)</td>
+                      <td className="px-8 py-5 text-gray-500">Admin</td>
+                      <td className="px-8 py-5 text-gray-400">Today, 10:45 AM</td>
+                    </tr>
+                    <tr className="text-sm hover:bg-gray-50/50 transition">
+                      <td className="px-8 py-5 font-bold text-gray-600">Logged In</td>
+                      <td className="px-8 py-5 text-gray-500">Admin</td>
+                      <td className="px-8 py-5 text-gray-400">Today, 09:00 AM</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

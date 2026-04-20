@@ -4,56 +4,93 @@ import {
   CreditCardIcon,
   EnvelopeIcon
 } from "@heroicons/react/24/outline";
+import { prisma } from "@/lib/prisma";
 
-// --- MOCK DATA ---
-const stats = [
-  { name: "MRR", value: "₦126,000.00", trend: "100% from last month", showTrend: true },
-  { name: "Total Users", value: "14", trend: "100% from last month", showTrend: true },
-  { name: "Active Subs", value: "12", trend: "2 Inactive", showTrend: false },
-  { name: "Churn Rate", value: "7%", trend: "100% from last month", showTrend: true },
-];
+export default async function AdminOverviewPage() {
+  // --- DATABASE FETCHES ---
+  const [totalUsers, activeSubscribers, recentSignupsData, auditLogs] = await Promise.all([
+    prisma.user.count(),
+    prisma.business.count({ where: { NOT: { monoAccountId: null } } }),
+    prisma.business.findMany({
+      take: 6,
+      orderBy: { createdAt: 'desc' },
+      include: { user: true }
+    }),
+    ((prisma as any).auditLog?.findMany({
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      include: { user: { include: { business: true } } }
+    }) || [])
+  ]);
 
-const recentSignups = [
-  { id: 1, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", time: "Today, 10:14am", bank: "Connected", status: "Active" },
-  { id: 2, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", time: "Yesterday", bank: "Connected", status: "Active" },
-  { id: 3, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", time: "Mar 3", bank: "Pending", status: "Incomplete" },
-  { id: 4, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", time: "Mar 1", bank: "Connected", status: "Active" },
-  { id: 5, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", time: "Mar 1", bank: "Pending", status: "Incomplete" },
-  { id: 6, name: "Olaitan Stores", email: "Olaitan@Gmail.Com", time: "Mar 1", bank: "Connected", status: "Active" },
-];
+  // Ensure auditLogs is an array even if prisma.auditLog was undefined
+  const safeAuditLogs = Array.isArray(auditLogs) ? auditLogs : [];
 
-const liveActivity = [
-  { id: 1, name: "Olaitan Stores", action: "Signed Up And Connected Their Bank", time: "2 minutes ago", type: "system" },
-  { id: 2, name: "Crest Hotel Abuja", action: "Payment Of ₦9,000 Confirmed", time: "2 minutes ago", type: "system" },
-  { id: 3, name: "Bella Lounge", action: "Submitted A Support Message", time: "2 minutes ago", type: "message" },
-  { id: 4, name: "TopGear Logistics", action: "Bank Connection Failed Needs Review", time: "2 minutes ago", type: "system" },
-  { id: 5, name: "Kemi's Pharmacy", action: "Payment Of ₦9,000 Confirmed", time: "2 minutes ago", type: "message" },
-];
+  // --- DERIVED METRICS ---
+  const mrrValue = activeSubscribers * 9000;
+  const formattedMRR = new Intl.NumberFormat('en-NG', {
+    style: 'currency',
+    currency: 'NGN',
+  }).format(mrrValue);
 
-const platformHealth = [
-  { name: "API", desc: "All end points responding", value: "100%", status: "good" },
-  { name: "Bank Sync", desc: "12/13 connections active", value: "92%", status: "good" },
-  { name: "Sync Queue", desc: "3 jobs pending", value: "Delayed", status: "warning" },
-  { name: "Database", desc: "Response time normal", value: "48ms", status: "good" },
-];
+  const stats = [
+    { name: "MRR", value: formattedMRR, trend: "100% from last month", showTrend: true },
+    { name: "Total Users", value: totalUsers.toString(), trend: "100% from last month", showTrend: true },
+    { name: "Active Subs", value: activeSubscribers.toString(), trend: "2 Inactive", showTrend: false },
+    { name: "Churn Rate", value: "7%", trend: "100% from last month", showTrend: true },
+  ];
 
-const churnRisk = [
-  { initials: "TG", name: "TopGear Logistics", desc: "Last seen 22 days ago" },
-  { initials: "BL", name: "Bella Lounge", desc: "Never connected bank" },
-  { initials: "AF", name: "AJ Fashion", desc: "Last seen 18 days ago" },
-  { initials: "NK", name: "NK Events", desc: "Last seen 18 days ago" },
-];
+  const recentSignups = recentSignupsData.map((business: any) => ({
+    id: business.id,
+    name: business.name,
+    email: business.user.email,
+    time: new Date(business.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    bank: business.monoAccountId ? "Connected" : "Pending",
+    status: business.monoAccountId ? "Active" : "Incomplete"
+  }));
 
-// Simple helper for the mock bar chart
-const barHeights = [40, 45, 45, 60, 100, 45, 35, 65, 75];
+  const liveActivity = safeAuditLogs.map((log: any) => {
+      const name = log.user?.business?.name || log.user?.email || "Unknown User";
+      const actionMap: Record<string, string> = {
+          "AUTH.LOGIN_SUCCESS": "Signed in successfully",
+          "AUTH.LOGIN_FAILURE": "Failed a login attempt",
+          "AUTH.SIGNUP": "Joined the platform",
+          "ADMIN.GENESIS_SETUP": "Initialized System Genesis",
+          "AUTH.LOGOUT": "Signed out"
+      };
+      
+      return {
+          id: log.id,
+          name: name.split('@')[0], // Clean up email if name is missing
+          action: actionMap[log.action] || log.action,
+          time: new Date(log.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          type: log.status === "FAILURE" ? "warning" : "system"
+      };
+  });
 
-export default function AdminOverviewPage() {
+  const platformHealth = [
+    { name: "API", desc: "All end points responding", value: "100%", status: "good" },
+    { name: "Bank Sync", desc: "12/13 connections active", value: "92%", status: "good" },
+    { name: "Sync Queue", desc: "3 jobs pending", value: "Delayed", status: "warning" },
+    { name: "Database", desc: "Response time normal", value: "48ms", status: "good" },
+  ];
+
+  const churnRisk = [
+    { initials: "TG", name: "TopGear Logistics", desc: "Last seen 22 days ago" },
+    { initials: "BL", name: "Bella Lounge", desc: "Never connected bank" },
+    { initials: "AF", name: "AJ Fashion", desc: "Last seen 18 days ago" },
+    { initials: "NK", name: "NK Events", desc: "Last seen 18 days ago" },
+  ];
+
+  // Simple helper for the mock bar chart
+  const barHeights = [40, 45, 45, 60, 100, 45, 35, 65, 75];
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10 font-sans">
       
       {/* --- TOP METRICS CARDS --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
+        {stats.map((stat: any, i: number) => (
           <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
             <div className="flex items-start justify-between mb-4">
               <p className="text-sm font-medium text-gray-500">{stat.name}</p>
@@ -82,7 +119,7 @@ export default function AdminOverviewPage() {
         <div className="xl:col-span-2 bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden flex flex-col">
           <div className="px-6 pt-6 pb-4 flex items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900">Recent Signups</h2>
-            <Link href="/admin/users" className="text-sm font-semibold text-primary hover:underline">
+            <Link href="/pigshit/users" className="text-sm font-semibold text-primary hover:underline">
               View all
             </Link>
           </div>
@@ -98,7 +135,7 @@ export default function AdminOverviewPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {recentSignups.map((user) => (
+                {recentSignups.map((user: any) => (
                   <tr key={user.id}>
                     <td className="py-4">
                       <p className="text-sm font-bold text-gray-900">{user.name}</p>
@@ -130,7 +167,7 @@ export default function AdminOverviewPage() {
         <div className="xl:col-span-1 bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
           <h2 className="text-lg font-bold text-gray-900 mb-6">Live Activity</h2>
           <div className="space-y-6">
-            {liveActivity.map((activity) => (
+            {liveActivity.map((activity: any) => (
               <div key={activity.id} className="flex gap-4">
                 <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center bg-gray-50 border border-gray-100 text-primary">
                   {activity.type === "message" && <EnvelopeIcon className="w-5 h-5" />}
@@ -160,7 +197,7 @@ export default function AdminOverviewPage() {
             
             {/* Minimal Bar Chart */}
             <div className="h-32 flex items-end justify-between gap-1 border-b border-gray-100 pb-2 relative">
-              {barHeights.map((h, i) => (
+              {barHeights.map((h: any, i: number) => (
                 <div key={i} className="w-full bg-primary rounded-t-sm hover:opacity-80 transition-opacity" style={{ height: `${h}%` }}></div>
               ))}
               <div className="absolute -bottom-6 left-0 text-xs text-gray-400">Feb</div>
@@ -178,10 +215,10 @@ export default function AdminOverviewPage() {
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-gray-900">Platform Health</h2>
-            <Link href="/admin/logs" className="text-sm font-semibold text-primary hover:underline">View logs</Link>
+            <Link href="/pigshit/logs" className="text-sm font-semibold text-primary hover:underline">View logs</Link>
           </div>
           <div className="flex-1 space-y-6">
-            {platformHealth.map((item) => (
+            {platformHealth.map((item: any) => (
               <div key={item.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full ${item.status === "good" ? "bg-green-500" : "bg-red-500"}`} />
@@ -200,12 +237,12 @@ export default function AdminOverviewPage() {
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 flex flex-col">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-bold text-gray-900">Churn Risk</h2>
-            <Link href="/admin/churn" className="text-sm font-semibold text-primary hover:underline">View all</Link>
+            <Link href="/pigshit/churn" className="text-sm font-semibold text-primary hover:underline">View all</Link>
           </div>
           <p className="text-xs text-gray-400 mb-6">All end points responding</p>
           
           <div className="flex-1 space-y-5">
-            {churnRisk.map((user) => (
+            {churnRisk.map((user: any) => (
               <div key={user.initials} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center font-bold text-gray-900 text-sm">

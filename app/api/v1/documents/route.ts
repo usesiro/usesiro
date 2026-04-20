@@ -2,6 +2,7 @@ import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { jwtVerify } from 'jose';
+import { recordAuditLog } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
@@ -11,7 +12,8 @@ export async function POST(request: Request) {
     if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, secret);
+    const userId = payload.userId as string;
 
     // 2. Parse the incoming form data (File + Transaction ID)
     const formData = await request.formData();
@@ -33,6 +35,18 @@ export async function POST(request: Request) {
         transactionId: transactionId,
         url: blob.url,
         mimeType: file.type,
+      }
+    });
+
+    // --- NEW: Record Audit Log ---
+    await recordAuditLog({
+      userId,
+      action: "DOCUMENT.UPLOAD",
+      status: "SUCCESS",
+      details: { 
+        transactionId,
+        fileName: file.name,
+        mimeType: file.type
       }
     });
 

@@ -11,7 +11,9 @@ datasource db {
 // --- ENUMS ---
 enum Role {
   USER
-  ADMIN
+  SUPER_ADMIN
+  BUSINESS_ADMIN
+  FINANCE_ADMIN
 }
 
 enum BusinessType {
@@ -28,6 +30,7 @@ enum TransactionType {
 enum TransactionSource {
   MANUAL
   MONO
+  FILE_UPLOAD
 }
 
 enum VatStatus {
@@ -53,6 +56,7 @@ model User {
   updatedAt    DateTime  @updatedAt
 
   business     Business? 
+  auditLogs    AuditLog[]
 }
 
 model Business {
@@ -68,6 +72,7 @@ model Business {
   updatedAt     DateTime @updatedAt
 
   transactions  Transaction[] 
+  savedMappings SavedMapping[]
 }
 
 model Category {
@@ -145,3 +150,52 @@ model ContactMessage {
   message   String
   createdAt DateTime @default(now())
 }
+
+// --- COMPLIANCE AUDIT LOGGING ---
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?  // Optional for failed logins
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  action    String   // e.g., "AUTH.LOGIN", "AUTH.SIGNUP", "ADMIN.USER_DELETED"
+  status    String   // SUCCESS, FAILURE, WARNING
+  details   Json?    // Contextual metadata
+  
+  ip        String?
+  userAgent String?
+  
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model SavedMapping {
+  id          String   @id @default(uuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  
+  headerHash  String   // A hash of the sorted column names to identify this specific file format
+  mapping     Json     // { "date": "Date", "description": "Narration", ... }
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([businessId, headerHash])
+}
+
+// --- BOOKING SYSTEM ---
+model Booking {
+  id           String   @id @default(uuid())
+  fullName     String
+  email        String
+  companyName  String?
+  notes        String?
+  startTime    DateTime @unique // Handles race conditions at DB level
+  endTime      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([startTime])
+}

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { Resend } from "resend";
 import { z } from "zod";
+import { recordAuditLog } from "@/lib/logger";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -41,13 +42,19 @@ export async function POST(request: Request) {
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    // 6. Save the user to the database
+    // 6. Bootstrap Logic: Assign SUPER_ADMIN role if no admins exist
+    const adminCount = await prisma.user.count({ where: { role: "SUPER_ADMIN" as any } });
+    const role = adminCount === 0 ? "SUPER_ADMIN" : "USER";
+
+    // 7. Save the user to the database
     const newUser = await prisma.user.create({
       data: {
         email,
         passwordHash,
+        firstName, // Fixed: Added this line to save the first name
         otpSecret: otpCode,
         otpExpiresAt,
+        role: role as any,
       },
     });
 
@@ -67,6 +74,14 @@ export async function POST(request: Request) {
           <p>This code expires in 5 minutes.</p>
         </div>
       `,
+    });
+
+    // 8. Record Audit Log (Compliance)
+    await recordAuditLog({
+      userId: newUser.id,
+      action: "AUTH.SIGNUP",
+      status: "SUCCESS",
+      details: { email: newUser.email, role: newUser.role }
     });
 
     return NextResponse.json(

@@ -3,10 +3,12 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
 import { z } from "zod";
+import { recordAuditLog } from "@/lib/logger";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email format"),
   password: z.string().min(1, "Password is required"),
+  portal: z.enum(["USER", "ADMIN"]).optional().default("USER"), // Added portal field
 });
 
 export async function POST(request: Request) {
@@ -22,7 +24,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { email, password } = validation.data;
+    const { email, password, portal } = validation.data;
 
     // 2. Find user
     const user = await prisma.user.findUnique({ 
@@ -34,15 +36,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // 3. Check Verification
-    if (!user.isVerified) {
-      return NextResponse.json({ error: "Please verify your email before logging in." }, { status: 403 });
-    }
-
-    // 4. Verify Password
+    // 3. Verify Password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
+    // --- IDENTITY ISOLATION CHECK (After Password Verification) ---
+    // This prevents role leakage and user enumeration.
+    const isAdmin = ["SUPER_ADMIN", "BUSINESS_ADMIN", "FINANCE_ADMIN"].includes(user.role);
+    
+    if ((portal === "ADMIN" && !isAdmin) || (portal === "USER" && isAdmin)) {
+      // Record the attempt internally for security auditing
+      await recordAuditLog({
+        userId: user.id,
+        action: "AUTH.PORTAL_MISMATCH",
+        status: "FAILURE",
+        details: { email: user.email, attemptedPortal: portal, userRole: user.role }
+      });
+
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
+    // 4. Check Verification
+    if (!user.isVerified) {
+      return NextResponse.json({ error: "Please verify your email before logging in." }, { status: 403 });
     }
 
     // 5. Generate the JWT (Edge Compatible)
@@ -51,7 +69,7 @@ export async function POST(request: Request) {
     const accessToken = await new SignJWT({ userId: user.id, role: user.role })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
-      .setExpirationTime("24h") // Extended for the meeting demo
+      .setExpirationTime("24h") 
       .sign(secret);
 
     // 6. Create the Response
@@ -62,6 +80,7 @@ export async function POST(request: Request) {
         user: {
             id: user.id,
             email: user.email,
+            role: user.role, // Added role for frontend logic
             businessName: user.business?.name
         }
       },
@@ -78,10 +97,24 @@ export async function POST(request: Request) {
       path: "/", // Valid for the whole site
     });
 
+    // 6. Record Audit Log (Compliance)
+    await recordAuditLog({
+      userId: user.id,
+      action: "AUTH.LOGIN_SUCCESS",
+      status: "SUCCESS",
+      details: { email: user.email, role: user.role }
+    });
+
     return response;
 
   } catch (error) {
     console.error("Login Error:", error);
+    // Log failed attempt if it was a credential issue or other (user might be null here if not found)
+    await recordAuditLog({
+      action: "AUTH.LOGIN_FAILURE",
+      status: "FAILURE",
+      details: { error: "Internal Server Error or Authentication Failed" }
+    });
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

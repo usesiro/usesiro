@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
+import { recordAuditLog } from "@/lib/logger";
 
 export async function PATCH(request: Request) {
   try {
@@ -35,6 +36,18 @@ export async function PATCH(request: Request) {
       },
       data: {
         categoryId: categoryId
+      }
+    });
+
+    // --- NEW: Record Audit Log ---
+    await recordAuditLog({
+      userId,
+      action: "TRANSACTION.BULK_UPDATE",
+      status: "SUCCESS",
+      details: { 
+        count: updated.count,
+        categoryId,
+        transactionIds: transactionIds.slice(0, 5) // Log first 5 IDs for context
       }
     });
 

@@ -6,33 +6,64 @@ export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // --- LAYER 1: UI PAGE PROTECTION ---
-  // Define all routes that require a user to be logged in
   const protectedPageRoutes = [
     '/dashboard',
     '/transactions',
     '/tax-readiness',
     '/reconciliation',
     '/reports',
-    '/settings'
+    '/settings',
+    '/pigshit' // New admin protection
   ];
 
+  const adminRoutes = ['/pigshit'];
   const isProtectedRoute = protectedPageRoutes.some(route => pathname.startsWith(route));
+  const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
   const pageToken = request.cookies.get('siro_auth_token')?.value;
 
+  const isAuthPage = 
+    pathname.includes('/pigshit/setup') || 
+    pathname.includes('/pigshit/auth') || 
+    pathname.includes('/pigshit/verify');
+
   if (isProtectedRoute) {
-    if (!pageToken) {
-      // No token found in cookies? Kick them to login
-      const loginUrl = new URL('/login', request.url);
-      return NextResponse.redirect(loginUrl);
+    // 1. Genesis Check: If no users exist, redirect to /pigshit/setup
+    // Skip this if we're already on an auth/setup/verify page to prevent loops
+    if (isAdminRoute && !isAuthPage) {
+      try {
+        const statusRes = await fetch(new URL('/api/v1/auth/status', request.url));
+        if (statusRes.ok) {
+           const { adminCount } = await statusRes.json();
+           if (adminCount === 0) {
+             return NextResponse.redirect(new URL('/pigshit/setup', request.url));
+           }
+        }
+      } catch (err) { console.error("Genesis check failed", err); }
     }
 
-    try {
-      // Optional: Verify JWT here too for maximum security on page loads
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-      await jwtVerify(pageToken, secret);
-    } catch (err) {
-      // Token expired or fake? Kick to login
-      return NextResponse.redirect(new URL('/login', request.url));
+    if (!pageToken && !isAuthPage) {
+      // Unauthenticated on admin? Dedicated Admin Login
+      const authUrl = isAdminRoute ? '/pigshit/auth' : '/login';
+      return NextResponse.redirect(new URL(authUrl, request.url));
+    }
+
+    if (pageToken) {
+      try {
+        const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+        const { payload } = await jwtVerify(pageToken, secret);
+        
+        // RBAC Check for Admin Routes
+        if (isAdminRoute && !isAuthPage) {
+          const role = payload.role as string;
+          if (role === 'USER') {
+            return NextResponse.redirect(new URL('/login?error=unauthorized', request.url));
+          }
+        }
+      } catch (err) {
+        const response = NextResponse.redirect(new URL('/login', request.url));
+        response.cookies.delete('siro_auth_token');
+        return response;
+      }
     }
   }
 
@@ -43,7 +74,8 @@ export default async function middleware(request: NextRequest) {
     if (
       pathname.startsWith('/api/v1/auth') || 
       pathname.startsWith('/api/v1/waitlist') ||
-      pathname.startsWith('/api/v1/contact')
+      pathname.startsWith('/api/v1/contact') ||
+      pathname.startsWith('/api/v1/bookings')
     ) {
       return NextResponse.next();
     }
@@ -79,6 +111,7 @@ export const config = {
   matcher: [
     '/api/v1/:path*',
     '/dashboard/:path*',
+    '/pigshit/:path*',
     '/transactions/:path*',
     '/tax-readiness/:path*',
     '/reconciliation/:path*',
