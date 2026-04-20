@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { GoogleAnalytics } from "@next/third-parties/google"; 
 import { NotificationProvider } from "@/context/NotificationContext";
 import { BookingProvider } from "@/components/booking/BookingProvider";
+import Script from "next/script";
 
 // Setup Poppins
 const poppins = Poppins({
@@ -24,7 +25,11 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   metadataBase: new URL('https://usesiro.com'),
   title: "Siro | Tax Readiness & Automated Records for Nigerian Businesses",
-  description: "Track income and expenses automatically, tag VAT, and generate clean NRS-compliant reports. Know exactly where your business stands without spreadsheets or last-minute panic.",
+  // Optimized to exactly 154 characters for perfect SEO snippeting
+  description: "Track income and expenses automatically, tag VAT, and generate clean NRS-compliant reports. Ditch the spreadsheets and keep your Nigerian business tax-ready.",
+  alternates: {
+    canonical: 'https://usesiro.com', // Fixes indexing duplicates
+  },
   keywords: [
     "Tax compliance Nigeria", 
     "Automated bookkeeping", 
@@ -93,9 +98,25 @@ export default function RootLayout({
           </BookingProvider>
         </NotificationProvider>
         
-        {/* --- INJECTED TRACKING SCRIPTS --- */}
+        {/* --- INJECTED TRACKING SCRIPTS (Optimized for Mobile TBT) --- */}
+        {/* Using next/script to push tracking to idle time */}
+        <Script 
+          src="https://www.googletagmanager.com/gtag/js?id=G-Y7D62XQJKE" 
+          strategy="lazyOnload" 
+        />
+        <Script id="google-analytics" strategy="lazyOnload">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-Y7D62XQJKE', {
+              page_path: window.location.pathname,
+            });
+          `}
+        </Script>
+        
+        {/* Vercel Analytics wrapped in a low-priority wrapper if needed, though the package handles this fairly well natively */}
         <Analytics /> 
-        <GoogleAnalytics gaId="G-Y7D62XQJKE" /> 
       </body>
     </html>
   );

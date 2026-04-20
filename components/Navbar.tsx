@@ -45,7 +45,8 @@ export default function Navbar() {
                 alt="Siro Logo" 
                 width={80} 
                 height={34} 
-                className="object-contain" 
+                className="object-contain"
+                priority // <-- FIX 1: Preloads the logo for faster LCP
               />
             </Link>
           </div>
@@ -96,8 +97,13 @@ export default function Navbar() {
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center">
-            <button onClick={() => setIsOpen(!isOpen)} className="text-gray-600 hover:text-gray-900 transition-colors">
-              {isOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
+            <button 
+              onClick={() => setIsOpen(!isOpen)} 
+              className="text-gray-600 hover:text-gray-900 transition-colors"
+              aria-label={isOpen ? "Close menu" : "Open menu"} // <-- FIX 2: Accessibility for screen readers
+              aria-expanded={isOpen} // <-- FIX 3: Accessibility state
+            >
+              {isOpen ? <XMarkIcon className="h-6 w-6" aria-hidden="true" /> : <Bars3Icon className="h-6 w-6" aria-hidden="true" />}
             </button>
           </div>
         </div>
