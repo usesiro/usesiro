@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { calculateTaxReadinessScore } from "@/utils/taxScoring"; // <-- IMPORT ADDED
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { 
   WalletIcon, CreditCardIcon, ScaleIcon, ArrowUpRightIcon, ArrowDownTrayIcon,
-  XMarkIcon, DocumentTextIcon, TableCellsIcon, DocumentChartBarIcon
+  XMarkIcon, DocumentTextIcon, TableCellsIcon
 } from "@heroicons/react/24/outline";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -19,7 +18,7 @@ export default function Reports() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- NEW EXPORT MODAL STATE ---
+  // --- EXPORT MODAL STATE ---
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportParams, setExportParams] = useState({
     startDate: "",
@@ -42,37 +41,57 @@ export default function Reports() {
     fetchData();
   }, []);
 
-  const { totalIncome, totalExpense, netBalance, barData, donutData, score } = useMemo(() => {
+  const { totalIncome, totalExpense, netBalance, barData, donutData, salesData } = useMemo(() => {
     let inc = 0, exp = 0;
     const monthlyMap: Record<string, any> = {};
     const categoryMap: Record<string, number> = {};
+    const salesMap: Record<string, number> = {};
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    months.forEach(m => monthlyMap[m] = { name: m, income: 0, expense: 0 });
+    
+    months.forEach(m => {
+      monthlyMap[m] = { name: m, income: 0, expense: 0 };
+      salesMap[m] = 0;
+    });
 
     transactions.forEach(t => {
       const amt = Number(t.amount);
       const m = months[new Date(t.date).getMonth()];
+      const catName = t.category?.name || t.categoryName || 'Uncategorized';
 
       if (t.type === 'INCOME') {
         inc += amt;
-        if (monthlyMap[m]) monthlyMap[m].income += amt / 1000;
+        if (monthlyMap[m]) monthlyMap[m].income += amt / 1000; // stored in thousands for chart
+        
+        // Strict check for "Sales" category for the Histogram
+        if (catName.toLowerCase().includes('sale')) {
+          if (salesMap[m] !== undefined) salesMap[m] += amt;
+        }
       } else {
         exp += amt;
-        if (monthlyMap[m]) monthlyMap[m].expense += amt / 1000;
-        const cat = t.categoryName || 'Uncategorized';
-        categoryMap[cat] = (categoryMap[cat] || 0) + amt;
+        if (monthlyMap[m]) monthlyMap[m].expense += amt / 1000; // stored in thousands for chart
+        categoryMap[catName] = (categoryMap[catName] || 0) + amt;
       }
     });
 
-    const processedDonut = Object.entries(categoryMap).map(([name, value], i) => ({
-      name, value: Math.round((value / (exp || 1)) * 100), color: ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6'][i % 4]
-    })).slice(0, 4);
+    // Sort and grab the top 5 highest expenses for the Pie Chart
+    const processedDonut = Object.entries(categoryMap)
+      .sort((a, b) => b[1] - a[1]) 
+      .map(([name, value], i) => ({
+        name, 
+        value,
+        color: ['#EF4444', '#F59E0B', '#3B82F6', '#8B5CF6', '#10B981'][i % 5]
+      })).slice(0, 5);
+
+    // Format sales data for the histogram
+    const processedSales = months.map(m => ({ name: m, sales: salesMap[m] }));
 
     return {
-      totalIncome: inc, totalExpense: exp, netBalance: inc - exp,
+      totalIncome: inc, 
+      totalExpense: exp, 
+      netBalance: inc - exp,
       barData: Object.values(monthlyMap),
-      donutData: processedDonut.length ? processedDonut : [{name: 'Empty', value: 100, color: '#F3F4F6'}],
-      score: calculateTaxReadinessScore(transactions) // <-- NEW SCORE LOGIC APPLIED
+      donutData: processedDonut.length > 0 ? processedDonut : [{name: 'No Expenses Yet', value: 1, color: '#F3F4F6'}],
+      salesData: processedSales
     };
   }, [transactions]);
 
@@ -83,7 +102,7 @@ export default function Reports() {
     setExportParams({ ...exportParams, [e.target.name]: e.target.value });
   };
 
-  // --- ADVANCED EXPORT GENERATOR ---
+  // --- EXPORT GENERATOR ---
   const handleGenerateExport = () => {
     const dataToExport = transactions.filter(t => {
       const tDate = new Date(t.date).getTime();
@@ -130,7 +149,6 @@ export default function Reports() {
 
     } else {
       const doc = new jsPDF();
-      
       doc.setFontSize(20);
       doc.setTextColor(47, 110, 246); 
       doc.text("Siro Financial Overview", 14, 22);
@@ -165,7 +183,7 @@ export default function Reports() {
         t.description,
         t.type,
         Number(t.amount).toLocaleString('en-NG', {minimumFractionDigits: 2}),
-        t.category?.name || 'Uncategorized'
+        t.category?.name || t.categoryName || 'Uncategorized'
       ]);
 
       autoTable(doc, {
@@ -187,19 +205,19 @@ export default function Reports() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-12">
         <div className="flex justify-between items-center print:hidden">
           <h1 className="text-2xl font-bold text-gray-800">Reports</h1>
           
-          {/* WIRED UP EXPORT BUTTON */}
           <button 
             onClick={() => setIsExportModalOpen(true)} 
-            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-100"
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition"
           >
             <ArrowDownTrayIcon className="w-4 h-4" /> Export Report
           </button>
         </div>
 
+        {/* STATS ROW */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <StatCard title="Total Income" amount={formatCurrency(totalIncome)} icon={<WalletIcon className="w-5 h-5"/>} color="blue" />
           <StatCard title="Total Expense" amount={formatCurrency(totalExpense)} icon={<CreditCardIcon className="w-5 h-5"/>} color="red" />
@@ -208,7 +226,10 @@ export default function Reports() {
           </div>
         </div>
 
+        {/* MIDDLE ROW: Bar Chart & Pie Chart */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* INCOME VS EXPENSE */}
           <div className="lg:col-span-2 bg-white p-8 rounded-2xl border border-gray-100 shadow-sm h-[450px]">
             <h2 className="text-gray-800 font-bold mb-8">Income vs Expense (k)</h2>
             <ResponsiveContainer width="100%" height="85%">
@@ -222,23 +243,63 @@ export default function Reports() {
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-md p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center h-[400px] md:h-[450px] relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform">
-              <DocumentChartBarIcon className="w-32 h-32 text-primary" />
+          {/* EXPENSE PIE CHART */}
+          <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col h-[450px]">
+            <h2 className="text-gray-800 font-bold mb-4">Expense Breakdown</h2>
+            <div className="flex-1 w-full min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={donutData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={65}
+                    outerRadius={105}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {donutData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(value as number)} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.05)'}} />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-            <h2 className="text-gray-400 font-black mb-4 uppercase tracking-widest text-[10px] md:text-sm">Tax Readiness</h2>
-            <div className="relative">
-              <span className="text-8xl md:text-[120px] leading-none font-black text-gray-900 drop-shadow-sm">
-                {score}<span className="text-3xl md:text-6xl text-gray-300 ml-1">%</span>
-              </span>
+            {/* Custom Legend */}
+            <div className="mt-4 space-y-2">
+              {donutData.map((entry, i) => (
+                 <div key={i} className="flex justify-between items-center text-xs font-medium">
+                   <div className="flex items-center gap-2 overflow-hidden">
+                     <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }}></span>
+                     <span className="text-gray-600 truncate" title={entry.name}>{entry.name}</span>
+                   </div>
+                   <span className="text-gray-900 font-bold">{formatCurrency(entry.value)}</span>
+                 </div>
+              ))}
             </div>
-            <p className="text-[10px] md:text-sm text-gray-500 font-black mt-6 bg-gray-50 px-5 py-2 rounded-full border border-gray-100 uppercase tracking-widest">
-              Compliance Level
-            </p>
           </div>
         </div>
 
-        {/* --- EXPORT RANGE & FORMAT MODAL --- */}
+        {/* BOTTOM ROW: SALES HISTOGRAM */}
+        <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm h-[450px]">
+          <div className="mb-8">
+            <h2 className="text-gray-800 font-bold">Sales Histogram</h2>
+            <p className="text-xs text-gray-500 font-medium mt-1">Monthly revenue derived strictly from categorized sales.</p>
+          </div>
+          <ResponsiveContainer width="100%" height="80%">
+            <BarChart data={salesData}>
+              <CartesianGrid vertical={false} stroke="#F3F4F6" strokeDasharray="3 3" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} />
+              <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} tickFormatter={(val) => `₦${val >= 1000 ? val/1000 + 'k' : val}`} width={80} />
+              <Tooltip cursor={{fill: '#F9FAFB'}} formatter={(value) => formatCurrency(value as number)} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.05)'}} />
+              <Bar dataKey="sales" fill="#10B981" radius={[4, 4, 0, 0]} barSize={40} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* --- EXPORT MODAL (Unchanged) --- */}
         {isExportModalOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={() => setIsExportModalOpen(false)}></div>
