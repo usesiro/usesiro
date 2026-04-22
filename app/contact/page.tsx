@@ -102,12 +102,13 @@ export default function ContactPage() {
               <p className="text-white/80 text-sm mb-8 leading-relaxed font-medium">
                 Get a guided walkthrough of how the platform works and see how Siro can automate your tax compliance.
               </p>
-              <Link 
-                href="/waitlist" 
-                className="bg-white text-primary px-6 py-3 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors w-max inline-block shadow-sm"
-              >
-                Join the waitlist
-              </Link>
+              <button 
+  data-cal-link="use-siro/30min"
+  data-cal-config='{"layout":"month_view"}'
+  className="bg-white text-primary px-6 py-3 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors w-max inline-block shadow-sm"
+>
+  Book a Demo
+</button>
             </div>
           </div>
 
