@@ -65,8 +65,14 @@ export function generateTransactionIdempotencyKey(
   let fingerprint = `${Number(amount).toFixed(2)}|${d}|${normalizedDesc}|${businessId}`;
   
   // Add optional but stable fields for better uniqueness
-  if (reference) fingerprint += `|ref:${reference.trim().toLowerCase()}`;
-  if (balance !== undefined) fingerprint += `|bal:${Number(balance).toFixed(2)}`;
+  if (reference && String(reference).trim().length > 0) {
+    fingerprint += `|ref:${String(reference).trim().toLowerCase()}`;
+  }
+  
+  const numBalance = Number(balance);
+  if (balance !== undefined && balance !== "" && !isNaN(numBalance)) {
+    fingerprint += `|bal:${numBalance.toFixed(2)}`;
+  }
 
   return crypto.createHash('sha256').update(fingerprint).digest('hex');
 }

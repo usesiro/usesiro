@@ -15,8 +15,14 @@ export async function POST(request: Request) {
 
     // 2. Body
     const { headers, data } = await request.json();
-    if (!headers || !data) {
-      return NextResponse.json({ error: "Missing data" }, { status: 400 });
+
+    if (!headers || !Array.isArray(headers) || !data || !Array.isArray(data)) {
+      return NextResponse.json({ error: "Invalid data format" }, { status: 400 });
+    }
+
+    if (!process.env.CEREBRAS_API_KEY) {
+      console.error("CRITICAL: CEREBRAS_API_KEY is missing from environment variables.");
+      return NextResponse.json({ error: "Server Configuration Error: Missing API Key on Vercel." }, { status: 500 });
     }
 
     // 3. Rate Limit & Audit
@@ -29,56 +35,79 @@ export async function POST(request: Request) {
       }
     });
 
-    // 4. Build AI Payload
-    // We send a sample of 30 rows (enough to see patterns but stays under token limits)
-    const sample = data.slice(0, 30);
-    
-    const systemPrompt = `You are a financial data cleanup expert. 
-Your goal is to take a "messy" array of rows from a spreadsheet and identify the actual transactions.
+    // 4. Single Batch Processing (Client-side now handles the loop)
+    const systemPrompt = `You are a professional financial auditor.
+Extract EVERY transaction from this chunk of data.
 
-Rules:
-1. Ignore header rows, summary/total rows, and metadata notes.
-2. Identify ONE row that is the "Header Row" (the one with the actual column names).
-3. For each transaction row, extract: date, description, amount, type (INCOME/EXPENSE).
-4. If there are split Debit/Credit columns, merge them into a single amount and determine the type.
-5. Look for an "Opening Balance" note or row.
-6. Look for any currency conversion notes (e.g. "rate: 1550").
+RULES:
+1. COUNT BEFORE RESPONDING: Count the records in the input FIRST. Your result MUST match this count.
+2. IDENTIFY ALL TRANSACTIONS: Date, description, amount, type (INCOME/EXPENSE), balance, and reference.
+3. TYPE DETECTION: 
+   - Debit/Withdrawal -> EXPENSE.
+   - Credit/Deposit -> INCOME.
+   - Negative amount -> EXPENSE.
+4. CURRENCY: Look for opening balances and exchange rates (only applies if this is the start of the file).
+5. JSON ONLY: { "count": number, "transactions": [...], "openingBalance": number?, "detectedCurrency": string?, "suggestedRate": number? }`;
 
-Output valid JSON ONLY with this structure:
-{
-  "headerRowIndex": number,
-  "transactions": [{ "originalIndex": number, "date": string, "description": string, "amount": number, "type": "INCOME" | "EXPENSE", "currency": string }],
-  "openingBalance": number | null,
-  "detectedCurrency": string,
-  "suggestedRate": number | null,
-  "skippedRows": [{ "index": number, "reason": string }]
-}`;
+    const processWithRetry = async (prompt: string, userMsg: string, attempt = 1): Promise<any> => {
+      try {
+        const response = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.CEREBRAS_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "llama3.1-8b",
+            messages: [
+              { role: "system", content: prompt },
+              { role: "user", content: "Data to clean. Remember to count them first so you don't miss any:\n" + userMsg }
+            ],
+            temperature: 0,
+            max_tokens: 8192,
+            response_format: { type: "json_object" }
+          })
+        });
 
-    const userMsg = JSON.stringify({ headers, sampleRows: sample });
+        if (!response.ok) {
+          if ((response.status === 429 || response.status === 503) && attempt < 6) {
+            const delay = attempt * 2000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return processWithRetry(prompt, userMsg, attempt + 1);
+          }
+          const errorBody = await response.text();
+          throw new Error(`AI Request Failed: ${response.status} ${response.statusText} - ${errorBody}`);
+        }
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: "Data to clean:\n" + userMsg }
-        ],
-        temperature: 0,
-        response_format: { type: "json_object" }
-      })
+        const cerebrasData = await response.json();
+        const rawContent = cerebrasData.choices[0].message.content;
+        try {
+          return JSON.parse(rawContent);
+        } catch (parseError) {
+          console.error("JSON Parse Error. Raw content snippet:", rawContent.substring(0, 500), "...");
+          if (cerebrasData.choices[0].finish_reason === "length") {
+            throw new Error("AI response was too long and got truncated. Try a smaller chunk size.");
+          }
+          throw parseError;
+        }
+      } catch (e: any) {
+        if (attempt < 3) {
+           await new Promise(resolve => setTimeout(resolve, 2000));
+           return processWithRetry(prompt, userMsg, attempt + 1);
+        }
+        throw e;
+      }
+    };
+
+    const userMsg = JSON.stringify({ headers, rows: data });
+    const result = await processWithRetry(systemPrompt, userMsg);
+
+    return NextResponse.json({
+      transactions: result.transactions || [],
+      openingBalance: result.openingBalance || null,
+      detectedCurrency: result.detectedCurrency || "NGN",
+      suggestedRate: result.suggestedRate || null
     });
-
-    if (!response.ok) throw new Error("AI service unavailable");
-
-    const groqData = await response.json();
-    const result = JSON.parse(groqData.choices[0].message.content);
-
-    return NextResponse.json(result);
 
   } catch (err: any) {
     console.error("Standardize Route Error:", err);

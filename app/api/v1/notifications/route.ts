@@ -20,15 +20,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { lastReadNotificationsAt: true }
+    });
+
     // 1. Fetch Audit Logs (Activity Feed)
     const logs = await prisma.auditLog.findMany({
       where: { userId },
-      take: 10,
+      take: 20,
       orderBy: { createdAt: 'desc' },
     });
 
     // 2. Fetch Compliance Issues (Action Items)
-    // We fetch transactions that need: Category, VAT, or Document
     const pendingTransactions = await prisma.transaction.findMany({
       where: {
         businessId: business.id,
@@ -44,7 +48,7 @@ export async function GET(request: Request) {
     });
 
     // 3. Format Unified Notifications
-    const notifications = [
+    const formattedNotifications = [
       ...logs.map((log: any) => ({
         id: `log-${log.id}`,
         type: 'activity',
@@ -62,10 +66,16 @@ export async function GET(request: Request) {
         status: 'WARNING',
         metadata: { transactionId: t.id }
       }))
-    ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-     .slice(0, 15);
+    ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 
-    return NextResponse.json({ notifications });
+    // 4. Calculate Unread Count
+    const lastRead = user?.lastReadNotificationsAt || new Date(0);
+    const unreadCount = formattedNotifications.filter(n => new Date(n.time) > lastRead).length;
+
+    return NextResponse.json({ 
+      notifications: formattedNotifications.slice(0, 20),
+      unreadCount 
+    });
 
   } catch (error) {
     console.error("Notifications Fetch Error:", error);

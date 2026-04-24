@@ -8,8 +8,10 @@ import {
   Squares2X2Icon, DocumentTextIcon, ClipboardDocumentCheckIcon, 
   MapPinIcon, ChartBarIcon, Cog6ToothIcon, BellIcon, Bars3Icon, 
   XMarkIcon, QuestionMarkCircleIcon, ArrowLeftOnRectangleIcon,
-  ChevronLeftIcon, ChevronRightIcon
+  ChevronLeftIcon, ChevronRightIcon,
+  SpeakerWaveIcon, SpeakerXMarkIcon
 } from "@heroicons/react/24/outline";
+import { useNotification } from "@/context/NotificationContext";
 import NotificationDropdown from "./NotificationDropdown";
 import NotificationModal from "./NotificationModal";
 import DashboardBottomNav from "./dashboard/DashboardBottomNav";
@@ -29,10 +31,43 @@ const formatBusinessName = (name: string) => {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { isMuted } = useNotification();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [businessData, setBusinessData] = useState({ name: "Loading...", industry: "" });
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await fetch("/api/v1/notifications", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const latestNotifs = data.notifications || [];
+        
+        // --- World Class Ringing Logic ---
+        // 1. Only ring if NOT muted
+        // 2. Only ring if unreadCount increased
+        // 3. Only ring if the latest NEWEST notification is an 'action'
+        // 4. Use localStorage to ensure we only ring once per item across all tabs
+        if (!isMuted && data.unreadCount > unreadCount) {
+          const newestAction = latestNotifs.find((n: any) => n.type === 'action');
+          const lastRungId = localStorage.getItem("siro_last_rung_id");
+          
+          if (newestAction && newestAction.id !== lastRungId) {
+            // It's a brand new high-priority action we haven't rung for
+            const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"); // Subtle modern ping
+            audio.play().catch(e => console.log("Audio play blocked"));
+            localStorage.setItem("siro_last_rung_id", newestAction.id);
+          }
+        }
+        
+        setUnreadCount(data.unreadCount);
+      }
+    } catch (err) { console.error(err); }
+  };
 
   useEffect(() => {
     async function fetchProfile() {
@@ -44,7 +79,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       } catch (err) { console.error(err); }
     }
     fetchProfile();
-  }, []);
+    fetchUnreadCount();
+
+    // Polling every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [isMuted, unreadCount]);
 
   const handleLogout = async () => {
     try {
@@ -132,7 +172,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           
           <div className="flex items-center gap-3 md:gap-4">
-            <NotificationDropdown onOpenModal={() => setIsNotificationModalOpen(true)} />
+            <NotificationDropdown 
+              onOpenModal={() => setIsNotificationModalOpen(true)} 
+              externalUnreadCount={unreadCount}
+            />
             <Link 
               href="/settings"
               className="flex items-center gap-3 sm:pl-4 sm:border-l border-gray-100 hover:bg-gray-50 p-1.5 rounded-2xl transition-all cursor-pointer group"

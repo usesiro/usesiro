@@ -243,34 +243,45 @@ export default function Reconciliation() {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-gray-50/50 text-gray-500 text-xs font-bold border-b border-gray-100">
-                    <th className="py-4 px-4 rounded-tl-lg">Description</th>
-                    <th className="py-4 px-4">Amount</th>
-                    <th className="py-4 px-4">Date</th>
-                    <th className="py-4 px-4">Source</th>
-                    <th className="py-4 px-4 text-center">Status</th>
+                  <tr className="bg-gray-50/50 text-gray-500 text-[10px] font-bold border-b border-gray-100 uppercase tracking-widest">
+                    <th className="py-4 px-6 rounded-tl-lg">Description</th>
+                    <th className="py-4 px-6 w-48">Amount</th>
+                    <th className="py-4 px-6 w-56">Date</th>
+                    <th className="py-4 px-6 w-56">Source</th>
+                    <th className="py-4 px-6 w-80 text-right">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                   {paginatedItems.length === 0 && !isLoading ? (
-                    <tr><td colSpan={5} className="text-center py-10 text-gray-500">No pending items found.</td></tr>
+                    <tr><td colSpan={5} className="text-center py-10 text-gray-500 font-bold uppercase text-[10px] tracking-widest">No pending items found.</td></tr>
                   ) : (
                     paginatedItems.map((item) => (
-                      <tr key={item.id} className="hover:bg-gray-50/50 transition">
-                        <td className="py-4 px-4 text-sm font-medium text-gray-700">{item.description}</td>
-                        <td className="py-4 px-4 text-sm font-bold">
+                      <tr key={item.id} className="hover:bg-gray-50/50 transition group">
+                        <td className="py-5 px-6 text-sm font-bold text-gray-800">{item.description}</td>
+                        <td className="py-5 px-6 text-sm font-black whitespace-nowrap">
                           {item.type === 'INCOME' ? (
                             <span className="text-green-600">+{formatCurrency(item.amount)}</span>
                           ) : (
-                            <span className="text-red-500">-{formatCurrency(item.amount)}</span>
+                            <span className="text-gray-900">-{formatCurrency(item.amount)}</span>
                           )}
                         </td>
-                        <td className="py-4 px-4 text-sm text-gray-500">{new Date(item.date).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})}</td>
-                        <td className="py-4 px-4 text-sm text-gray-500">{item.source === 'MONO' ? 'Bank Synced' : 'Manual Entry'}</td>
-                        <td className="py-4 px-4">
-                          <div className="flex items-center justify-between gap-4">
-                            <span className="text-sm text-gray-600">{getPrimaryIssue(item)}</span>
-                            <button onClick={() => handleFixClick(item)} className="px-4 py-1.5 bg-red-50 text-red-500 text-xs font-bold rounded-lg hover:bg-red-100 transition">Fix</button>
+                        <td className="py-5 px-6 text-sm text-gray-500 font-medium whitespace-nowrap">
+                          {new Date(item.date).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})}
+                        </td>
+                        <td className="py-5 px-6 text-[10px] text-gray-400 font-black uppercase tracking-widest whitespace-nowrap">
+                          {item.source === 'MONO' ? 'Bank Synced' : 'Manual Entry'}
+                        </td>
+                        <td className="py-5 px-6">
+                          <div className="flex items-center justify-end gap-4">
+                            <span className="text-[10px] font-black text-red-500 uppercase tracking-tight bg-red-50 px-3 py-1.5 rounded-lg border border-red-100 whitespace-nowrap">
+                              {getPrimaryIssue(item)}
+                            </span>
+                            <button 
+                              onClick={() => handleFixClick(item)} 
+                              className="px-5 py-2 bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-blue-50/50 hover:bg-blue-600 transition active:scale-95 whitespace-nowrap"
+                            >
+                              Fix Now
+                            </button>
                           </div>
                         </td>
                       </tr>
