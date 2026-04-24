@@ -27,6 +27,7 @@
     "jspdf": "^4.2.0",
     "jspdf-autotable": "^5.0.7",
     "next": "^16.1.6",
+    "papaparse": "^5.5.3",
     "pdf-parse": "1.1.1",
     "pg": "^8.19.0",
     "prisma": "^7.4.2",

@@ -35,13 +35,13 @@ export default function AuthLayout({ children, leftContent }: AuthLayoutProps) {
                 alt="Siro Tech Logo White" 
                 width={200} 
                 height={80}
-                className="w-48 h-auto"
+                className="w-48 h-auto drop-shadow-md"
               />
             )}
             {/* Overlay the small logo for branding consistency */}
             {leftContent?.icon && (
                <div className="absolute top-12 left-12">
-                 <Image src="/logo1.svg" alt="Siro" width={100} height={40} className="w-24 h-auto" />
+                 <Image src="/logo1.svg" alt="Siro" width={100} height={40} className="w-24 h-auto drop-shadow-md" />
                </div>
             )}
           </div>
