@@ -38,6 +38,8 @@ export default function Settings() {
 
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [isLogsLoading, setIsLogsLoading] = useState(false);
+  const [auditLogPage, setAuditLogPage] = useState(1);
+  const logsPerPage = 10;
 
   const tabs = ["Personal Info", "Business Info", "Automation", "Notification", "Security", "Audit Logs"];
 
@@ -162,6 +164,9 @@ export default function Settings() {
     }
   };
 
+  const totalPages = Math.ceil(auditLogs.length / logsPerPage);
+  const currentLogs = auditLogs.slice((auditLogPage - 1) * logsPerPage, auditLogPage * logsPerPage);
+
   if (loading) return (
     <DashboardLayout>
       <div className="p-10 text-center text-gray-400 uppercase font-bold animate-pulse">Fetching Details...</div>
@@ -175,8 +180,8 @@ export default function Settings() {
         {/* TABS */}
         <div className="bg-gray-100/50 p-1.5 rounded-xl flex flex-nowrap overflow-x-auto no-scrollbar gap-2 mb-8 w-full md:w-fit border border-gray-100 shadow-none scroll-smooth">
           {tabs.map((tab) => (
-            <button key={tab} onClick={() => setActiveTab(tab as any)}
-              className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200
+            <button key={tab} onClick={() => { setActiveTab(tab as any); setAuditLogPage(1); }}
+              className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 whitespace-nowrap
                 ${activeTab === tab ? "bg-white text-gray-800 border border-gray-100 shadow-sm" : "text-gray-500 hover:text-gray-800"}`}>
               {tab}
             </button>
@@ -357,26 +362,31 @@ export default function Settings() {
               
               {/* MOBILE LIST VIEW */}
               <div className="md:hidden divide-y divide-gray-50">
-                <div className="p-6 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-black text-gray-900 uppercase">Bank Synced</span>
-                    <span className="text-[10px] font-bold text-gray-400">10:45 AM</span>
+                {isLogsLoading ? (
+                  <div className="p-6 text-center text-gray-400 font-bold uppercase tracking-widest text-xs animate-pulse">
+                    Syncing Secure Logs...
                   </div>
-                  <div className="flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    <span>Admin</span>
-                    <span>Today</span>
+                ) : currentLogs.length === 0 ? (
+                  <div className="p-6 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">
+                    No audit entries found
                   </div>
-                </div>
-                <div className="p-6 space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-black text-gray-900 uppercase">Logged In</span>
-                    <span className="text-[10px] font-bold text-gray-400">09:00 AM</span>
-                  </div>
-                  <div className="flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    <span>Admin</span>
-                    <span>Today</span>
-                  </div>
-                </div>
+                ) : (
+                  currentLogs.map((log) => (
+                    <div key={log.id} className="p-6 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-black text-gray-900 uppercase">{formatAuditAction(log.action)}</span>
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest 
+                          ${log.status === 'SUCCESS' ? 'bg-green-50 text-green-500' : 'bg-red-50 text-red-500'}`}>
+                          {log.status}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        <span>{log.ip || "System Action"}</span>
+                        <span>{new Date(log.createdAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
               {/* DESKTOP TABLE VIEW */}
@@ -396,14 +406,14 @@ export default function Settings() {
                           Syncing Secure Logs...
                         </td>
                       </tr>
-                    ) : auditLogs.length === 0 ? (
+                    ) : currentLogs.length === 0 ? (
                       <tr>
                         <td colSpan={3} className="px-8 py-10 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">
                           No audit entries found
                         </td>
                       </tr>
                     ) : (
-                      auditLogs.map((log) => (
+                      currentLogs.map((log) => (
                         <tr key={log.id} className="text-sm hover:bg-gray-50/50 transition group">
                           <td className="px-8 py-5">
                             <div className="font-bold text-gray-800">{formatAuditAction(log.action)}</div>
@@ -429,6 +439,29 @@ export default function Settings() {
                   </tbody>
                 </table>
               </div>
+              
+              {/* PAGINATION CONTROLS */}
+              {!isLogsLoading && totalPages > 1 && (
+                <div className="p-4 border-t border-gray-50 flex items-center justify-between">
+                  <button 
+                    onClick={() => setAuditLogPage(prev => Math.max(prev - 1, 1))}
+                    disabled={auditLogPage === 1}
+                    className="px-4 py-2 text-xs font-bold text-gray-500 border border-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-xs font-bold text-gray-400">
+                    Page {auditLogPage} of {totalPages}
+                  </span>
+                  <button 
+                    onClick={() => setAuditLogPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={auditLogPage === totalPages}
+                    className="px-4 py-2 text-xs font-bold text-gray-500 border border-gray-200 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
