@@ -6,7 +6,7 @@ import { calculateTaxReadinessScore } from "@/utils/taxScoring";
 import { 
   WalletIcon, CreditCardIcon, ScaleIcon,
   CheckCircleIcon, DocumentDuplicateIcon, ExclamationTriangleIcon,
-  ChevronRightIcon, BoltIcon, InformationCircleIcon, XMarkIcon
+  ChevronRightIcon, InformationCircleIcon, XMarkIcon
 } from "@heroicons/react/24/outline";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
@@ -93,7 +93,7 @@ export default function Dashboard() {
     getDashboardData();
   }, []);
 
-  const { stats, barData, readinessScore, docRate, automationRate, pendingCount, recentActivity } = useMemo(() => {
+  const { stats, barData, readinessScore, docRate, pendingCount, recentActivity } = useMemo(() => {
     let inc = 0, exp = 0, documented = 0, automated = 0;
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthlyMap: Record<string, any> = {};
@@ -171,10 +171,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 4-Column KPI Row */}
+        {/* 3-Column KPI Row */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
           <ProgressCard title="Tax Readiness" percentage={readinessScore} icon={<CheckCircleIcon className="w-5 h-5 text-primary"/>} />
-          <ProgressCard title="Bank Automation" percentage={automationRate} icon={<BoltIcon className="w-5 h-5 text-yellow-500"/>} />
           <ProgressCard title="Doc Coverage" percentage={docRate} icon={<DocumentDuplicateIcon className="w-5 h-5 text-orange-500"/>} />
           
           <div className="bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-2xl border border-gray-100 flex flex-col justify-between h-32 md:h-36 shadow-sm transition-all hover:shadow-md group">
