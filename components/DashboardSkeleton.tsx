@@ -19,7 +19,7 @@ export default function DashboardSkeleton() {
         </div>
 
         {/* Mini Stats Row (1x3) */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-28 w-full rounded-2xl shadow-sm border border-gray-50" />
           ))}

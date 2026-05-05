@@ -94,7 +94,7 @@ export default function Dashboard() {
   }, []);
 
   const { stats, barData, readinessScore, docRate, pendingCount, recentActivity } = useMemo(() => {
-    let inc = 0, exp = 0, documented = 0, automated = 0;
+    let inc = 0, exp = 0, documented = 0;
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthlyMap: Record<string, any> = {};
     months.forEach(m => monthlyMap[m] = { name: m, income: 0, expense: 0 });
@@ -104,8 +104,6 @@ export default function Dashboard() {
       const m = months[new Date(t.date).getMonth()];
       
       if (t.document) documented++;
-      if (t.source === 'MONO') automated++; // Track synced transactions
-      
       if (t.type === 'INCOME') { inc += amt; monthlyMap[m].income += amt / 1000; } 
       else { exp += amt; monthlyMap[m].expense += amt / 1000; }
     });
@@ -122,7 +120,6 @@ export default function Dashboard() {
       barData: Object.values(monthlyMap),
       readinessScore: calculateTaxReadinessScore(transactions),
       docRate: Math.round((documented / total) * 100),
-      automationRate: Math.round((automated / total) * 100),
       pendingCount: transactions.filter(t => t.vatStatus === 'MISSING_VAT' || !t.categoryId || !t.document).length,
       recentActivity: recent
     };
@@ -163,7 +160,7 @@ export default function Dashboard() {
 
       <div className="space-y-6">
         {/* Top Financials */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
           <StatCard title="Total Income" value={formatCurrency(stats.totalIncome)} icon={<WalletIcon className="w-5 h-5 text-blue-500"/>} />
           <StatCard title="Total Expenses" value={formatCurrency(stats.totalExpense)} icon={<CreditCardIcon className="w-5 h-5 text-red-500"/>} />
           <div className="col-span-2 md:col-span-1">
