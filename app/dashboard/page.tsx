@@ -59,6 +59,7 @@ export default function Overview() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAlertDismissed, setIsAlertDismissed] = useState(false);
+  const [isMounted, setIsMounted] = useState(false); // New state for the 0-100% animation
 
   const greeting = useMemo(() => getGreeting(), []);
   const subMessage = useMemo(() => getHolidayMessage() || getRandomHumor(), []);
@@ -80,7 +81,11 @@ export default function Overview() {
           const txData = await txRes.json();
           setTransactions(txData.transactions || []);
         }
-      } finally { setLoading(false); }
+      } finally { 
+        setLoading(false);
+        // Trigger the visual sweep animation immediately after loading finishes
+        setTimeout(() => setIsMounted(true), 100); 
+      }
     }
     getDashboardData();
   }, []);
@@ -161,7 +166,7 @@ export default function Overview() {
         <div className="bg-[#1A1C23] rounded-2xl p-6 md:p-10 flex flex-col md:flex-row items-center gap-8 md:gap-12">
           {/* Circular Gauge */}
           <div className="flex items-center gap-6">
-            <CircularProgress score={readinessScore} />
+            <CircularProgress score={readinessScore} isMounted={isMounted} />
             <div className="text-white">
               <h2 className="text-xl font-bold">Your tax readiness score</h2>
               <p className="text-sm text-gray-400 mt-1 max-w-sm">
@@ -172,9 +177,9 @@ export default function Overview() {
 
           {/* Mini Progress Bars */}
           <div className="flex-1 w-full space-y-4">
-            <ProgressBar label="VAT tagging" score={compliance.vat.score} color="bg-red-500" />
-            <ProgressBar label="Categorization" score={compliance.category.score} color="bg-yellow-500" />
-            <ProgressBar label="Documentation" score={compliance.document.score} color="bg-emerald-500" />
+            <ProgressBar label="VAT tagging" score={compliance.vat.score} color="bg-red-500" isMounted={isMounted} />
+            <ProgressBar label="Categorization" score={compliance.category.score} color="bg-yellow-500" isMounted={isMounted} />
+            <ProgressBar label="Documentation" score={compliance.document.score} color="bg-emerald-500" isMounted={isMounted} />
           </div>
         </div>
 
@@ -183,16 +188,25 @@ export default function Overview() {
           <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Actions Needed</h3>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* VAT Action Card */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col justify-between h-full">
-              <div>
-                <span className="inline-block px-3 py-1 bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest rounded-md mb-4">Urgent</span>
+            {/* VAT Action Card (URGENT - with soft breathing pulse) */}
+            <div className="relative bg-white border border-gray-200 rounded-2xl p-6 flex flex-col justify-between h-full overflow-hidden group">
+              {/* Soft Red Breathing Background */}
+              <div className="absolute inset-0 bg-red-50/40 animate-pulse pointer-events-none"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 text-[10px] font-black uppercase tracking-widest rounded-md">
+                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+                    Urgent
+                  </span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Takes 2 mins</span>
+                </div>
                 <h4 className="text-lg font-bold text-gray-900 mb-2">{compliance.vat.count} transactions are untagged for VAT</h4>
                 <p className="text-sm text-gray-500 leading-relaxed mb-6">
                   Untagged transactions are your biggest gap. Tag each as VAT-applicable or exempt.
                 </p>
               </div>
-              <Link href="/tax-readiness">
+              <Link href="/tax-readiness" className="relative z-10">
                 <button className="w-full py-3 bg-red-50 text-red-600 font-bold text-sm rounded-lg hover:bg-red-100 transition-colors">
                   Tag transactions
                 </button>
@@ -202,7 +216,10 @@ export default function Overview() {
             {/* Category Action Card */}
             <div className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col justify-between h-full">
               <div>
-                <span className="inline-block px-3 py-1 bg-yellow-50 text-yellow-600 text-[10px] font-black uppercase tracking-widest rounded-md mb-4">Attention</span>
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="inline-block px-3 py-1 bg-yellow-50 text-yellow-600 text-[10px] font-black uppercase tracking-widest rounded-md">Attention</span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Takes 1 min</span>
+                </div>
                 <h4 className="text-lg font-bold text-gray-900 mb-2">{compliance.category.count} transactions are uncategorized</h4>
                 <p className="text-sm text-gray-500 leading-relaxed mb-6">
                   Your report is incomplete until these are categorized. It takes less than a minute.
@@ -218,7 +235,10 @@ export default function Overview() {
             {/* Document Action Card */}
             <div className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col justify-between h-full">
               <div>
-                <span className="inline-block px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest rounded-md mb-4">Recommended</span>
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="inline-block px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest rounded-md">Recommended</span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Takes 3 mins</span>
+                </div>
                 <h4 className="text-lg font-bold text-gray-900 mb-2">
                   {compliance.document.count === 0 ? "No" : compliance.document.count} documents attached to records
                 </h4>
@@ -310,14 +330,15 @@ export default function Overview() {
 
 // --- SUB-COMPONENTS FOR DARK SCOREBOARD ---
 
-function CircularProgress({ score }: { score: number }) {
+function CircularProgress({ score, isMounted }: { score: number, isMounted: boolean }) {
   const radius = 40; 
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (score / 100) * circumference;
+  // Start at 0, animate to actual score
+  const displayScore = isMounted ? score : 0;
+  const strokeDashoffset = circumference - (displayScore / 100) * circumference;
 
   return (
     <div className="relative flex items-center justify-center w-24 h-24 flex-shrink-0">
-      {/* Added viewBox and overflow-visible to prevent clipping */}
       <svg className="transform -rotate-90 w-full h-full overflow-visible" viewBox="0 0 100 100">
         {/* Track */}
         <circle cx="50" cy="50" r={radius} stroke="rgba(255,255,255,0.1)" strokeWidth="8" fill="transparent" />
@@ -326,25 +347,28 @@ function CircularProgress({ score }: { score: number }) {
           cx="50" cy="50" r={radius} 
           stroke="#3B82F6" strokeWidth="8" fill="transparent" 
           strokeLinecap="round"
-          style={{ strokeDasharray: circumference, strokeDashoffset, transition: "stroke-dashoffset 1s ease-in-out" }}
+          style={{ strokeDasharray: circumference, strokeDashoffset, transition: "stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)" }}
         />
       </svg>
       <div className="absolute flex flex-col items-center justify-center">
-        <span className="text-xl font-black text-white leading-none">{score}%</span>
+        <span className="text-xl font-black text-white leading-none">{displayScore}%</span>
         <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">Ready</span>
       </div>
     </div>
   );
 }
 
-function ProgressBar({ label, score, color }: { label: string, score: number, color: string }) {
+function ProgressBar({ label, score, color, isMounted }: { label: string, score: number, color: string, isMounted: boolean }) {
+  // Start at 0, animate to actual score
+  const displayScore = isMounted ? score : 0;
+  
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-xs text-gray-400 font-medium w-28 flex-shrink-0">{label}</span>
       <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
         <div 
-          className={`h-full ${color} transition-all duration-1000 ease-out`} 
-          style={{ width: `${score}%` }} 
+          className={`h-full ${color}`} 
+          style={{ width: `${displayScore}%`, transition: "width 1.5s cubic-bezier(0.4, 0, 0.2, 1)" }} 
         />
       </div>
     </div>
