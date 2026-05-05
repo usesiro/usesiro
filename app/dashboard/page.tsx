@@ -54,7 +54,7 @@ const getRandomHumor = () => {
   return messages[Math.floor(Math.random() * messages.length)];
 };
 
-export default function Dashboard() {
+export default function Overview() {
   const [business, setBusiness] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +86,7 @@ export default function Dashboard() {
   }, []);
 
   // --- REWRITTEN DATA ENGINE FOR COMPLIANCE ---
-  const { stats, compliance, readinessScore } = useMemo(() => {
+  const { stats, compliance, readinessScore, recentActivity } = useMemo(() => {
     let inc = 0, exp = 0;
     let untaggedVat = 0, uncategorized = 0, undocumented = 0;
 
@@ -102,6 +102,11 @@ export default function Dashboard() {
 
     const total = transactions.length || 1;
 
+    // Extract the 5 most recent transactions
+    const recent = [...transactions]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5);
+
     return {
       stats: { totalIncome: inc, totalExpense: exp, netBalance: inc - exp },
       compliance: {
@@ -111,6 +116,7 @@ export default function Dashboard() {
         totalIssues: untaggedVat + uncategorized + undocumented
       },
       readinessScore: calculateTaxReadinessScore(transactions),
+      recentActivity: recent
     };
   }, [transactions]);
 
@@ -230,39 +236,73 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* --- FINANCIAL SNAPSHOT --- */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 max-w-3xl">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">Financial snapshot</h3>
+        {/* --- BOTTOM ROW: SNAPSHOT & RECENT ACTIVITY --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
-          <div className="space-y-5">
-            <div className="flex justify-between items-center pb-5 border-b border-gray-100">
-              <span className="text-sm text-gray-600 font-medium">Total Income</span>
-              <span className="text-sm font-bold text-green-600">{formatCurrency(stats.totalIncome)}</span>
-            </div>
+          {/* FINANCIAL SNAPSHOT (Left) */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 flex flex-col h-full">
+            <h3 className="text-lg font-bold text-gray-900 mb-6">Financial snapshot</h3>
             
-            <div className="flex justify-between items-center pb-5 border-b border-gray-100">
-              <span className="text-sm text-gray-600 font-medium">Total Expense</span>
-              <span className="text-sm font-bold text-red-600">{formatCurrency(stats.totalExpense)}</span>
-            </div>
-            
-            <div className="flex justify-between items-center pb-5 border-b border-gray-100">
-              <span className="text-sm text-gray-600 font-medium">Net Balance</span>
-              <span className="text-sm font-bold text-gray-900">{formatCurrency(stats.netBalance)}</span>
-            </div>
-            
-            <div className="flex justify-between items-center pb-8">
-              <span className="text-sm text-gray-600 font-medium">Compliance issues</span>
-              <span className="text-sm font-bold text-red-600">{compliance.totalIssues} unresolved</span>
+            <div className="space-y-5 flex-1">
+              <div className="flex justify-between items-center pb-5 border-b border-gray-100">
+                <span className="text-sm text-gray-600 font-medium">Total Income</span>
+                <span className="text-sm font-bold text-green-600">{formatCurrency(stats.totalIncome)}</span>
+              </div>
+              
+              <div className="flex justify-between items-center pb-5 border-b border-gray-100">
+                <span className="text-sm text-gray-600 font-medium">Total Expense</span>
+                <span className="text-sm font-bold text-red-600">{formatCurrency(stats.totalExpense)}</span>
+              </div>
+              
+              <div className="flex justify-between items-center pb-5 border-b border-gray-100">
+                <span className="text-sm text-gray-600 font-medium">Net Balance</span>
+                <span className="text-sm font-bold text-gray-900">{formatCurrency(stats.netBalance)}</span>
+              </div>
+              
+              <div className="flex justify-between items-center pb-8">
+                <span className="text-sm text-gray-600 font-medium">Compliance issues</span>
+                <span className="text-sm font-bold text-red-600">{compliance.totalIssues} unresolved</span>
+              </div>
             </div>
 
             <Link href="/reports">
-              <button className="w-full py-3.5 bg-blue-50 text-blue-600 font-bold text-sm rounded-lg hover:bg-blue-100 transition-colors">
+              <button className="w-full mt-auto py-3.5 bg-blue-50 text-blue-600 font-bold text-sm rounded-lg hover:bg-blue-100 transition-colors">
                 View full report
               </button>
             </Link>
           </div>
-        </div>
 
+          {/* RECENT ACTIVITY (Right) */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 flex flex-col h-full">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-gray-900">Recent Activity</h3>
+              <Link href="/transactions" className="text-sm font-bold text-primary hover:underline">
+                View All
+              </Link>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto pr-2 space-y-2">
+              {recentActivity.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center mt-10">No recent transactions.</p>
+              ) : (
+                recentActivity.map((t: any) => (
+                  <div key={t.id} className="flex justify-between items-center py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 rounded-lg px-2 transition-colors">
+                    <div className="overflow-hidden">
+                      <p className="text-sm font-bold text-gray-800 truncate">{t.description}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {new Date(t.date).toLocaleDateString('en-GB')} • {t.source === 'MONO' ? 'Bank Sync' : 'Manual'}
+                      </p>
+                    </div>
+                    <span className={`text-sm font-bold whitespace-nowrap ml-4 ${t.type === 'INCOME' ? 'text-green-600' : 'text-gray-800'}`}>
+                      {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          
+        </div>
       </div>
     </DashboardLayout>
   );

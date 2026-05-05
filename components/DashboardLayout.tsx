@@ -97,7 +97,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const menuItems = [
-    { name: "Dashboard", href: "/dashboard", icon: Squares2X2Icon },
+    { name: "Overview", href: "/dashboard", icon: Squares2X2Icon },
     { name: "Transactions", href: "/transactions", icon: DocumentTextIcon },
     { name: "Reconciliation", href: "/reconciliation", icon: ClipboardDocumentCheckIcon }, 
     { name: "Tax Readiness", href: "/tax-readiness", icon: MapPinIcon },
