@@ -172,12 +172,12 @@ export default function Dashboard() {
         </div>
 
         {/* 4-Column KPI Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
           <ProgressCard title="Tax Readiness" percentage={readinessScore} icon={<CheckCircleIcon className="w-5 h-5 text-primary"/>} />
           <ProgressCard title="Bank Automation" percentage={automationRate} icon={<BoltIcon className="w-5 h-5 text-yellow-500"/>} />
           <ProgressCard title="Doc Coverage" percentage={docRate} icon={<DocumentDuplicateIcon className="w-5 h-5 text-orange-500"/>} />
           
-          <div className="bg-white/80 backdrop-blur-md p-4 md:p-5 rounded-2xl border border-gray-100 flex flex-col justify-between h-32 shadow-sm transition-all hover:shadow-md group">
+          <div className="bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-2xl border border-gray-100 flex flex-col justify-between h-32 md:h-36 shadow-sm transition-all hover:shadow-md group">
             <div className="flex justify-between items-center">
               <span className="text-gray-400 text-[10px] md:text-xs font-black uppercase tracking-wider">Compliance</span>
               <ExclamationTriangleIcon className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform"/>
