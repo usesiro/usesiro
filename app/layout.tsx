@@ -25,10 +25,9 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   metadataBase: new URL('https://usesiro.com'),
   title: "Siro | Tax Readiness & Automated Records for Nigerian Businesses",
-  // Optimized to exactly 154 characters for perfect SEO snippeting
   description: "Track income and expenses automatically, tag VAT, and generate clean NRS-compliant reports. Ditch the spreadsheets and keep your Nigerian business tax-ready.",
   alternates: {
-    canonical: 'https://usesiro.com', // Fixes indexing duplicates
+    canonical: 'https://usesiro.com', 
   },
   keywords: [
     "Tax compliance Nigeria", 
@@ -47,7 +46,7 @@ export const metadata: Metadata = {
     siteName: 'Siro',
     images: [
       {
-        url: '/logo.png', 
+        url: '/logo.png', // Keep the 1200x630 rectangle ONLY for social sharing
         width: 1200,
         height: 630,
         alt: 'Siro Technologies Logo',
@@ -74,12 +73,11 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: [
-      { url: '/logo.png', type: 'image/png' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
-    ],
-    shortcut: '/logo.png',
-    apple: '/logo.png',
+    // FIX: Only use the SVG for the standard favicon to guarantee Google accepts it
+    icon: '/icon.svg',
+    // Make sure you add a perfect square 180x180 png to your public folder named apple-icon.png!
+    shortcut: '/apple-icon.png',
+    apple: '/apple-icon.png',
   },
 };
 
@@ -91,6 +89,26 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${poppins.variable} ${fraunces.variable} font-sans`}>
+        
+        {/* --- GOOGLE ORGANIZATION SCHEMA (Forces Google to recognize your logo) --- */}
+        <Script
+          id="organization-schema"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "Siro Technologies",
+              "url": "https://usesiro.com",
+              "logo": "https://usesiro.com/icon.svg",
+              "sameAs": [
+                "https://twitter.com/usesiro", // Add your real socials here if you have them
+                "https://linkedin.com/company/usesiro"
+              ]
+            })
+          }}
+        />
+
         <AOSInit />
         <NotificationProvider>
           <BookingProvider>
@@ -98,8 +116,7 @@ export default function RootLayout({
           </BookingProvider>
         </NotificationProvider>
         
-        {/* --- INJECTED TRACKING SCRIPTS (Optimized for Mobile TBT) --- */}
-        {/* Using next/script to push tracking to idle time */}
+        {/* --- INJECTED TRACKING SCRIPTS --- */}
         <Script 
           src="https://www.googletagmanager.com/gtag/js?id=G-Y7D62XQJKE" 
           strategy="lazyOnload" 
@@ -115,7 +132,6 @@ export default function RootLayout({
           `}
         </Script>
         
-        {/* Vercel Analytics wrapped in a low-priority wrapper if needed, though the package handles this fairly well natively */}
         <Analytics /> 
       </body>
     </html>
