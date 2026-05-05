@@ -5,8 +5,9 @@ import DashboardLayout from "@/components/DashboardLayout";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { 
-  WalletIcon, CreditCardIcon, ScaleIcon, ArrowUpRightIcon, ArrowDownTrayIcon,
-  XMarkIcon, DocumentTextIcon, TableCellsIcon
+  WalletIcon, CreditCardIcon, ScaleIcon, ArrowDownTrayIcon,
+  XMarkIcon, DocumentTextIcon, TableCellsIcon,
+  BoltIcon, DocumentDuplicateIcon
 } from "@heroicons/react/24/outline";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
@@ -41,8 +42,9 @@ export default function Reports() {
     fetchData();
   }, []);
 
-  const { totalIncome, totalExpense, netBalance, barData, donutData, salesData } = useMemo(() => {
+  const { totalIncome, totalExpense, netBalance, barData, donutData, salesData, automationRate, docRate, recentActivity } = useMemo(() => {
     let inc = 0, exp = 0;
+    let automated = 0, documented = 0;
     const monthlyMap: Record<string, any> = {};
     const categoryMap: Record<string, number> = {};
     const salesMap: Record<string, number> = {};
@@ -57,6 +59,10 @@ export default function Reports() {
       const amt = Number(t.amount);
       const m = months[new Date(t.date).getMonth()];
       const catName = t.category?.name || t.categoryName || 'Uncategorized';
+
+      // Automation & Document tracking
+      if (t.source === 'MONO') automated++;
+      if (t.document) documented++;
 
       if (t.type === 'INCOME') {
         inc += amt;
@@ -73,6 +79,8 @@ export default function Reports() {
       }
     });
 
+    const total = transactions.length || 1;
+
     // Sort and grab the top 5 highest expenses for the Pie Chart
     const processedDonut = Object.entries(categoryMap)
       .sort((a, b) => b[1] - a[1]) 
@@ -84,6 +92,11 @@ export default function Reports() {
 
     // Format sales data for the histogram
     const processedSales = months.map(m => ({ name: m, sales: salesMap[m] }));
+    
+    // Recent activity feed extraction
+    const recent = [...transactions]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 8); // Showing slightly more in Reports page
 
     return {
       totalIncome: inc, 
@@ -91,18 +104,19 @@ export default function Reports() {
       netBalance: inc - exp,
       barData: Object.values(monthlyMap),
       donutData: processedDonut.length > 0 ? processedDonut : [{name: 'No Expenses Yet', value: 1, color: '#F3F4F6'}],
-      salesData: processedSales
+      salesData: processedSales,
+      automationRate: Math.round((automated / total) * 100),
+      docRate: Math.round((documented / total) * 100),
+      recentActivity: recent
     };
   }, [transactions]);
 
   const formatCurrency = (val: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(val);
 
-  // --- Handlers ---
   const handleExportParamChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setExportParams({ ...exportParams, [e.target.name]: e.target.value });
   };
 
-  // --- EXPORT GENERATOR ---
   const handleGenerateExport = () => {
     const dataToExport = transactions.filter(t => {
       const tDate = new Date(t.date).getTime();
@@ -208,16 +222,15 @@ export default function Reports() {
       <div className="space-y-6 pb-12">
         <div className="flex justify-between items-center print:hidden">
           <h1 className="text-2xl font-bold text-gray-800">Reports</h1>
-          
           <button 
             onClick={() => setIsExportModalOpen(true)} 
-            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition"
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition"
           >
             <ArrowDownTrayIcon className="w-4 h-4" /> Export Report
           </button>
         </div>
 
-        {/* STATS ROW */}
+        {/* FINANCIAL STATS ROW */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <StatCard title="Total Income" amount={formatCurrency(totalIncome)} icon={<WalletIcon className="w-5 h-5"/>} color="blue" />
           <StatCard title="Total Expense" amount={formatCurrency(totalExpense)} icon={<CreditCardIcon className="w-5 h-5"/>} color="red" />
@@ -226,17 +239,23 @@ export default function Reports() {
           </div>
         </div>
 
-        {/* MIDDLE ROW: Bar Chart & Pie Chart */}
+        {/* PLATFORM METRICS ROW (Moved from Dashboard) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <ProgressCard title="Bank Automation" percentage={automationRate} icon={<BoltIcon className="w-5 h-5 text-yellow-500"/>} />
+          <ProgressCard title="Document Coverage" percentage={docRate} icon={<DocumentDuplicateIcon className="w-5 h-5 text-emerald-500"/>} />
+        </div>
+
+        {/* CHARTS ROW: Bar Chart & Pie Chart */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* INCOME VS EXPENSE */}
-          <div className="lg:col-span-2 bg-white p-8 rounded-2xl border border-gray-100 shadow-sm h-[450px]">
+          <div className="lg:col-span-2 bg-white p-8 rounded-2xl border border-gray-200 h-[450px]">
             <h2 className="text-gray-800 font-bold mb-8">Income vs Expense (k)</h2>
             <ResponsiveContainer width="100%" height="85%">
               <BarChart data={barData} barGap={8}>
                 <CartesianGrid vertical={false} stroke="#F3F4F6" strokeDasharray="3 3" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} />
-                <Tooltip cursor={{fill: '#F9FAFB'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.05)'}} />
+                <Tooltip cursor={{fill: '#F9FAFB'}} contentStyle={{borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: 'none'}} />
                 <Bar dataKey="income" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={12} />
                 <Bar dataKey="expense" fill="#F87171" radius={[4, 4, 0, 0]} barSize={12} />
               </BarChart>
@@ -244,7 +263,7 @@ export default function Reports() {
           </div>
 
           {/* EXPENSE PIE CHART */}
-          <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col h-[450px]">
+          <div className="bg-white p-8 rounded-3xl border border-gray-200 flex flex-col h-[450px]">
             <h2 className="text-gray-800 font-bold mb-4">Expense Breakdown</h2>
             <div className="flex-1 w-full min-h-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -263,7 +282,7 @@ export default function Reports() {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => formatCurrency(value as number)} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.05)'}} />
+                  <Tooltip formatter={(value) => formatCurrency(value as number)} contentStyle={{borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: 'none'}} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -282,28 +301,60 @@ export default function Reports() {
           </div>
         </div>
 
-        {/* BOTTOM ROW: SALES HISTOGRAM */}
-        <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm h-[450px]">
-          <div className="mb-8">
-            <h2 className="text-gray-800 font-bold">Sales Histogram</h2>
-            <p className="text-xs text-gray-500 font-medium mt-1">Monthly revenue derived strictly from categorized sales.</p>
+        {/* BOTTOM ROW: Sales Histogram & Recent Activity Feed */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* SALES HISTOGRAM */}
+          <div className="lg:col-span-2 bg-white p-8 rounded-2xl border border-gray-200 h-[450px]">
+            <div className="mb-8">
+              <h2 className="text-gray-800 font-bold">Sales Histogram</h2>
+              <p className="text-xs text-gray-500 font-medium mt-1">Monthly revenue derived strictly from categorized sales.</p>
+            </div>
+            <ResponsiveContainer width="100%" height="80%">
+              <BarChart data={salesData}>
+                <CartesianGrid vertical={false} stroke="#F3F4F6" strokeDasharray="3 3" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} tickFormatter={(val) => `₦${val >= 1000 ? val/1000 + 'k' : val}`} width={80} />
+                <Tooltip cursor={{fill: '#F9FAFB'}} formatter={(value) => formatCurrency(value as number)} contentStyle={{borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: 'none'}} />
+                <Bar dataKey="sales" fill="#10B981" radius={[4, 4, 0, 0]} barSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
-          <ResponsiveContainer width="100%" height="80%">
-            <BarChart data={salesData}>
-              <CartesianGrid vertical={false} stroke="#F3F4F6" strokeDasharray="3 3" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} />
-              <YAxis axisLine={false} tickLine={false} tick={{fill: '#9CA3AF', fontSize: 12}} tickFormatter={(val) => `₦${val >= 1000 ? val/1000 + 'k' : val}`} width={80} />
-              <Tooltip cursor={{fill: '#F9FAFB'}} formatter={(value) => formatCurrency(value as number)} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.05)'}} />
-              <Bar dataKey="sales" fill="#10B981" radius={[4, 4, 0, 0]} barSize={40} />
-            </BarChart>
-          </ResponsiveContainer>
+
+          {/* RECENT ACTIVITY FEED (Moved from Dashboard) */}
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 h-[450px] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-sm font-bold text-gray-800">Recent Activity</h3>
+              <a href="/transactions" className="text-xs font-bold text-primary hover:underline">View All</a>
+            </div>
+            <div className="flex-1 overflow-y-auto pr-2 space-y-2">
+              {recentActivity.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center mt-10">No recent transactions.</p>
+              ) : (
+                recentActivity.map((t: any) => (
+                  <div key={t.id} className="flex justify-between items-center py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 rounded-lg px-2 transition-colors">
+                    <div className="overflow-hidden">
+                      <p className="text-sm font-bold text-gray-800 truncate">{t.description}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {new Date(t.date).toLocaleDateString('en-GB')} • {t.source === 'MONO' ? 'Bank Sync' : 'Manual'}
+                      </p>
+                    </div>
+                    <span className={`text-sm font-bold whitespace-nowrap ml-4 ${t.type === 'INCOME' ? 'text-green-600' : 'text-gray-800'}`}>
+                      {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          
         </div>
 
-        {/* --- EXPORT MODAL (Unchanged) --- */}
+        {/* --- EXPORT MODAL --- */}
         {isExportModalOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={() => setIsExportModalOpen(false)}></div>
-            <div className="relative bg-white rounded-2xl w-full max-w-md p-8 animate-fade-in-up">
+            <div className="relative bg-white rounded-2xl w-full max-w-md p-8 animate-fade-in-up border border-gray-200">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-gray-700">Export Financial Report</h3>
                 <button onClick={() => setIsExportModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition"><XMarkIcon className="w-6 h-6" /></button>
@@ -370,19 +421,40 @@ export default function Reports() {
   );
 }
 
+// --- SUB COMPONENTS (CLEAN & FLAT UI) ---
+
 function StatCard({ title, amount, icon, color }: any) {
   const isRed = color === 'red';
   return (
-    <div className="bg-white/80 backdrop-blur-md p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md group h-32 md:h-36 flex flex-col justify-between">
+    <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-200 h-32 md:h-36 flex flex-col justify-between">
       <div className="flex justify-between items-start mb-4">
         <span className="text-gray-400 text-[10px] md:text-xs font-black uppercase tracking-wider">{title}</span>
         <div className={`p-2 rounded-xl ${isRed ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'}`}>{icon}</div>
       </div>
       <div>
-        <h3 className="text-lg md:text-2xl font-black text-gray-900 leading-none truncate">{amount}</h3>
-        <p className={`text-[10px] mt-2 ${isRed ? 'text-red-500' : 'text-blue-500'} font-black flex items-center gap-1 uppercase tracking-tight`}>
-          <ArrowUpRightIcon className="w-3 h-3" /> 100% <span className="text-gray-400 font-bold ml-1">Growth</span>
-        </p>
+        <h3 className="text-xl md:text-2xl font-black text-gray-900 leading-none truncate">{amount}</h3>
+      </div>
+    </div>
+  );
+}
+
+function ProgressCard({ title, percentage, icon }: any) {
+  return (
+    <div className="bg-white p-5 md:p-6 rounded-2xl border border-gray-200 h-32 md:h-36 flex flex-col justify-between">
+      <div className="flex justify-between items-center">
+        <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{title}</span>
+        {icon}
+      </div>
+      <div>
+        <span className="text-xl md:text-2xl font-black text-gray-900 leading-none">{percentage}%</span>
+        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden mt-2">
+          <div
+            className={`h-full transition-all duration-1000 ease-out ${
+              percentage > 80 ? 'bg-emerald-500' : percentage > 50 ? 'bg-yellow-500' : 'bg-red-500'
+            }`}
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
       </div>
     </div>
   );
