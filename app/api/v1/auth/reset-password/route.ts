@@ -29,11 +29,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Verification code has expired. Please request a new one." }, { status: 400 });
     }
 
-    // 4. Hash the new password
+    // 4. Check if new password is the same as the old one
+    const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
+    if (isSamePassword) {
+      return NextResponse.json({ error: "New password cannot be the same as your current password." }, { status: 400 });
+    }
+
+    // 5. Hash the new password
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
-    // 5. Save new password and clear the OTP fields so it can't be reused
+    // 6. Save new password and clear the OTP fields so it can't be reused
     await prisma.user.update({
       where: { id: user.id },
       data: {
