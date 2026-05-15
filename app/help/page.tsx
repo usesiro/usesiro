@@ -43,19 +43,45 @@ export default function HelpCenterPage() {
   
   // Form State
   const [contactForm, setContactForm] = useState({ name: "", email: "", topic: "Enquiries", message: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const toggleFaq = (id: string) => {
     setOpenFaq(openFaq === id ? null : id);
   };
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contactForm.name || !contactForm.message) {
+    if (!contactForm.name || !contactForm.email || !contactForm.message) {
       showNotification("Please fill out the required fields.", "error");
       return;
     }
-    showNotification("Message Sent! We'll get back to you shortly.", "success");
-    setContactForm({ name: "", email: "", topic: "Enquiries", message: "" }); // Reset form
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/v1/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: contactForm.name,
+          email: contactForm.email,
+          topic: contactForm.topic,
+          message: contactForm.message,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send message.");
+      }
+
+      showNotification("Message Sent! We'll get back to you shortly.", "success");
+      setContactForm({ name: "", email: "", topic: "Enquiries", message: "" }); // Reset form
+    } catch (error: any) {
+      showNotification(error.message || "An error occurred. Please try again.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -224,8 +250,12 @@ export default function HelpCenterPage() {
                     className="w-full px-4 py-3 bg-gray-50/50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:border-primary focus:bg-white transition-colors resize-none"
                   ></textarea>
                 </div>
-                <button type="submit" className="w-full bg-primary text-white py-3.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors mt-2 shadow-md shadow-blue-100">
-                  Submit
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className={`w-full bg-primary text-white py-3.5 rounded-xl text-sm font-bold transition-colors mt-2 shadow-md shadow-blue-100 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'}`}
+                >
+                  {isSubmitting ? "Sending..." : "Submit"}
                 </button>
               </form>
             </div>

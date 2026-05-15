@@ -174,7 +174,7 @@ export default function ContactPage() {
                           onChange={handleChange} 
                           className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:bg-white text-sm appearance-none text-gray-500 transition-colors"
                         >
-                          <option value="">Enquiries</option>
+                          <option value="enquiries">Enquiries</option>
                           <option value="waitlist">Waitlist Questions</option>
                           <option value="support">Technical Support</option>
                           <option value="partnership">Partnerships</option>

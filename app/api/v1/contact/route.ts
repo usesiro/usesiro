@@ -28,25 +28,46 @@ export async function POST(req: Request) {
       },
     });
 
-    // 3. Send the email alert to info@usesiro.com via Resend
+    // 3. Send emails
     try {
+      // A. Alert info@usesiro.com
       await resend.emails.send({
         from: 'Siro System <info@usesiro.com>',
-        to: 'info@usesiro.com', // Change to your actual email if testing restrictions apply
+        to: 'info@usesiro.com', 
         subject: `New Contact Message: ${topic} from ${fullName}`,
         html: `
-          <h3>New Message via usesiro.com</h3>
-          <p><strong>Name:</strong> ${fullName}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Topic:</strong> ${topic}</p>
-          <br/>
-          <p><strong>Message:</strong></p>
-          <p>${message}</p>
+          <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
+            <h3>New Message via usesiro.com</h3>
+            <p><strong>Name:</strong> ${fullName}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Topic:</strong> ${topic}</p>
+            <br/>
+            <p><strong>Message:</strong></p>
+            <p style="white-space: pre-wrap;">${message}</p>
+          </div>
         `
       });
-      console.log("Resend email fired successfully.");
+
+      // B. Auto-response to the User
+      await resend.emails.send({
+        from: 'Siro <info@usesiro.com>',
+        to: email,
+        subject: "We've received your message",
+        html: `
+          <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; padding: 20px; color: #333; line-height: 1.6;">
+            <p>Hi ${fullName.split(' ')[0]},</p>
+            <p>Thank you for reaching out to us. This is to confirm that we've received your message regarding <strong>${topic}</strong>.</p>
+            <p>Our team is currently reviewing your enquiry and we will get back to you as soon as possible (usually within 24-48 hours).</p>
+            <p>In the meantime, feel free to explore our <a href="https://usesiro.com/help" style="color: #4F75FF; text-decoration: none; font-weight: bold;">Help Center</a> for quick answers to common questions.</p>
+            <br/>
+            <p>Best regards,<br/>The Siro Team</p>
+          </div>
+        `
+      });
+
+      console.log("Contact emails (alert + auto-response) fired successfully.");
     } catch (emailError) {
-      console.error("Failed to send email alert:", emailError);
+      console.error("Failed to send contact emails:", emailError);
     }
 
     // 4. Return Success
