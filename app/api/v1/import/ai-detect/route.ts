@@ -71,36 +71,54 @@ Rules:
       sampleData: sampleRows.slice(0, 3) // Hard limit to top 3 rows for token economy and privacy
     });
 
-    const response = await fetch("https://api.cerebras.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.CEREBRAS_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "llama3.1-8b", 
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: "Data to map:\n" + userMessage }
-        ],
-        temperature: 0, 
-        max_tokens: 300,
-        response_format: { type: "json_object" }
-      })
-    });
+    const processWithRetry = async (prompt: string, userMsg: string, attempt = 1): Promise<any> => {
+      try {
+        const response = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.CEREBRAS_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "qwen-3-235b-a22b-instruct-2507", 
+            messages: [
+              { role: "system", content: prompt },
+              { role: "user", content: "Data to map:\n" + userMsg }
+            ],
+            temperature: 0, 
+            max_tokens: 400,
+            response_format: { type: "json_object" }
+          })
+        });
 
-    if (!response.ok) {
-      console.error("Groq API Error:", await response.text());
-      throw new Error("Failed to communicate with AI mapping service.");
-    }
+        if (!response.ok) {
+          if ((response.status === 429 || response.status >= 500) && attempt < 6) {
+            const delay = Math.pow(2, attempt) * 1000;
+            console.warn(`AI Detect Retry (Status ${response.status}): Attempt ${attempt}, waiting ${delay}ms`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return processWithRetry(prompt, userMsg, attempt + 1);
+          }
+          const errorBody = await response.text();
+          throw new Error(`AI Request Failed: ${response.status} ${response.statusText} - ${errorBody}`);
+        }
 
-    const groqData = await response.json();
-    const aiMessage = groqData.choices[0]?.message?.content;
-    
-    if (!aiMessage) throw new Error("AI returned empty response");
+        const groqData = await response.json();
+        const aiMessage = groqData.choices[0]?.message?.content;
+        if (!aiMessage) throw new Error("AI returned empty response");
+        return JSON.parse(aiMessage);
+      } catch (e: any) {
+        const isNetworkError = e.message.includes('fetch failed') || e.name === 'ConnectTimeoutError' || e.code === 'UND_ERR_CONNECT_TIMEOUT' || e.code === 'ETIMEDOUT';
+        if (isNetworkError && attempt < 6) {
+          const delay = Math.pow(2, attempt) * 1000;
+          console.warn(`AI Detect Network Retry: Attempt ${attempt}, waiting ${delay}ms. Error: ${e.message}`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return processWithRetry(prompt, userMsg, attempt + 1);
+        }
+        throw e;
+      }
+    };
 
-    // 5. Parse and Validate AI output
-    const aiMapping = JSON.parse(aiMessage);
+    const aiMapping = await processWithRetry(systemPrompt, userMessage);
     
     // Ensure all returned values are valid SiroFields or null
     const sanitizedMapping: Record<string, string | null> = {};

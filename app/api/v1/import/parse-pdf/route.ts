@@ -22,14 +22,13 @@ export async function POST(request: Request) {
 Your task is to take raw text from a bank statement and extract EVERY transaction row into a JSON array.
 
 STRICT ACCURACY RULES:
-1. COUNT BEFORE RESPONDING: Count the number of transactions in the input FIRST. Your array MUST match this count.
-2. HEADER METADATA: Look for "Opening Balance", "Initial Balance", "Start Balance", or "Currency" in the header text. If found, return them.
-3. DO NOT SUMMARIZE: Do not skip ANY rows. If it looks like a transaction, extract it.
-4. BE EXHAUSTIVE: Even if there are many rows, capture every single one in this text chunk.
-5. DATA FIELDS: Extract "date", "description", "amount", "type" (INCOME/EXPENSE), "balance", and "reference".
-6. JSON FORMAT ONLY: Respond with a JSON object.
+1. HEADER METADATA: Look for "Opening Balance", "Initial Balance", "Start Balance", or "Currency" in the header text. If found, return them.
+2. DO NOT SUMMARIZE: Do not skip ANY rows. If it looks like a transaction, extract it.
+3. DATA FIELDS: Extract "date", "description", "amount", "type" (INCOME/EXPENSE), "balance", and "reference".
+4. ULTRA-DENSE JSON: Omit any keys that are null or empty. Do not include 'reference' or 'balance' if they aren't explicitly on the line.
+5. JSON FORMAT ONLY: Respond with a JSON object.
 
-Schema: { "count": number, "rows": [...], "openingBalance": number|null, "currency": string|null }`;
+Schema: { "rows": [...], "openingBalance": number|null, "currency": string|null }`;
 
     const processWithRetry = async (prompt: string, chunk: string, attempt = 1): Promise<any> => {
       try {
@@ -40,10 +39,10 @@ Schema: { "count": number, "rows": [...], "openingBalance": number|null, "curren
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            model: "llama3.1-8b",
+            model: "qwen-3-235b-a22b-instruct-2507",
             messages: [
               { role: "system", content: prompt },
-              { role: "user", content: "Extract records from this text. Remember to count them first so you don't miss any:\n" + chunk }
+              { role: "user", content: "Extract records from this text. Omit null fields:\n" + chunk }
             ],
             temperature: 0,
             max_tokens: 8192,
@@ -52,8 +51,10 @@ Schema: { "count": number, "rows": [...], "openingBalance": number|null, "curren
         });
 
         if (!response.ok) {
-          if ((response.status === 429 || response.status === 503) && attempt < 6) {
-            const delay = attempt * 2000; 
+          // Retry on Rate Limit (429) or Server Errors (5xx)
+          if ((response.status === 429 || response.status >= 500) && attempt < 6) {
+            const delay = Math.pow(2, attempt) * 1000;
+            console.warn(`AI Retry (Status ${response.status}): Attempt ${attempt}, waiting ${delay}ms`);
             await new Promise(resolve => setTimeout(resolve, delay));
             return processWithRetry(prompt, chunk, attempt + 1);
           }
@@ -80,9 +81,13 @@ Schema: { "count": number, "rows": [...], "openingBalance": number|null, "curren
           throw parseError;
         }
       } catch (e: any) {
-        if (attempt < 3) {
-           await new Promise(resolve => setTimeout(resolve, 2000));
-           return processWithRetry(prompt, chunk, attempt + 1);
+        const isNetworkError = e.message.includes('fetch failed') || e.name === 'ConnectTimeoutError' || e.code === 'UND_ERR_CONNECT_TIMEOUT' || e.code === 'ETIMEDOUT';
+        
+        if (isNetworkError && attempt < 6) {
+          const delay = Math.pow(2, attempt) * 1000;
+          console.warn(`AI Network Retry: Attempt ${attempt}, waiting ${delay}ms. Error: ${e.message}`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return processWithRetry(prompt, chunk, attempt + 1);
         }
         throw e;
       }

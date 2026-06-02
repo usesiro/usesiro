@@ -44,6 +44,8 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
   const [importProgress, setImportProgress] = useState(0);
   const [currentBatchText, setCurrentBatchText] = useState("");
   const [importStage, setImportStage] = useState<'IDLE' | 'READING' | 'EXTRACTING' | 'CLEANING' | 'REVIEW'>('IDLE');
+  const [lastProcessedIndex, setLastProcessedIndex] = useState(-1);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -66,6 +68,7 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
       setConfirmedRate(null);
       setApplyOpeningBalance(false);
       setCurrentPage(1);
+      setLastProcessedIndex(-1);
     }
   }, [isOpen]);
 
@@ -95,13 +98,15 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
       batches.push(rawData.slice(i, i + BATCH_SIZE));
     }
 
-    let allTransactions: any[] = [];
-    let initialBalance = null;
-    let currency = "NGN";
-    let exchangeRate = null;
+    let allTransactions: any[] = lastProcessedIndex >= 0 ? [...editableTransactions] : [];
+    let initialBalance = standardizedData?.openingBalance || null;
+    let currency = standardizedData?.detectedCurrency || "NGN";
+    let exchangeRate = standardizedData?.suggestedRate || null;
 
     try {
-      for (let i = 0; i < batches.length; i++) {
+      const startIndex = lastProcessedIndex + 1;
+      for (let i = startIndex; i < batches.length; i++) {
+        setLastProcessedIndex(i);
         setCurrentBatchText(`AI Structuring: Records ${i * BATCH_SIZE + 1} to ${Math.min((i + 1) * BATCH_SIZE, rawData.length)}...`);
         
         const response = await fetch('/api/v1/import/standardize', {
@@ -149,10 +154,15 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
       } else {
         setStep('REVIEW');
       }
+      setLastProcessedIndex(-1); // Success, clear progress
     } catch (err: any) {
+      const isNetwork = err.message.toLowerCase().includes('fetch') || err.message.toLowerCase().includes('network') || err.message.toLowerCase().includes('timeout');
       setError(err.message || "Clearsheet AI failed to process some records.");
-      setStep('UPLOAD');
-      setImportStage('IDLE');
+      if (!isNetwork) {
+        setStep('UPLOAD');
+        setImportStage('IDLE');
+        setLastProcessedIndex(-1);
+      }
     }
   };
 
@@ -190,49 +200,74 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
         setImportStage('EXTRACTING');
         const transactionLines = extractTransactionRegions(rawText);
         
-        // Target 40 lines per chunk to stay within Cerebras output limits
-        const lineChunks = chunkByLines(transactionLines, 40, 2);
-
         let allExtractedRows: any[] = [];
         const seenRows = new Set<string>(); // For de-duplication
-        let detectedOpeningBalance = null;
-        let detectedCurrency = null;
+        let detectedOpeningBalance: number | null = null;
+        let detectedCurrency: string | null = null;
 
-        for (let i = 0; i < lineChunks.length; i++) {
-          setCurrentBatchText(`AI Reading: Section ${i + 1} of ${lineChunks.length}...`);
-          const parseRes = await fetch('/api/v1/import/parse-pdf', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('siro_access_token')}` 
-            },
-            // Send chunk joined by newlines
-            body: JSON.stringify({ text: lineChunks[i].join('\n') }),
-          });
+        // Recursive processor to handle "Split-and-Retry" for truncated responses
+        // batchNumber and totalBatches are used for progress tracking/UI
+        const processChunkWithRetry = async (lines: string[], batchNumber: number, totalBatches: number) => {
+          setCurrentBatchText(`AI Reading: Section ${batchNumber} of ${totalBatches}...`);
+          
+          try {
+            const parseRes = await fetch('/api/v1/import/parse-pdf', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('siro_access_token')}` 
+              },
+              body: JSON.stringify({ text: lines.join('\n') }),
+            });
 
-          const parseResult = await parseRes.json();
-          if (!parseRes.ok) throw new Error(parseResult.error || `Failed to read section ${i + 1}`);
-          
-          const newRows = parseResult.rows || [];
-          
-          // Capture Metadata from the first chunk
-          if (i === 0) {
-            detectedOpeningBalance = parseResult.openingBalance;
-            detectedCurrency = parseResult.currency;
-          }
-          
-          // Smart De-duplication using composite key
-          newRows.forEach((row: any) => {
-            const rowKey = `${row.date}_${row.description}_${row.amount}`.toLowerCase().replace(/\s+/g, '');
-            if (!seenRows.has(rowKey)) {
-              seenRows.add(rowKey);
-              allExtractedRows.push(row);
+            const parseResult = await parseRes.json();
+            
+            // If we hit a truncation error, split this specific chunk in half and retry
+            if (!parseRes.ok && parseResult.error?.toLowerCase().includes('truncated')) {
+              console.warn("AI Truncated. Splitting chunk and retrying...", lines.length);
+              const half = Math.ceil(lines.length / 2);
+              const firstHalf = lines.slice(0, half + 2); // 2-line overlap
+              const secondHalf = lines.slice(half);
+              
+              await processChunkWithRetry(firstHalf, batchNumber, totalBatches + 1);
+              await processChunkWithRetry(secondHalf, batchNumber + 1, totalBatches + 1);
+              return;
             }
-          });
 
-          setImportProgress(Math.round(((i + 1) / lineChunks.length) * 50));
-          if (lineChunks.length > 1) await new Promise(r => setTimeout(r, 4500)); 
+            if (!parseRes.ok) throw new Error(parseResult.error || `Failed to read section ${batchNumber}`);
+            
+            const newRows = parseResult.rows || [];
+            
+            // Capture Metadata (only if not already set)
+            if (!detectedOpeningBalance) detectedOpeningBalance = parseResult.openingBalance;
+            if (!detectedCurrency) detectedCurrency = parseResult.currency;
+            
+            // Smart De-duplication using composite key
+            newRows.forEach((row: any) => {
+              const rowKey = `${row.date}_${row.description}_${row.amount}`.toLowerCase().replace(/\s+/g, '');
+              if (!seenRows.has(rowKey)) {
+                seenRows.add(rowKey);
+                allExtractedRows.push(row);
+              }
+            });
+
+            setImportProgress(Math.round((batchNumber / totalBatches) * 50));
+            // Add jitter/delay to stay under RPM limits on Free Tier
+            await new Promise(r => setTimeout(r, 2500)); 
+          } catch (error: any) {
+             throw error;
+          }
+        };
+
+        // Initial chunks of 25 lines (optimized for Qwen-235B)
+        const initialChunks = chunkByLines(transactionLines, 25, 2);
+        for (let i = 0; i < initialChunks.length; i++) {
+          if (i <= lastProcessedIndex) continue; // Skip on retry if we track this separately
+          await processChunkWithRetry(initialChunks[i], i + 1, initialChunks.length);
+          setLastProcessedIndex(i);
         }
+
+        setLastProcessedIndex(-1); // Reset for next stage
 
         if (allExtractedRows.length === 0) throw new Error("No transactions found in this PDF.");
         
@@ -336,9 +371,32 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
 
         <div className="p-8">
           {error && (
-            <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-2xl border border-red-100 flex gap-3 text-sm font-medium">
-              <ExclamationCircleIcon className="w-5 h-5 shrink-0" />
-              {error}
+            <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-2xl border border-red-100 flex flex-col gap-3">
+              <div className="flex gap-3 text-sm font-medium">
+                <ExclamationCircleIcon className="w-5 h-5 shrink-0" />
+                {error}
+              </div>
+              {lastProcessedIndex >= 0 && (
+                <div className="flex justify-end mt-2">
+                  <button 
+                    onClick={() => {
+                        setError(null);
+                        if (importStage === 'CLEANING') {
+                            handleStandardize(headers, fileData, standardizedData?.openingBalance, standardizedData?.detectedCurrency);
+                        } else if (importStage === 'EXTRACTING') {
+                            // Stage 2 retry is trickier as it's inside handleFileUpload
+                            // For now we mainly handle Stage 3 which is where the user failed
+                            setError("Please re-upload for Stage 2 errors. Resuming Stage 3 cleanup...");
+                            setStep('UPLOAD');
+                        }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-black shadow-lg shadow-red-200 hover:bg-red-700 transition-colors"
+                  >
+                    <ArrowPathIcon className="w-3.5 h-3.5" />
+                    Retry From Records {Math.max(0, lastProcessedIndex * 25)}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
