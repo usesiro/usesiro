@@ -132,6 +132,15 @@ export default function RootLayout({
           `}
         </Script>
         
+=======
+        {/* --- LUCKY ORANGE SESSION TRACKING --- */}
+        <Script 
+          src="https://tools.luckyorange.com/core/lo.js?site-id=4d5a072a"
+          strategy="lazyOnload"
+        />
+        
+        {/* Vercel Analytics wrapped in a low-priority wrapper if needed, though the package handles this fairly well natively */}
+ d355b5d8498fa2ea966148e14856180f857937dc
         <Analytics /> 
       </body>
     </html>

@@ -58,10 +58,10 @@ RULES:
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            model: "llama3.1-8b",
+            model: "qwen-3-235b-a22b-instruct-2507",
             messages: [
               { role: "system", content: prompt },
-              { role: "user", content: "Data to clean. Remember to count them first so you don't miss any:\n" + userMsg }
+              { role: "user", content: "Data to clean:\n" + userMsg }
             ],
             temperature: 0,
             max_tokens: 8192,
@@ -70,8 +70,10 @@ RULES:
         });
 
         if (!response.ok) {
-          if ((response.status === 429 || response.status === 503) && attempt < 6) {
-            const delay = attempt * 2000;
+          // Retry on Rate Limit (429) or Server Errors (5xx)
+          if ((response.status === 429 || response.status >= 500) && attempt < 6) {
+            const delay = Math.pow(2, attempt) * 1000; // Exponential: 2s, 4s, 8s, 16s...
+            console.warn(`AI Retry (Status ${response.status}): Attempt ${attempt}, waiting ${delay}ms`);
             await new Promise(resolve => setTimeout(resolve, delay));
             return processWithRetry(prompt, userMsg, attempt + 1);
           }
@@ -91,9 +93,14 @@ RULES:
           throw parseError;
         }
       } catch (e: any) {
-        if (attempt < 3) {
-           await new Promise(resolve => setTimeout(resolve, 2000));
-           return processWithRetry(prompt, userMsg, attempt + 1);
+        // Catch network errors specifically (TypeError: fetch failed, ConnectTimeout, etc.)
+        const isNetworkError = e.message.includes('fetch failed') || e.name === 'ConnectTimeoutError' || e.code === 'UND_ERR_CONNECT_TIMEOUT' || e.code === 'ETIMEDOUT';
+        
+        if (isNetworkError && attempt < 6) {
+          const delay = Math.pow(2, attempt) * 1000;
+          console.warn(`AI Network Retry: Attempt ${attempt}, waiting ${delay}ms. Error: ${e.message}`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return processWithRetry(prompt, userMsg, attempt + 1);
         }
         throw e;
       }
