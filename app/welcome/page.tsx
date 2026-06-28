@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import MonoButton from "@/components/mono/MonoButton";
@@ -11,12 +12,46 @@ import {
 } from "@heroicons/react/24/outline";
 
 export default function WelcomePage() {
+  const [firstName, setFirstName] = useState("");
+
+  // Fetch the user's name when the page loads
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem("siro_access_token");
+        if (!token) return;
+
+        // Assuming your auth status endpoint returns the user object.
+        // Adjust the endpoint URL if your user profile endpoint is different.
+        const res = await fetch("/api/v1/auth/status", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          // Adjust "data.user.firstName" based on your actual API response structure
+          if (data.user?.firstName) {
+            setFirstName(data.user.firstName);
+          } else if (data.firstName) {
+            setFirstName(data.firstName);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch user data", error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
   return (
     <DashboardLayout>
       <div className="max-w-4xl mx-auto py-12 px-4 text-center">
         {/* Header Section */}
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-          Welcome to <span className="text-primary">Siro</span>, House of Salam
+          Welcome to <span className="text-primary">Siro</span>{firstName ? `, ${firstName}` : ""}
         </h1>
         <p className="text-gray-500 max-w-2xl mx-auto mb-12">
           Let's get your business tax-ready in a few simple steps. Start by connecting 
@@ -63,7 +98,7 @@ export default function WelcomePage() {
         {/* Action Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           
-          {/* Card 1: Bank Account - UPDATED WITH MONO */}
+          {/* Card 1: Bank Account */}
           <div className="bg-primary text-white p-8 rounded-3xl text-left relative overflow-hidden group">
             <div className="absolute top-6 right-8 bg-blue-400/30 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
               Recommended
