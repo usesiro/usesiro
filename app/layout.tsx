@@ -140,7 +140,6 @@ export default function RootLayout({
         />
         
         {/* Vercel Analytics wrapped in a low-priority wrapper if needed, though the package handles this fairly well natively */}
- d355b5d8498fa2ea966148e14856180f857937dc
         <Analytics /> 
       </body>
     </html>
