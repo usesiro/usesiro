@@ -2,20 +2,26 @@
 
 ## Latest Update
 
-**Updated By:** Morenike Oyewole  
-**Date:** July 4, 2026
-
-## Overview
-
-The AI-powered CSV import pipeline has been migrated from direct provider API calls to the Vercel AI SDK using Google Gemini 2.5 Flash.
-
-The migration simplifies the AI integration by reducing boilerplate code, improving type safety through Zod schemas, and making it easier to switch AI providers in the future.
+- **Updated By:** Morenike Oyewole
+- **Date:** July 4, 2026
 
 ---
 
-## Setup
+## Overview
 
-### 1. Install Dependencies
+The AI-powered import pipeline for both CSV and PDF files has been migrated from direct provider API calls to the **Vercel AI SDK**, using **Google Gemini 2.5 Flash**.
+
+The migration simplifies the AI integration by:
+
+- Reducing boilerplate code
+- Improving type safety through Zod schemas
+- Making it easier to switch AI providers in the future
+
+---
+
+# Setup
+
+## 1. Install Dependencies
 
 ```bash
 npm install
@@ -30,7 +36,7 @@ Required AI packages:
 
 ---
 
-### 2. Configure Environment Variables
+## 2. Configure Environment Variables
 
 Add the following to your `.env` file:
 
@@ -38,11 +44,11 @@ Add the following to your `.env` file:
 GOOGLE_GENERATIVE_AI_API_KEY=your_google_ai_api_key
 ```
 
-> **Note:** `CEREBRAS_API_KEY` is no longer required for the CSV standardization endpoint. The PDF import route still depends on it until that endpoint is migrated.
+> **Note:** `CEREBRAS_API_KEY` is no longer required, as both the CSV and PDF import pipelines have been migrated to the Vercel AI SDK with Google Gemini.
 
 ---
 
-### 3. Obtain a Google AI API Key
+## 3. Obtain a Google AI API Key
 
 1. Visit https://aistudio.google.com/app/apikey
 2. Generate an API key.
@@ -51,22 +57,22 @@ GOOGLE_GENERATIVE_AI_API_KEY=your_google_ai_api_key
 
 ---
 
-### 4. AI Configuration
+## 4. AI Configuration
 
 | Setting | Value |
-|---------|-------|
-| Provider | Google AI |
-| Model | `gemini-2.5-flash` |
-| SDK | Vercel AI SDK |
-| Output | `generateObject()` + Zod schemas |
+|----------|-------|
+| **Provider** | Google AI |
+| **Model** | `gemini-2.5-flash` |
+| **SDK** | Vercel AI SDK |
+| **Output** | `generateObject()` + Zod schemas |
 
 The AI SDK abstracts the provider implementation, making future provider changes straightforward.
 
 ---
 
-### 5. Project Structure
+## 5. Project Structure
 
-```
+```text
 lib/
 └── ai/
     ├── prompts.ts
@@ -75,21 +81,29 @@ lib/
 
 CSV standardization endpoint:
 
-```
+```text
 app/api/import/standardize/route.ts
 ```
 
 ---
 
-## Changes Implemented
+# Changes Implemented
 
-### CSV Standardization
+## Full Vercel AI SDK Migration
 
-Migrated the `standardize` endpoint from the legacy Cerebras implementation to the Vercel AI SDK.
+The standardization endpoint for both CSV and PDF imports has been migrated from the legacy Cerebras implementation to the Vercel AI SDK. This unifies the extraction and standardization logic under a single, modern architecture.
 
-### AI SDK Adoption
+---
 
-Replaced:
+## Enhanced PDF Extraction
+
+PDF parsing now leverages **Google Generative AI's multimodal capabilities** for more robust and accurate data extraction, significantly improving reliability over the previous implementation.
+
+---
+
+## AI SDK Adoption
+
+### Replaced
 
 - Manual `fetch()` requests
 - Manual retry logic
@@ -97,7 +111,7 @@ Replaced:
 - Manual response validation
 - Provider-specific request handling
 
-With:
+### With
 
 - `generateObject()`
 - Built-in retry handling
@@ -107,67 +121,25 @@ With:
 
 ---
 
-### Prompt & Schema Organization
+## Improved Schemas and Error Handling
 
 - Extracted prompts into reusable modules.
-- Added shared Zod schemas for AI responses.
-- Reduced duplicate parsing and validation logic across the import pipeline.
+- Updated and expanded shared Zod schemas for more consistent and reliable AI response validation across both CSV and PDF pipelines.
+- Implemented more robust error handling for AI API calls and data processing.
 
 ---
 
-## Remaining Work
+# Remaining Work
 
-### PDF Import
-
-The PDF parsing endpoint still uses the legacy Cerebras implementation.
-
-It should be migrated to the same architecture as the CSV pipeline:
-
-- AI SDK
-- Google Gemini
-- `generateObject()`
-- Shared prompts
-- Shared Zod schemas
-
----
-
-### Authentication
+## Authentication
 
 Authentication still requires additional work before the import pipeline is considered production-ready.
 
 ---
 
-## Dependency Updates
-
-### Added
-
-- `ai`
-- `@ai-sdk/google`
-- `@ai-sdk/xai`
-- `dotenv`
-- `tsx`
-
-### Updated
-
-- `@prisma/config`
-- `prisma`
-
-### Removed
-
-- `bcrypt` (unused)
-
----
-
-## Additional Changes
-
-- Simplified `dotenv` configuration in `prisma.config.ts`.
-- Removed redundant migration statements from the User table migration.
-- Reduced provider-specific implementation by adopting the AI SDK abstraction.
----
-
 ## Testing
 
-After making changes to the AI import pipeline, verify the following scenarios:
+After making changes to the AI import pipeline, verify the following scenarios.
 
 ### CSV Import
 
@@ -178,15 +150,30 @@ After making changes to the AI import pipeline, verify the following scenarios:
 - Upload an invalid CSV (non-transaction data) and confirm appropriate validation errors are displayed.
 - Upload an empty CSV containing only headers and verify the application handles it gracefully.
 
+---
+
 ### PDF Import
 
 - Import a valid PDF bank statement.
 - Verify that all transactions are extracted correctly.
 - Test a scanned (image-only) PDF to ensure the application fails gracefully when text cannot be extracted.
 
+---
+
 ### Additional Scenarios
 
 - Import the same statement twice and verify duplicate handling.
-- Test multiple date formats (e.g. `DD/MM/YYYY`, `YYYY-MM-DD`, `MMM DD, YYYY`, Excel serial dates).
-- Test statements from different banks with varying column names (e.g. Narration, Details, Particulars).
-- Test large files (500–1000 transactions) to verify batching, progress updates, retries, and performance.
+- Test multiple date formats:
+  - `DD/MM/YYYY`
+  - `YYYY-MM-DD`
+  - `MMM DD, YYYY`
+  - Excel serial dates
+- Test statements from different banks with varying column names, such as:
+  - Narration
+  - Details
+  - Particulars
+- Test large files (500–1000 transactions) to verify:
+  - Batching
+  - Progress updates
+  - Retries
+  - Overall performance
