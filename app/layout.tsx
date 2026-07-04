@@ -75,9 +75,9 @@ export const metadata: Metadata = {
   icons: {
     // FIX: Only use the SVG for the standard favicon to guarantee Google accepts it
     icon: '/icon.svg',
-    // Make sure you add a perfect square 180x180 png to your public folder named apple-icon.png!
-    shortcut: '/apple-icon.png',
-    apple: '/apple-icon.png',
+    // TODO: Add a perfect square 180x180 png to /public named apple-icon.png, then switch these back.
+    shortcut: '/logo.png',
+    apple: '/logo.png',
   },
 };
 
