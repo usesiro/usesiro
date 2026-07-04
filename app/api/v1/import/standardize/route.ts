@@ -5,10 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
 import { ResponseSchema } from "@/lib/ai/import-schema";
 import { IMPORT_PROMPT } from "@/lib/ai/prompts";
-
-const google = createGoogleGenerativeAI({
-  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-});
+import { google } from "@/lib/ai/google-client";
 
 export async function POST(request: Request) {
   try {
