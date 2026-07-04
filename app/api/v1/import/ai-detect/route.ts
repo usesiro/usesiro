@@ -80,7 +80,7 @@ Rules:
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            model: "qwen-3-235b-a22b-instruct-2507", 
+            model: "gpt-oss-120b", 
             messages: [
               { role: "system", content: prompt },
               { role: "user", content: "Data to map:\n" + userMsg }
