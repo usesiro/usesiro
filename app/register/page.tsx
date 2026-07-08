@@ -15,21 +15,24 @@ export default function Register() {
   const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   
-  // New States for API calls
+  // States for API calls
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false); // NEW: Track resend state
   const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState(""); // NEW: For resend success feedback
   
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", phone: "", email: "", password: "", confirmPassword: "",
     otp: "", 
-    businessName: "", businessType: "", industry: "", tin: "" // Added tin to match schema
+    businessName: "", businessType: "", industry: "", tin: ""
   });
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setErrorMsg(""); // Clear errors on typing
+    setErrorMsg("");
+    setSuccessMsg("");
   };
 
   const handleOtpChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,7 +65,6 @@ export default function Register() {
       const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Only sending the fields Zod expects
         body: JSON.stringify({ email: formData.email, password: formData.password, firstName: formData.firstName }),
       });
       const data = await res.json();
@@ -79,12 +81,42 @@ export default function Register() {
     }
   };
 
+  // NEW: Resend OTP Logic
+  const handleResendOtp = async () => {
+    setIsResending(true);
+    setErrorMsg("");
+    setSuccessMsg("");
+    try {
+      const res = await fetch("/api/v1/auth/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to resend OTP");
+      
+      setSuccessMsg("A new code has been sent to your email.");
+      showNotification("OTP resent successfully", "success");
+      
+      // Clear current OTP input
+      setFormData(prev => ({ ...prev, otp: "" }));
+      inputRefs.current[0]?.focus();
+    } catch (err: any) {
+      const msg = err.message === "Failed to fetch" || err.name === "TypeError"
+        ? "Network error. Check your connection."
+        : err.message;
+      setErrorMsg(msg);
+      showNotification(msg, "error");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   const handleStep2 = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMsg("");
     try {
-      // 1. Verify the OTP
       const verifyRes = await fetch("/api/v1/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -93,7 +125,6 @@ export default function Register() {
       const verifyData = await verifyRes.json();
       if (!verifyRes.ok) throw new Error(verifyData.error || "Invalid OTP");
 
-      // 2. AUTO-LOGIN to get the JWT token for Step 3
       const loginRes = await fetch("/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -102,7 +133,6 @@ export default function Register() {
       const loginData = await loginRes.json();
       if (!loginRes.ok) throw new Error("Auto-login failed. Please go to login page.");
 
-      // Save token securely
       localStorage.setItem("siro_access_token", loginData.accessToken);
       setStep(3);
     } catch (err: any) {
@@ -132,13 +162,12 @@ export default function Register() {
           name: formData.businessName,
           type: formData.businessType,
           industry: formData.industry,
-          tin: formData.tin || undefined // Send undefined if empty
+          tin: formData.tin || undefined 
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create business");
       
-      // Success! Send them to the dashboard
       router.push("/welcome"); 
     } catch (err: any) {
       const msg = err.message === "Failed to fetch" || err.name === "TypeError"
@@ -162,6 +191,12 @@ export default function Register() {
           {errorMsg}
         </div>
       )}
+      
+      {successMsg && step === 2 && (
+        <div className="mb-4 p-3 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm text-center">
+          {successMsg}
+        </div>
+      )}
 
       {/* --- STEP 1 --- */}
       {step === 1 && (
@@ -170,9 +205,7 @@ export default function Register() {
             <h1 className="text-2xl font-bold text-dark mb-2">Create A New Account</h1>
             <p className="text-gray-500 text-sm">Input your personal details</p>
           </div>
-          {/* ... Keep your existing Step 1 inputs here ... */}
           
-          {/* Example of one input for brevity, KEEP yours */}
           <div className="relative">
             <UserIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input name="firstName" value={formData.firstName} onChange={handleChange} type="text" placeholder="First Name" className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary text-dark bg-white" />
@@ -206,22 +239,44 @@ export default function Register() {
       {/* --- STEP 2 --- */}
       {step === 2 && (
         <form className="space-y-6" onSubmit={handleStep2}>
-          {/* ... Keep your existing OTP header/icons ... */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-dark mb-2">Verify Email</h1>
+            <p className="text-gray-500 text-sm">Enter the 6-digit code sent to {formData.email}</p>
+          </div>
+
           <div className="flex justify-between gap-2">
               {[0, 1, 2, 3, 4, 5].map((index) => (
                 <input key={index} ref={(el) => { inputRefs.current[index] = el }} type="text" maxLength={1} value={formData.otp[index] || ""} onChange={(e) => handleOtpChange(index, e)} onKeyDown={(e) => handleOtpKeyDown(index, e)} className="w-10 h-10 md:w-12 md:h-12 text-center border border-gray-200 rounded-lg focus:outline-none focus:border-primary text-xl font-bold bg-white text-dark shadow-sm transition-all"/>
               ))}
           </div>
+          
           <button type="submit" disabled={!isStep2Valid || isLoading} className={`w-full py-3 rounded-lg font-semibold text-white transition ${isStep2Valid && !isLoading ? "bg-primary hover:bg-blue-700 shadow-lg cursor-pointer" : "bg-primary opacity-50 cursor-not-allowed"}`}>
             {isLoading ? "Verifying..." : "Verify"}
           </button>
+
+          {/* NEW: Resend OTP Block */}
+          <div className="text-center mt-4">
+            <p className="text-sm text-gray-500 mb-2">Didn't receive the code?</p>
+            <button 
+              type="button" 
+              onClick={handleResendOtp}
+              disabled={isResending || isLoading}
+              className="text-primary font-bold text-sm hover:underline disabled:opacity-50 disabled:no-underline"
+            >
+              {isResending ? "Resending..." : "Resend OTP"}
+            </button>
+          </div>
         </form>
       )}
 
       {/* --- STEP 3 --- */}
       {step === 3 && (
         <form className="space-y-5" onSubmit={handleStep3}>
-          {/* ... Keep your existing headers ... */}
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-dark mb-2">Business Details</h1>
+            <p className="text-gray-500 text-sm">Set up your workspace</p>
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-dark mb-1.5 ml-1">Business Name</label>
             <input name="businessName" value={formData.businessName} onChange={handleChange} type="text" placeholder="Enter Business Name" className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-dark" />
@@ -230,7 +285,6 @@ export default function Register() {
             <label className="block text-xs font-medium text-dark mb-1.5 ml-1">Business Type</label>
             <select name="businessType" value={formData.businessType} onChange={handleChange} className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-gray-500">
               <option value="">Pick Business Type</option>
-              {/* FIXED ENUM VALUES HERE */}
               <option value="SOLE_PROPRIETORSHIP">Sole Proprietorship</option>
               <option value="PARTNERSHIP">Partnership</option>
               <option value="LIMITED_LIABILITY">Limited Liability</option>

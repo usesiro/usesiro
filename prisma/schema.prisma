@@ -61,20 +61,21 @@ model User {
 }
 
 model Business {
-  id            String   @id @default(uuid())
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id])
-  name          String
-  type          BusinessType
-  industry      String
-  tin           String?
-  monoAccountId String?  @unique 
-  lastSyncedAt  DateTime? 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  name            String
+  type            BusinessType
+  industry        String
+  tin             String?
+  monoAccountId   String?  @unique 
+  startingBalance Float?   @default(0) // <-- NEW: Saves the opening balance from AI
+  lastSyncedAt    DateTime? 
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  transactions  Transaction[] 
-  savedMappings SavedMapping[]
+  transactions    Transaction[] 
+  savedMappings   SavedMapping[]
 }
 
 model Category {
@@ -200,4 +201,4 @@ model Booking {
   updatedAt    DateTime @updatedAt
 
   @@index([startTime])
-}
+}
