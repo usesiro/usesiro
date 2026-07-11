@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     siteName: 'Siro',
     images: [
       {
-        url: '/logo.png', // Keep the 1200x630 rectangle ONLY for social sharing
+        url: '/logo.png', 
         width: 1200,
         height: 630,
         alt: 'Siro Technologies Logo',
@@ -73,9 +73,7 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    // FIX: Only use the SVG for the standard favicon to guarantee Google accepts it
     icon: '/icon.svg',
-    // TODO: Add a perfect square 180x180 png to /public named apple-icon.png, then switch these back.
     shortcut: '/logo.png',
     apple: '/logo.png',
   },
@@ -90,7 +88,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${poppins.variable} ${fraunces.variable} font-sans`}>
         
-        {/* --- GOOGLE ORGANIZATION SCHEMA (Forces Google to recognize your logo) --- */}
+        {/* --- GOOGLE ORGANIZATION SCHEMA --- */}
         <Script
           id="organization-schema"
           type="application/ld+json"
@@ -102,7 +100,7 @@ export default function RootLayout({
               "url": "https://usesiro.com",
               "logo": "https://usesiro.com/icon.svg",
               "sameAs": [
-                "https://twitter.com/usesiro", // Add your real socials here if you have them
+                "https://twitter.com/usesiro",
                 "https://linkedin.com/company/usesiro"
               ]
             })
@@ -132,10 +130,13 @@ export default function RootLayout({
           `}
         </Script>
         
-{/* --- LUCKY ORANGE SESSION TRACKING --- */}
-<Script 
-  src="https://tools.luckyorange.com/core/lo.js?site-id=4d5a072a"
-  strategy="lazyOnload"
-/>
-
-<Analytics />
+        {/* --- LUCKY ORANGE SESSION TRACKING --- */}
+        <Script 
+          src="https://tools.luckyorange.com/core/lo.js?site-id=4d5a072a"
+          strategy="lazyOnload"
+        />
+        <Analytics />
+      </body>
+    </html>
+  );
+}
