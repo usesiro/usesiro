@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     }
 
     const { object } = await generateObject({
-      model: google("gemini-2.5-flash"),
+      model: google("gemini-3.1-flash-lite"),
       schema: ResponseSchema,
       prompt: text,
       instructions: PDF_EXTRACT_PROMPT,
