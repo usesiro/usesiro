@@ -9,13 +9,14 @@ import {
   ArrowUpRightIcon, WalletIcon, CreditCardIcon, ScaleIcon,
   MagnifyingGlassIcon, ArrowDownTrayIcon, PlusIcon,
   ChevronLeftIcon, ChevronRightIcon, XMarkIcon, CheckCircleIcon,
-  ReceiptRefundIcon, DocumentChartBarIcon, DocumentTextIcon, TableCellsIcon, ArrowPathIcon, TrashIcon
+  ReceiptRefundIcon, DocumentChartBarIcon, DocumentTextIcon, TableCellsIcon, ArrowPathIcon, TrashIcon,
+  FunnelIcon, ChevronDownIcon // Added new icons
 } from "@heroicons/react/24/outline";
 import { useNotification } from "@/context/NotificationContext";
 import TableSkeleton from "@/components/TableSkeleton";
 import TransactionImportModal from "@/components/TransactionImportModal";
 
-const ITEMS_PER_PAGE = 15; // Set pagination limit
+const ITEMS_PER_PAGE = 15;
 
 export default function Transactions() {
   const { showNotification } = useNotification();
@@ -27,6 +28,10 @@ export default function Transactions() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+
+  // New Popover States
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
 
   // Dynamic Data State
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -70,6 +75,8 @@ export default function Transactions() {
     date: new Date().toISOString().split('T')[0] 
   });
 
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Fetch functions
   const fetchData = async () => {
     setIsLoading(true);
@@ -89,8 +96,8 @@ export default function Transactions() {
         setTransactions(data.transactions);
         setStats(data.stats);
         setLastSyncedAt(data.lastSyncedAt);
-        setCurrentPage(1); // Reset to page 1 whenever filters change
-        setSelectedIds([]); // Clear selection on new fetch
+        setCurrentPage(1); 
+        setSelectedIds([]); 
       }
     } catch (err: any) {
       const msg = err.message === "Failed to fetch" || err.name === "TypeError"
@@ -129,7 +136,6 @@ export default function Transactions() {
     fetchCategories();
   }, []);
 
-  // --- Pagination Math ---
   const totalPages = Math.ceil(transactions.length / ITEMS_PER_PAGE) || 1;
   const paginatedTransactions = transactions.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -139,7 +145,6 @@ export default function Transactions() {
   const handlePrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
   const handleNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
-  // --- Handlers ---
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
   };
@@ -150,11 +155,9 @@ export default function Transactions() {
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      // Only select items on the current page
       const pageIds = paginatedTransactions.map(t => t.id);
       setSelectedIds(prev => Array.from(new Set([...prev, ...pageIds])));
     } else {
-      // Deselect items on the current page
       const pageIds = paginatedTransactions.map(t => t.id);
       setSelectedIds(prev => prev.filter(id => !pageIds.includes(id)));
     }
@@ -238,9 +241,6 @@ export default function Transactions() {
     }
   };
 
-  // Add this state
-  const [isDeleting, setIsDeleting] = useState(false);
-
   const handleVatStatusChange = async (transactionId: string, newVatStatus: string) => {
     setTransactions(prevTransactions => 
       prevTransactions.map(t => 
@@ -315,7 +315,6 @@ export default function Transactions() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // --- ADVANCED EXPORT GENERATOR ---
   const handleGenerateExport = () => {
     const dataToExport = transactions.filter(t => {
       const tDate = new Date(t.date).getTime();
@@ -415,10 +414,10 @@ export default function Transactions() {
     setIsExportModalOpen(false); 
   };
 
-  // Formatters
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount);
   };
+  
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
@@ -432,7 +431,6 @@ export default function Transactions() {
     }
   };
 
-  // Helper check for "Select All" based on the current page
   const isAllCurrentPageSelected = paginatedTransactions.length > 0 && paginatedTransactions.every(t => selectedIds.includes(t.id));
 
   const getCanSync = () => {
@@ -485,17 +483,19 @@ export default function Transactions() {
           </div>
         </div>
 
-
         {/* MAIN TABLE SECTION */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-bold text-gray-700">Transaction List</h2>
           </div>
 
-          {/* FILTERS TOOLBAR */}
-          <div className="flex flex-col xl:flex-row gap-4 justify-between mb-8">
-            <div className="flex flex-col md:flex-row gap-3 flex-1">
-              <div className="relative w-full md:w-64">
+          {/* FILTERS TOOLBAR - REFACTORED */}
+          <div className="flex flex-col xl:flex-row items-center justify-between gap-4 mb-8">
+            
+            {/* LEFT: Search & Filter */}
+            <div className="flex items-center gap-3 w-full xl:w-auto flex-1">
+              {/* Search Bar */}
+              <div className="relative w-full sm:max-w-md">
                 <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input 
                   type="text" 
@@ -503,61 +503,101 @@ export default function Transactions() {
                   value={filters.search}
                   onChange={handleFilterChange}
                   placeholder="Search descriptions..." 
-                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary" 
+                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-all shadow-sm" 
                 />
               </div>
-              
-              <div className="relative w-full md:w-40">
-                <select 
-                  name="type"
-                  value={filters.type}
-                  onChange={handleFilterChange}
-                  className="w-full pl-4 pr-10 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary appearance-none bg-white text-gray-500"
-                >
-                  <option value="All Types">All Types</option>
-                  <option value="INCOME">Income</option>
-                  <option value="EXPENSE">Expense</option>
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"><svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg></div>
-              </div>
 
-              <div className="relative w-full md:w-40">
-                <select 
-                  name="source"
-                  value={filters.source}
-                  onChange={handleFilterChange}
-                  className="w-full pl-4 pr-10 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary appearance-none bg-white text-gray-500"
+              {/* Filter Trigger Button */}
+              <div className="relative">
+                <button 
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg text-sm font-semibold transition-all shadow-sm
+                    ${isFilterOpen ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'}`}
                 >
-                  <option value="All Sources">All Sources</option>
-                  <option value="MONO">Bank (Mono)</option>
-                  <option value="MANUAL">Manual Entry</option>
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"><svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg></div>
+                  <FunnelIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Filter</span>
+                </button>
+
+                {/* Filter Popover */}
+                {isFilterOpen && (
+                  <div className="absolute left-0 mt-2 w-64 bg-white border border-gray-100 rounded-xl shadow-xl z-40 p-4 animate-fade-in-up">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Transaction Filters</p>
+                    <div className="space-y-3">
+                      <select 
+                        name="type"
+                        value={filters.type}
+                        onChange={handleFilterChange}
+                        className="w-full border border-gray-200 rounded-lg text-sm p-2.5 bg-gray-50 focus:outline-none focus:border-primary text-gray-600 appearance-none"
+                      >
+                        <option value="All Types">All Types</option>
+                        <option value="INCOME">Income</option>
+                        <option value="EXPENSE">Expense</option>
+                      </select>
+                      <select 
+                        name="source"
+                        value={filters.source}
+                        onChange={handleFilterChange}
+                        className="w-full border border-gray-200 rounded-lg text-sm p-2.5 bg-gray-50 focus:outline-none focus:border-primary text-gray-600 appearance-none"
+                      >
+                        <option value="All Sources">All Sources</option>
+                        <option value="MONO">Bank (Mono)</option>
+                        <option value="MANUAL">Manual Entry</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="grid grid-cols-2 md:flex md:items-center gap-3 w-full md:w-auto">
+
+            {/* RIGHT: Secondary & Primary Actions */}
+            <div className="flex items-center gap-3 w-full xl:w-auto justify-end">
               <button 
                 onClick={() => setDeleteModal({ isOpen: true, type: "CLEAR_ALL", ids: [] })}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 border border-red-100 rounded-lg text-sm font-medium text-red-400 hover:bg-red-50 transition"
+                className="flex items-center gap-2 px-3 py-2.5 text-red-500 hover:bg-red-50 rounded-lg text-sm font-semibold transition-colors"
               >
-                <TrashIcon className="w-4 h-4" /> Clear All
+                <TrashIcon className="w-4 h-4" />
+                <span className="hidden md:inline">Clear All</span>
               </button>
+
               <button 
                 onClick={() => setIsExportModalOpen(true)}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-semibold transition-all shadow-sm"
               >
-                <ArrowDownTrayIcon className="w-4 h-4" /> Export Report
+                <ArrowDownTrayIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">Export Report</span>
               </button>
-              <button 
-                onClick={() => setIsImportModalOpen(true)} 
-                className="col-span-2 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-primary text-primary rounded-lg text-sm font-medium hover:bg-blue-50 transition"
-              >
-                <TableCellsIcon className="w-4 h-4 text-primary" /> 
-                Upload Records
-              </button>
-              <button onClick={() => setIsAddModalOpen(true)} className="col-span-2 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-black transition">
-                <PlusIcon className="w-4 h-4" /> Add Transaction
-              </button>
+
+              {/* Add Record (Dropdown) */}
+              <div className="relative">
+                <button 
+                  onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
+                  className="flex items-center gap-2 bg-primary hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-md"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  <span>Add Record</span>
+                  <ChevronDownIcon className={`w-3 h-3 transition-transform duration-200 ${isAddMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Action Menu Popover */}
+                {isAddMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                    <button 
+                      onClick={() => { setIsAddMenuOpen(false); setIsAddModalOpen(true); }}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 text-gray-700 font-semibold text-sm border-b border-gray-50 flex items-center gap-3 transition-colors"
+                    >
+                      <DocumentTextIcon className="w-4 h-4 text-gray-400" />
+                      Manual Entry
+                    </button>
+                    <button 
+                      onClick={() => { setIsAddMenuOpen(false); setIsImportModalOpen(true); }}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-50 text-gray-700 font-semibold text-sm flex items-center gap-3 transition-colors"
+                    >
+                      <TableCellsIcon className="w-4 h-4 text-primary" />
+                      Upload File
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -670,7 +710,7 @@ export default function Transactions() {
               <tbody className="divide-y divide-gray-50">
                 {paginatedTransactions.length === 0 ? (
                     <tr>
-                        <td colSpan={7} className="text-center py-8 text-gray-500">No transactions found matching those filters.</td>
+                        <td colSpan={8} className="text-center py-8 text-gray-500">No transactions found matching those filters.</td>
                     </tr>
                 ) : (
                     paginatedTransactions.map((t) => (
