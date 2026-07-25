@@ -5,6 +5,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { calculateTaxReadinessScore } from "@/utils/taxScoring"; 
 import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
+import CheckoutButton from "@/components/CheckoutButton";
 import Link from "next/link";
 
 // --- GREETING UTILITIES (UNTOUCHED) ---
@@ -59,7 +60,8 @@ export default function Overview() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAlertDismissed, setIsAlertDismissed] = useState(false);
-  const [isMounted, setIsMounted] = useState(false); // New state for the 0-100% animation
+  const [isMounted, setIsMounted] = useState(false);
+  const [isPro, setIsPro] = useState(false);
 
   const greeting = useMemo(() => getGreeting(), []);
   const subMessage = useMemo(() => getHolidayMessage() || getRandomHumor(), []);
@@ -72,19 +74,23 @@ export default function Overview() {
     async function getDashboardData() {
       try {
         const token = localStorage.getItem("siro_access_token");
-        const [bizRes, txRes] = await Promise.all([
+        const [bizRes, txRes, payRes] = await Promise.all([
           fetch("/api/v1/business/me", { headers: { Authorization: `Bearer ${token}` } }),
-          fetch("/api/v1/transactions", { headers: { Authorization: `Bearer ${token}` } })
+          fetch("/api/v1/transactions", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("/api/payments/status", { headers: { Authorization: `Bearer ${token}` } })
         ]);
         if (bizRes.ok) setBusiness(await bizRes.json());
         if (txRes.ok) {
           const txData = await txRes.json();
           setTransactions(txData.transactions || []);
         }
-      } finally { 
+        if (payRes.ok) {
+          const payData = await payRes.json();
+          setIsPro(payData.isPro);
+        }
+      } finally {
         setLoading(false);
-        // Trigger the visual sweep animation immediately after loading finishes
-        setTimeout(() => setIsMounted(true), 100); 
+        setTimeout(() => setIsMounted(true), 100);
       }
     }
     getDashboardData();
@@ -161,7 +167,18 @@ export default function Overview() {
       </div>
 
       <div className="space-y-10">
-        
+
+        {/* --- DEMO: SUBSCRIPTION CHECKOUT --- */}
+        {!isPro && (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Upgrade to Siro Pro</h3>
+              <p className="text-sm text-gray-500 mt-1">₦9,999/month — Full access to automated bank syncing, AI imports & more.</p>
+            </div>
+            <CheckoutButton userEmail={business?.owner?.email || ""} />
+          </div>
+        )}
+
         {/* --- DARK SCOREBOARD BANNER --- */}
         <div className="bg-[#1A1C23] rounded-2xl p-6 md:p-10 flex flex-col md:flex-row items-center gap-8 md:gap-12">
           {/* Circular Gauge */}

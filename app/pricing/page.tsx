@@ -54,8 +54,23 @@ export default function PricingPage() {
               <p className="text-xs font-semibold text-primary tracking-widest uppercase">FULL ACCESS • ALL FEATURES</p>
             </div>
             <div className="text-left md:text-right">
-              <span className="text-5xl font-fraunces font-bold text-primary block mb-1">₦9,000</span>
+              <div className="flex items-center gap-2 justify-start md:justify-end mb-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-widest rounded-full border border-amber-200">
+                  <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                  Early Adopter Rate
+                </span>
+              </div>
+              <span className="text-5xl font-fraunces font-bold text-primary block mb-1">₦9,999</span>
               <span className="text-gray-500 text-sm">per month</span>
+              <div className="relative group mt-2">
+                <p className="text-[11px] text-gray-400 cursor-help underline decoration-dotted underline-offset-2">
+                  Why this price?
+                </p>
+                <div className="absolute bottom-full right-0 md:right-auto md:left-0 mb-2 w-64 p-3 bg-gray-900 text-white text-xs rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  Standard pricing of ₦15,000/mo applies once automated bank syncing is fully active. Lock in the early adopter rate now.
+                  <div className="absolute top-full left-6 w-2 h-2 bg-gray-900 rotate-45 -translate-y-1"></div>
+                </div>
+              </div>
             </div>
           </div>
 

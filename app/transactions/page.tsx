@@ -15,6 +15,7 @@ import {
 import { useNotification } from "@/context/NotificationContext";
 import TableSkeleton from "@/components/TableSkeleton";
 import TransactionImportModal from "@/components/TransactionImportModal";
+import PaywallModal from "@/components/PaywallModal";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -32,6 +33,11 @@ export default function Transactions() {
   // New Popover States
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+
+  // Paywall State
+  const [isPro, setIsPro] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [paywallModal, setPaywallModal] = useState<{ isOpen: boolean; feature: string }>({ isOpen: false, feature: "" });
 
   // Dynamic Data State
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -134,6 +140,25 @@ export default function Transactions() {
 
   useEffect(() => {
     fetchCategories();
+    // Fetch payment status for paywall
+    async function fetchPaymentStatus() {
+      try {
+        const token = localStorage.getItem("siro_access_token");
+        const [payRes, bizRes] = await Promise.all([
+          fetch("/api/payments/status", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("/api/v1/business/me", { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+        if (payRes.ok) {
+          const data = await payRes.json();
+          setIsPro(data.isPro);
+        }
+        if (bizRes.ok) {
+          const biz = await bizRes.json();
+          setUserEmail(biz.owner?.email || "");
+        }
+      } catch (err) { console.error(err); }
+    }
+    fetchPaymentStatus();
   }, []);
 
   const totalPages = Math.ceil(transactions.length / ITEMS_PER_PAGE) || 1;
@@ -450,10 +475,11 @@ export default function Transactions() {
 
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800">Transactions</h1>
-          <button 
+          <button
             disabled={!canSync || isSyncing}
-            onClick={async () => { 
-                setIsSyncing(true); 
+            onClick={async () => {
+                if (!isPro) { setPaywallModal({ isOpen: true, feature: "Sync Bank" }); return; }
+                setIsSyncing(true);
                 const res = await fetch("/api/v1/mono/sync", { 
                     method: "POST", 
                     headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` } 
@@ -490,8 +516,8 @@ export default function Transactions() {
           </div>
 
           {/* FILTERS TOOLBAR - REFACTORED */}
-          <div className="flex flex-col xl:flex-row items-center justify-between gap-4 mb-8">
-            
+          <div id="tour-search-filter" className="flex flex-col xl:flex-row items-center justify-between gap-4 mb-8">
+
             {/* LEFT: Search & Filter */}
             <div className="flex items-center gap-3 w-full xl:w-auto flex-1">
               {/* Search Bar */}
@@ -559,8 +585,11 @@ export default function Transactions() {
                 <span className="hidden md:inline">Clear All</span>
               </button>
 
-              <button 
-                onClick={() => setIsExportModalOpen(true)}
+              <button
+                onClick={() => {
+                  if (!isPro) { setPaywallModal({ isOpen: true, feature: "Export Report" }); return; }
+                  setIsExportModalOpen(true);
+                }}
                 className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-semibold transition-all shadow-sm"
               >
                 <ArrowDownTrayIcon className="w-4 h-4" />
@@ -581,15 +610,21 @@ export default function Transactions() {
                 {/* Action Menu Popover */}
                 {isAddMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
-                    <button 
+                    <button
+                      id="tour-add-transaction"
                       onClick={() => { setIsAddMenuOpen(false); setIsAddModalOpen(true); }}
                       className="w-full text-left px-4 py-3 hover:bg-gray-50 text-gray-700 font-semibold text-sm border-b border-gray-50 flex items-center gap-3 transition-colors"
                     >
                       <DocumentTextIcon className="w-4 h-4 text-gray-400" />
                       Manual Entry
                     </button>
-                    <button 
-                      onClick={() => { setIsAddMenuOpen(false); setIsImportModalOpen(true); }}
+                    <button
+                      id="tour-upload-records"
+                      onClick={() => {
+                        setIsAddMenuOpen(false);
+                        if (!isPro) { setPaywallModal({ isOpen: true, feature: "Upload Records" }); return; }
+                        setIsImportModalOpen(true);
+                      }}
                       className="w-full text-left px-4 py-3 hover:bg-gray-50 text-gray-700 font-semibold text-sm flex items-center gap-3 transition-colors"
                     >
                       <TableCellsIcon className="w-4 h-4 text-primary" />
@@ -921,10 +956,18 @@ export default function Transactions() {
         )}
 
         {/* IMPORT MODAL */}
-        <TransactionImportModal 
-          isOpen={isImportModalOpen} 
-          onClose={() => setIsImportModalOpen(false)} 
-          onSuccess={() => fetchData()} 
+        <TransactionImportModal
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          onSuccess={() => fetchData()}
+        />
+
+        {/* PAYWALL MODAL */}
+        <PaywallModal
+          isOpen={paywallModal.isOpen}
+          onClose={() => setPaywallModal({ isOpen: false, feature: "" })}
+          userEmail={userEmail}
+          featureName={paywallModal.feature}
         />
 
         {/* --- DELETE CONFIRMATION MODAL --- */}
