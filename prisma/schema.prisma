@@ -188,6 +188,28 @@ model SavedMapping {
   @@unique([businessId, headerHash])
 }
 
+// --- PAYMENT RECORDS ---
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  reference String        @unique
+  email     String
+  amount    Int           // Amount in kobo
+  status    PaymentStatus @default(PENDING)
+  channel   String?       // e.g. "card", "bank", "ussd"
+  paidAt    DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([email])
+  @@index([createdAt])
+}
+
 // --- BOOKING SYSTEM ---
 model Booking {
   id           String   @id @default(uuid())

@@ -69,10 +69,16 @@ export default async function middleware(request: NextRequest) {
 
 
   // --- LAYER 2: API ROUTE PROTECTION (Your Existing Logic) ---
-  if (pathname.startsWith('/api/v1/')) {
+
+  // Webhooks are verified by their own signature logic — let them through
+  if (pathname.startsWith('/api/webhooks/')) {
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith('/api/v1/') || pathname.startsWith('/api/payments/')) {
     // Let public auth/waitlist/contact pass
     if (
-      pathname.startsWith('/api/v1/auth') || 
+      pathname.startsWith('/api/v1/auth') ||
       pathname.startsWith('/api/v1/waitlist') ||
       pathname.startsWith('/api/v1/contact') ||
       pathname.startsWith('/api/v1/bookings')
@@ -110,6 +116,8 @@ export default async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/api/v1/:path*',
+    '/api/payments/:path*',
+    '/api/webhooks/:path*',
     '/dashboard/:path*',
     '/pigshit/:path*',
     '/transactions/:path*',

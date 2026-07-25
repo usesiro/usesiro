@@ -12,6 +12,7 @@ import {
   SpeakerWaveIcon, SpeakerXMarkIcon
 } from "@heroicons/react/24/outline";
 import { useNotification } from "@/context/NotificationContext";
+import { useProductTour } from "@/hooks/useProductTour";
 import NotificationDropdown from "./NotificationDropdown";
 import NotificationModal from "./NotificationModal";
 import DashboardBottomNav from "./dashboard/DashboardBottomNav";
@@ -32,6 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const { isMuted } = useNotification();
+  const { startTour } = useProductTour();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
@@ -172,6 +174,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           
           <div className="flex items-center gap-3 md:gap-4">
+            <button
+              onClick={() => {
+                if (pathname === "/transactions") {
+                  // Already on transactions, start tour directly
+                  setTimeout(() => startTour(), 300);
+                } else {
+                  // Navigate to transactions first, then start tour
+                  router.push("/transactions");
+                  setTimeout(() => startTour(), 800);
+                }
+              }}
+              className="hidden md:flex items-center gap-2 px-3 py-2 text-xs font-bold text-primary bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Start Tour
+            </button>
             <NotificationDropdown 
               onOpenModal={() => setIsNotificationModalOpen(true)} 
               externalUnreadCount={unreadCount}

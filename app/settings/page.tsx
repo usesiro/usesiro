@@ -11,7 +11,7 @@ import SettingsSkeleton from "@/components/SettingsSkeleton";
 export default function Settings() {
   const router = useRouter();
   const { showNotification } = useNotification();
-  const [activeTab, setActiveTab] = useState<"Personal Info" | "Business Info" | "Automation" | "Notification" | "Security" | "Audit Logs">("Personal Info");
+  const [activeTab, setActiveTab] = useState<"Personal Info" | "Business Info" | "Subscription" | "Automation" | "Notification" | "Security" | "Audit Logs">("Personal Info");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -41,17 +41,21 @@ export default function Settings() {
   const [auditLogPage, setAuditLogPage] = useState(1);
   const logsPerPage = 10;
 
-  const tabs = ["Personal Info", "Business Info", "Automation", "Notification", "Security", "Audit Logs"];
+  // --- SUBSCRIPTION STATE ---
+  const [subscriptionData, setSubscriptionData] = useState<{ isPro: boolean; payment: any }>({ isPro: false, payment: null });
+
+  const tabs = ["Personal Info", "Business Info", "Subscription", "Automation", "Notification", "Security", "Audit Logs"];
 
   const fetchData = async () => {
     try {
-      const res = await fetch("/api/v1/business/me", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` }
-      });
-      if (res.ok) {
-        const fetchedData = await res.json();
+      const token = localStorage.getItem("siro_access_token");
+      const [bizRes, payRes] = await Promise.all([
+        fetch("/api/v1/business/me", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/payments/status", { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+      if (bizRes.ok) {
+        const fetchedData = await bizRes.json();
         setData(fetchedData);
-        // Pre-fill form data
         setFormData({
           firstName: fetchedData?.owner?.firstName || "",
           lastName: fetchedData?.owner?.lastName || "",
@@ -65,8 +69,11 @@ export default function Settings() {
           loginAlerts: fetchedData?.owner?.twoFactorEnabled
         });
       }
-    } finally { 
-      setLoading(false); 
+      if (payRes.ok) {
+        setSubscriptionData(await payRes.json());
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -262,6 +269,80 @@ export default function Settings() {
                   <Field label="Industry" value={data?.industry} />
                   <Field label="Type" value="Sole Business" />
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* --- SUBSCRIPTION TAB --- */}
+          {activeTab === "Subscription" && (
+            <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm max-w-2xl animate-fade-in-up">
+              {subscriptionData.isPro ? (
+                <>
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center">
+                      <svg className="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-gray-800">Siro Pro</h2>
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-green-200">
+                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                        Active
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center py-4 border-b border-gray-100">
+                      <span className="text-sm text-gray-500 font-medium">Plan</span>
+                      <span className="text-sm font-bold text-gray-900">Siro Pro — ₦9,999/month</span>
+                    </div>
+                    <div className="flex justify-between items-center py-4 border-b border-gray-100">
+                      <span className="text-sm text-gray-500 font-medium">Status</span>
+                      <span className="text-sm font-bold text-green-600">Active</span>
+                    </div>
+                    <div className="flex justify-between items-center py-4 border-b border-gray-100">
+                      <span className="text-sm text-gray-500 font-medium">Activated on</span>
+                      <span className="text-sm font-bold text-gray-900">
+                        {subscriptionData.payment?.paidAt
+                          ? new Date(subscriptionData.payment.paidAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                          : "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-4 border-b border-gray-100">
+                      <span className="text-sm text-gray-500 font-medium">Payment method</span>
+                      <span className="text-sm font-bold text-gray-900 capitalize">{subscriptionData.payment?.channel || "Card"}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-4">
+                      <span className="text-sm text-gray-500 font-medium">Reference</span>
+                      <span className="text-xs font-mono text-gray-400">{subscriptionData.payment?.reference || "—"}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 p-4 bg-green-50/50 border border-green-100 rounded-xl">
+                    <p className="text-xs text-green-700 font-medium">
+                      You have full access to all Siro features including automated bank syncing, AI-powered imports, and unlimited reporting.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-800 mb-2">No active subscription</h2>
+                    <p className="text-sm text-gray-500 mb-8 max-w-sm mx-auto">
+                      Upgrade to Siro Pro to unlock automated bank syncing, AI imports, and unlimited tax reporting.
+                    </p>
+                    <a href="/dashboard" className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white text-sm font-bold rounded-xl hover:bg-blue-600 transition shadow-lg shadow-blue-100">
+                      Subscribe — ₦9,999/month
+                    </a>
+                  </div>
+                </>
               )}
             </div>
           )}
