@@ -3,11 +3,8 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { getCalApi } from "@calcom/embed-react";
-import { useBookingModal } from "./booking/BookingProvider";
 
 export default function Hero() {
-  const { openBookingModal } = useBookingModal();
-  
   // Initialize the Cal.com popup
   useEffect(() => {
     (async function () {
@@ -44,18 +41,17 @@ export default function Hero() {
 
         {/* --- BUTTONS --- */}
         <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4" data-aos="fade-up" data-aos-delay="200">
-          <Link href="/waitlist">
+          <Link href="/register">
             <button className="w-full sm:w-auto px-8 py-3 bg-primary text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20">
-              Join the waitlist
+              Sign Up
             </button>
           </Link>
-          
-          <button 
-            onClick={openBookingModal}
-            className="w-full sm:w-auto px-8 py-3 bg-white text-primary border border-primary/20 rounded-lg font-bold text-sm hover:bg-blue-50 transition-colors shadow-sm"
-          >
-            Book a Demo
-          </button>
+
+          <Link href="/login">
+            <button className="w-full sm:w-auto px-8 py-3 bg-white text-primary border border-primary/20 rounded-lg font-bold text-sm hover:bg-blue-50 transition-colors shadow-sm">
+              Sign In
+            </button>
+          </Link>
         </div>
 
       </div>

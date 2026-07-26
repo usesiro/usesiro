@@ -7,9 +7,10 @@ import { useNotification } from "@/context/NotificationContext";
 interface PaystackInnerProps {
   userEmail: string;
   amountInKobo: number;
+  onPaymentSuccess?: () => void;
 }
 
-function PaystackInner({ userEmail, amountInKobo }: PaystackInnerProps) {
+function PaystackInner({ userEmail, amountInKobo, onPaymentSuccess }: PaystackInnerProps) {
   const { showNotification } = useNotification();
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -39,6 +40,7 @@ function PaystackInner({ userEmail, amountInKobo }: PaystackInnerProps) {
 
       if (res.ok && data.verified) {
         showNotification("Payment successful! Thank you.", "success");
+        if (onPaymentSuccess) onPaymentSuccess();
       } else {
         showNotification(data.error || "Payment verification failed. Contact support.", "error");
       }

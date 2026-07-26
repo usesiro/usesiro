@@ -45,8 +45,12 @@ export async function POST(request: Request) {
 
     // --- STEP 2: Process Transactions ---
     const allCategories = await prisma.category.findMany();
+    const businessRules = await prisma.businessCategoryRule.findMany({
+      where: { businessId: business.id }
+    });
     const transactionsToCreate: any[] = [];
-    
+    let pendingReviewCount = 0;
+
     console.log(`[Import] Processing ${data.length} items. Applying rate: ${rate || 1}`);
 
     const getMappedValue = (row: any, field: string) => {
@@ -121,7 +125,9 @@ export async function POST(request: Request) {
         row.balance
       );
 
-      const categoryId = autoCategorize(desc, finalType, allCategories);
+      const { categoryId, reviewStatus } = autoCategorize(desc, finalType, allCategories, businessRules);
+
+      if (reviewStatus === "PENDING_REVIEW") pendingReviewCount++;
 
       transactionsToCreate.push({
         businessId: business.id,
@@ -131,6 +137,7 @@ export async function POST(request: Request) {
         source: "FILE_UPLOAD",
         type: finalType,
         categoryId,
+        reviewStatus,
         externalId,
         vatStatus: "MISSING_VAT"
       });
@@ -172,7 +179,8 @@ export async function POST(request: Request) {
       success: true,
       count: result.count,
       duplicates: duplicateCount,
-      message: `Successfully imported ${result.count} transactions.`
+      pendingReview: pendingReviewCount,
+      message: `Successfully imported ${result.count} transactions.${pendingReviewCount > 0 ? ` ${pendingReviewCount} need manual review.` : ''}`
     });
 
   } catch (error) {

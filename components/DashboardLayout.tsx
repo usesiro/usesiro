@@ -163,10 +163,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className={`flex-1 flex flex-col transition-all duration-300 w-full ${isDesktopSidebarOpen ? "lg:ml-64" : "lg:ml-20"}`}>
         
         <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 h-20 px-4 md:px-8 flex items-center justify-between sticky top-0 z-20">
-          
+
           <div className="flex items-center gap-3">
-            
-            <h1 className="text-lg md:text-xl font-black text-gray-900 truncate">
+            {/* Mobile logo — visible when sidebar is hidden */}
+            <Image src="/logo.svg" alt="Siro" width={80} height={32} className="lg:hidden object-contain" />
+
+            <h1 className="text-lg md:text-xl font-black text-gray-900 truncate hidden lg:block">
               {pathname === "/help" 
                 ? "Help Centre" 
                 : menuItems.find(i => i.href === pathname)?.name || "Overview"}

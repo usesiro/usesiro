@@ -2,49 +2,51 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout";
-import MonoButton from "@/components/mono/MonoButton";
-import { 
-  CheckIcon, 
-  BuildingLibraryIcon, 
+import {
+  CheckIcon,
+  BuildingLibraryIcon,
   PencilSquareIcon,
-  ArrowRightIcon 
+  ArrowRightIcon
 } from "@heroicons/react/24/outline";
 
 export default function WelcomePage() {
+  const router = useRouter();
   const [firstName, setFirstName] = useState("");
+  const [isChecking, setIsChecking] = useState(true);
 
-  // Fetch the user's name when the page loads
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const token = localStorage.getItem("siro_access_token");
-        if (!token) return;
+        if (!token) { router.push("/login"); return; }
 
-        // Assuming your auth status endpoint returns the user object.
-        // Adjust the endpoint URL if your user profile endpoint is different.
-        const res = await fetch("/api/v1/auth/status", {
-          headers: {
-            "Authorization": `Bearer ${token}`
-          }
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          // Adjust "data.user.firstName" based on your actual API response structure
-          if (data.user?.firstName) {
-            setFirstName(data.user.firstName);
-          } else if (data.firstName) {
-            setFirstName(data.firstName);
-          }
+        const [authRes, payRes] = await Promise.all([
+          fetch("/api/v1/auth/status", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("/api/payments/status", { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+
+        // Payment guard — redirect to pricing if not paid
+        if (payRes.ok) {
+          const payData = await payRes.json();
+          if (!payData.isPro) { router.push("/pricing"); return; }
+        }
+
+        if (authRes.ok) {
+          const data = await authRes.json();
+          setFirstName(data.user?.firstName || data.firstName || "");
         }
       } catch (error) {
         console.error("Failed to fetch user data", error);
+      } finally {
+        setIsChecking(false);
       }
     };
-
     fetchUserData();
-  }, []);
+  }, [router]);
+
+  if (isChecking) return null;
 
   return (
     <DashboardLayout>
@@ -98,10 +100,10 @@ export default function WelcomePage() {
         {/* Action Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
           
-          {/* Card 1: Bank Account */}
-          <div className="bg-primary text-white p-8 rounded-3xl text-left relative overflow-hidden group">
-            <div className="absolute top-6 right-8 bg-blue-400/30 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
-              Recommended
+          {/* Card 1: Bank Account — Coming Soon */}
+          <div className="bg-primary/60 text-white p-8 rounded-3xl text-left relative overflow-hidden opacity-75 cursor-not-allowed">
+            <div className="absolute top-6 right-8 bg-white/20 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">
+              Coming Soon
             </div>
             <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-6">
               <BuildingLibraryIcon className="w-6 h-6 text-white" />
@@ -110,12 +112,13 @@ export default function WelcomePage() {
             <p className="text-blue-100 text-sm leading-relaxed mb-8">
               Automatically pull in your transactions through Open Banking. Siro categorizes and VAT-tags them for you.
             </p>
-            
-            <MonoButton 
-              label="Get Started"
-              className="inline-flex items-center justify-between w-full bg-white text-primary font-bold py-4 px-6 rounded-xl hover:bg-blue-50 transition"
-              onSuccess={() => window.location.href = '/dashboard'}
-            />
+
+            <button
+              disabled
+              className="inline-flex items-center justify-between w-full bg-white/50 text-primary/60 font-bold py-4 px-6 rounded-xl cursor-not-allowed"
+            >
+              Coming Soon
+            </button>
           </div>
 
           {/* Card 2: Manual Upload */}

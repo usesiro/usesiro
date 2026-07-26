@@ -21,8 +21,9 @@ const PaystackInner = dynamic(() => import("./PaystackInner"), {
 interface CheckoutButtonProps {
   userEmail: string;
   amountInKobo?: number;
+  onPaymentSuccess?: () => void;
 }
 
-export default function CheckoutButton({ userEmail, amountInKobo = 999900 }: CheckoutButtonProps) {
-  return <PaystackInner userEmail={userEmail} amountInKobo={amountInKobo} />;
+export default function CheckoutButton({ userEmail, amountInKobo = 999900, onPaymentSuccess }: CheckoutButtonProps) {
+  return <PaystackInner userEmail={userEmail} amountInKobo={amountInKobo} onPaymentSuccess={onPaymentSuccess} />;
 }

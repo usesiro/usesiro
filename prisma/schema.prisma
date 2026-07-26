@@ -33,6 +33,12 @@ enum TransactionSource {
   FILE_UPLOAD
 }
 
+enum ReviewStatus {
+  AUTO_CATEGORIZED
+  PENDING_REVIEW
+  HUMAN_RESOLVED
+}
+
 enum VatStatus {
   TAGGED
   MISSING_VAT
@@ -70,21 +76,24 @@ model Business {
   tin             String?
   monoAccountId   String?  @unique 
   startingBalance Float?   @default(0) // <-- NEW: Saves the opening balance from AI
-  lastSyncedAt    DateTime? 
+  taxBracket      String?  @default("SMALL") // CITA bracket: SMALL (0%), MEDIUM (20%), LARGE (30%)
+  lastSyncedAt    DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  transactions    Transaction[] 
+  transactions    Transaction[]
   savedMappings   SavedMapping[]
+  categoryRules   BusinessCategoryRule[]
 }
 
 model Category {
   id         String   @id @default(uuid())
   name       String   @unique
   slug       String   @unique
-  isStandard Boolean  @default(true) 
+  isStandard Boolean  @default(true)
 
-  transactions Transaction[]
+  transactions  Transaction[]
+  categoryRules BusinessCategoryRule[]
 }
 
 model Transaction {
@@ -101,6 +110,7 @@ model Transaction {
   source      TransactionSource @default(MANUAL)
   type        TransactionType
   vatStatus   VatStatus         @default(MISSING_VAT)
+  reviewStatus ReviewStatus    @default(AUTO_CATEGORIZED)
   
   externalId  String?           @unique 
   
@@ -208,6 +218,20 @@ model Payment {
 
   @@index([email])
   @@index([createdAt])
+}
+
+// --- TENANT-SPECIFIC CATEGORY RULES ---
+model BusinessCategoryRule {
+  id          String   @id @default(uuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  pattern     String   // lowercase normalized description pattern
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@unique([businessId, pattern])
+  @@index([businessId])
 }
 
 // --- BOOKING SYSTEM ---

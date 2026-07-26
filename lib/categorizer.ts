@@ -1,4 +1,4 @@
-import { Category, TransactionType } from "@prisma/client";
+import { Category, TransactionType, BusinessCategoryRule } from "@prisma/client";
 
 // Rules for money going OUT (Expenses)
 const expenseRules: Record<string, RegExp> = {
@@ -12,43 +12,50 @@ const expenseRules: Record<string, RegExp> = {
 
 // Rules for money coming IN (Income)
 const incomeRules: Record<string, RegExp> = {
-  // If someone pays you via Opay/Moniepoint/Paystack, it's a sale
   'sales': /pos settlement|payout|stripe|checkout|sale|opay|moniepoint|palmpay|paystack|flutterwave/i,
   'interest': /interest|dividend|yield/i,
-  'services': /service|consulting|freelance/i, 
+  'services': /service|consulting|freelance/i,
+};
+
+export type CategorizationResult = {
+  categoryId: string | null;
+  reviewStatus: "AUTO_CATEGORIZED" | "PENDING_REVIEW" | "HUMAN_RESOLVED";
 };
 
 /**
- * Scans a transaction description and returns the matching database Category ID
+ * Three-pass auto-categorization pipeline:
+ * 1. Tenant-specific saved rules (from human resolutions)
+ * 2. Standard regex rules
+ * 3. Flag as PENDING_REVIEW (no guessing)
  */
 export function autoCategorize(
-  description: string, 
-  transactionType: TransactionType, 
-  dbCategories: Category[]
-): string | null {
-  
-  let matchedSlug: string | null = null;
-  
-  // 1. Pick the right rulebook based on INCOME vs EXPENSE
-  const rulesToUse = transactionType === 'INCOME' ? incomeRules : expenseRules;
-  
-  // 2. Scan the description against the chosen rulebook
-  for (const [slug, regex] of Object.entries(rulesToUse)) {
-    if (regex.test(description)) {
-      matchedSlug = slug;
-      break;
+  description: string,
+  transactionType: TransactionType,
+  dbCategories: Category[],
+  businessRules: BusinessCategoryRule[] = []
+): CategorizationResult {
+
+  const descLower = description.toLowerCase().trim();
+
+  // --- PASS 1: Tenant-specific saved rules ---
+  for (const rule of businessRules) {
+    if (descLower.includes(rule.pattern.toLowerCase())) {
+      return { categoryId: rule.categoryId, reviewStatus: "HUMAN_RESOLVED" };
     }
   }
 
-  // 3. Find the exact Category ID from the database using the matched slug
-  if (matchedSlug) {
-    const foundCat = dbCategories.find(c => c.slug === matchedSlug);
-    if (foundCat) return foundCat.id;
+  // --- PASS 2: Standard regex rules ---
+  const rulesToUse = transactionType === 'INCOME' ? incomeRules : expenseRules;
+
+  for (const [slug, regex] of Object.entries(rulesToUse)) {
+    if (regex.test(description)) {
+      const foundCat = dbCategories.find(c => c.slug === slug);
+      if (foundCat) {
+        return { categoryId: foundCat.id, reviewStatus: "AUTO_CATEGORIZED" };
+      }
+    }
   }
 
-  // 4. If no match is found, apply the correct fallback based on the Type Enum
-  const fallbackSlug = transactionType === 'INCOME' ? 'uncategorized-income' : 'uncategorized-expense';
-  const fallbackCat = dbCategories.find(c => c.slug === fallbackSlug);
-  
-  return fallbackCat ? fallbackCat.id : null;
+  // --- PASS 3: No match — flag for human review ---
+  return { categoryId: null, reviewStatus: "PENDING_REVIEW" };
 }

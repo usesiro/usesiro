@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
 
+// Founder emails — always have full Pro access
+const FOUNDER_EMAILS = [
+  "mustymuhd018@gmail.com",
+  "olawalemarcus92@gmail.com",
+];
+
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get("authorization");
@@ -12,7 +18,6 @@ export async function GET(request: Request) {
     const { payload } = await jwtVerify(token, secret);
     const userId = payload.userId as string;
 
-    // Get user email
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { email: true },
@@ -20,6 +25,14 @@ export async function GET(request: Request) {
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Founders always get Pro access
+    if (FOUNDER_EMAILS.includes(user.email.toLowerCase())) {
+      return NextResponse.json({
+        isPro: true,
+        payment: { reference: "founder-access", amount: 0, paidAt: new Date().toISOString(), channel: "founder" },
+      });
     }
 
     // Check for a successful payment
