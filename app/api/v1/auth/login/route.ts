@@ -44,18 +44,20 @@ export async function POST(request: Request) {
 
     // --- IDENTITY ISOLATION CHECK (After Password Verification) ---
     // This prevents role leakage and user enumeration.
+    // SUPER_ADMIN can access both portals (they are founders).
     const isAdmin = ["SUPER_ADMIN", "BUSINESS_ADMIN", "FINANCE_ADMIN"].includes(user.role);
-    
-    if ((portal === "ADMIN" && !isAdmin) || (portal === "USER" && isAdmin)) {
-      // Record the attempt internally for security auditing
-      await recordAuditLog({
-        userId: user.id,
-        action: "AUTH.PORTAL_MISMATCH",
-        status: "FAILURE",
-        details: { email: user.email, attemptedPortal: portal, userRole: user.role }
-      });
+    const isSuperAdmin = user.role === "SUPER_ADMIN";
 
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    if (!isSuperAdmin) {
+      if ((portal === "ADMIN" && !isAdmin) || (portal === "USER" && isAdmin)) {
+        await recordAuditLog({
+          userId: user.id,
+          action: "AUTH.PORTAL_MISMATCH",
+          status: "FAILURE",
+          details: { email: user.email, attemptedPortal: portal, userRole: user.role }
+        });
+        return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+      }
     }
 
     // 4. Check Verification
