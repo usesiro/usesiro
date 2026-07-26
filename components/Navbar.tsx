@@ -85,13 +85,19 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* CTA Button */}
-          <div className="hidden md:flex items-center justify-end w-auto">
-            <Link 
-              href="/waitlist" 
+          {/* CTA Buttons */}
+          <div className="hidden md:flex items-center justify-end gap-3 w-auto">
+            <Link
+              href="/login"
+              className="text-primary px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-blue-50 transition-colors"
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/register"
               className="bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors shadow-sm whitespace-nowrap"
             >
-              Join the waitlist
+              Sign Up
             </Link>
           </div>
 
@@ -147,13 +153,20 @@ export default function Navbar() {
             >
               Contact Us
             </Link>
-            <div className="pt-4 px-2">
-              <Link 
-                href="/waitlist"
-                className="block w-full text-center py-3 bg-primary text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+            <div className="pt-4 px-2 flex gap-3">
+              <Link
+                href="/login"
+                className="flex-1 text-center py-3 text-primary border border-primary/20 text-sm font-bold rounded-lg hover:bg-blue-50 transition-colors"
                 onClick={() => setIsOpen(false)}
               >
-                Join the waitlist
+                Sign In
+              </Link>
+              <Link
+                href="/register"
+                className="flex-1 text-center py-3 bg-primary text-white text-sm font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                onClick={() => setIsOpen(false)}
+              >
+                Sign Up
               </Link>
             </div>
           </div>

@@ -1,12 +1,15 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import FAQ from "@/components/FAQ";
 import CallToAction from "@/components/CallToAction";
 import Footer from "@/components/Footer";
-import { 
-  CheckCircleIcon, 
+import CheckoutButton from "@/components/CheckoutButton";
+import {
+  CheckCircleIcon,
   LockClosedIcon,
   ArrowPathIcon,
   TagIcon,
@@ -17,6 +20,36 @@ import {
 } from "@heroicons/react/24/solid";
 
 export default function PricingPage() {
+  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [isPro, setIsPro] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("siro_access_token");
+    if (!token) return;
+    setIsLoggedIn(true);
+
+    async function checkStatus() {
+      try {
+        const [payRes, bizRes] = await Promise.all([
+          fetch("/api/payments/status", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("/api/v1/business/me", { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+        if (payRes.ok) {
+          const data = await payRes.json();
+          setIsPro(data.isPro);
+          if (data.isPro) router.push("/welcome");
+        }
+        if (bizRes.ok) {
+          const biz = await bizRes.json();
+          setUserEmail(biz.owner?.email || "");
+        }
+      } catch (err) { console.error(err); }
+    }
+    checkStatus();
+  }, [router]);
+
   return (
     <div className="bg-[#FAFAFA] min-h-screen font-sans selection:bg-primary selection:text-white flex flex-col">
       <Navbar />
@@ -100,9 +133,16 @@ export default function PricingPage() {
             ))}
           </div>
 
-          <Link href="/waitlist" className="w-full md:w-2/3 mx-auto py-4 bg-primary text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center shadow-lg shadow-blue-500/30">
-            Join the waitlist
-          </Link>
+          {isLoggedIn ? (
+            <div className="w-full md:w-2/3 mx-auto flex flex-col items-center gap-3">
+              <CheckoutButton userEmail={userEmail} onPaymentSuccess={() => router.push("/welcome")} />
+              <p className="text-[11px] text-gray-400">Secure payment via Paystack. Cancel anytime.</p>
+            </div>
+          ) : (
+            <Link href="/register" className="w-full md:w-2/3 mx-auto py-4 bg-primary text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center shadow-lg shadow-blue-500/30">
+              Get Started
+            </Link>
+          )}
         </div>
       </div>
 

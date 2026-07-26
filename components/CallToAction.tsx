@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useBookingModal } from "./booking/BookingProvider";
 
 export default function CallToAction() {
-  const { openBookingModal } = useBookingModal();
   return (
     <section 
       id="get-started" 
@@ -33,23 +31,22 @@ export default function CallToAction() {
           Start free, stay compliant.
         </p>
 
-        <div 
+        <div
           className="mt-12 flex flex-col sm:flex-row justify-center items-center gap-6"
           data-aos="fade-up"
           data-aos-delay="200"
         >
-          <Link href="/waitlist">
+          <Link href="/register">
             <button className="w-full sm:w-auto px-10 py-4 bg-white text-primary rounded-xl font-bold text-sm hover:bg-gray-50 transition active:scale-95 shadow-xl shadow-black/10">
-              Join the waitlist
+              Sign Up
             </button>
           </Link>
-          
-          <button 
-            onClick={openBookingModal}
-            className="w-full sm:w-auto px-10 py-4 bg-transparent text-white border-2 border-white rounded-xl font-bold text-sm hover:bg-white hover:text-primary transition active:scale-95"
-          >
-            Book a Demo
-          </button>
+
+          <Link href="/login">
+            <button className="w-full sm:w-auto px-10 py-4 bg-transparent text-white border-2 border-white rounded-xl font-bold text-sm hover:bg-white hover:text-primary transition active:scale-95">
+              Sign In
+            </button>
+          </Link>
         </div>
 
       </div>

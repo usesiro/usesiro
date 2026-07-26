@@ -39,6 +39,12 @@ export default function Transactions() {
   const [userEmail, setUserEmail] = useState("");
   const [paywallModal, setPaywallModal] = useState<{ isOpen: boolean; feature: string }>({ isOpen: false, feature: "" });
 
+  // Pending Review State
+  const [activeTab, setActiveTab] = useState<"all" | "pending">("all");
+  const [pendingTransactions, setPendingTransactions] = useState<any[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [isResolvingId, setIsResolvingId] = useState<string | null>(null);
+
   // Dynamic Data State
   const [transactions, setTransactions] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -160,6 +166,53 @@ export default function Transactions() {
     }
     fetchPaymentStatus();
   }, []);
+
+  // Fetch pending review transactions
+  const fetchPendingReview = async () => {
+    try {
+      const token = localStorage.getItem("siro_access_token");
+      const res = await fetch("/api/v1/transactions/pending-review", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPendingTransactions(data.transactions || []);
+        setPendingCount(data.transactions?.length || 0);
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  useEffect(() => {
+    fetchPendingReview();
+  }, []);
+
+  // Resolve a pending transaction
+  const handleResolveTransaction = async (transactionId: string, categoryId: string) => {
+    setIsResolvingId(transactionId);
+    try {
+      const token = localStorage.getItem("siro_access_token");
+      const res = await fetch("/api/v1/transactions/pending-review", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ transactionId, categoryId })
+      });
+      if (res.ok) {
+        showNotification("Transaction resolved. Pattern saved for future imports.", "success");
+        fetchPendingReview();
+        fetchData();
+      } else {
+        const err = await res.json();
+        showNotification(err.error || "Failed to resolve", "error");
+      }
+    } catch (err) {
+      showNotification("Network error", "error");
+    } finally {
+      setIsResolvingId(null);
+    }
+  };
 
   const totalPages = Math.ceil(transactions.length / ITEMS_PER_PAGE) || 1;
   const paginatedTransactions = transactions.slice(
@@ -476,27 +529,12 @@ export default function Transactions() {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-800">Transactions</h1>
           <button
-            disabled={!canSync || isSyncing}
-            onClick={async () => {
-                if (!isPro) { setPaywallModal({ isOpen: true, feature: "Sync Bank" }); return; }
-                setIsSyncing(true);
-                const res = await fetch("/api/v1/mono/sync", { 
-                    method: "POST", 
-                    headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` } 
-                }); 
-                if (res.ok) {
-                    showNotification("Sync successful", "success");
-                    fetchData();
-                } else {
-                    const err = await res.json();
-                    showNotification(err.details || err.error || "Sync failed", "error");
-                }
-                setIsSyncing(false);
-            }} 
-            className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium transition shadow-none ${!canSync ? 'bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+            disabled
+            className="flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed opacity-50"
           >
-            <ArrowPathIcon className={`w-4 h-4 ${!canSync ? 'text-gray-300' : 'text-primary'} ${isSyncing ? 'animate-spin' : ''}`} />
-            {isSyncing ? "Syncing..." : !canSync ? "Synced Today" : "Sync Bank"}
+            <ArrowPathIcon className="w-4 h-4 text-gray-300" />
+            Sync Bank
+            <span className="text-[9px] font-black uppercase tracking-widest bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded">Soon</span>
           </button>
         </div>
         
@@ -509,7 +547,106 @@ export default function Transactions() {
           </div>
         </div>
 
+        {/* TAB SWITCHER */}
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6">
+          <button
+            onClick={() => setActiveTab("all")}
+            className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition ${activeTab === "all" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            All Transactions
+          </button>
+          <button
+            onClick={() => { setActiveTab("pending"); fetchPendingReview(); }}
+            className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition flex items-center justify-center gap-2 ${activeTab === "pending" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            Pending Review
+            {pendingCount > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-amber-500 text-white text-[10px] font-black rounded-full">
+                {pendingCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* PENDING REVIEW TABLE */}
+        {activeTab === "pending" && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+            <h2 className="text-lg font-bold text-gray-700 mb-4">
+              Transactions Needing Review
+              <span className="text-sm font-normal text-gray-400 ml-2">
+                Assign a category — the pattern will be memorized for future imports.
+              </span>
+            </h2>
+
+            {pendingTransactions.length === 0 ? (
+              <div className="text-center py-12 text-gray-400">
+                <p className="text-sm font-medium">No transactions pending review.</p>
+                <p className="text-xs mt-1">All imported transactions have been categorized.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 text-gray-400 text-xs uppercase tracking-wider">
+                      <th className="text-left py-3 px-2 font-semibold">Date</th>
+                      <th className="text-left py-3 px-2 font-semibold">Description</th>
+                      <th className="text-left py-3 px-2 font-semibold">Type</th>
+                      <th className="text-right py-3 px-2 font-semibold">Amount</th>
+                      <th className="text-left py-3 px-2 font-semibold">Category</th>
+                      <th className="text-center py-3 px-2 font-semibold">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingTransactions.map((tx: any) => (
+                      <tr key={tx.id} className="border-b border-gray-50 hover:bg-gray-50/50">
+                        <td className="py-3 px-2 text-gray-600 whitespace-nowrap">
+                          {new Date(tx.date).toLocaleDateString("en-NG", { day: "2-digit", month: "short", year: "numeric" })}
+                        </td>
+                        <td className="py-3 px-2 text-gray-800 font-medium max-w-[200px] truncate">{tx.description}</td>
+                        <td className="py-3 px-2">
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded ${tx.type === "INCOME" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}>
+                            {tx.type}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-right font-semibold text-gray-900">
+                          {new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(Number(tx.amount))}
+                        </td>
+                        <td className="py-3 px-2">
+                          <select
+                            id={`resolve-cat-${tx.id}`}
+                            defaultValue=""
+                            className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-primary bg-white text-gray-700 w-full max-w-[160px]"
+                          >
+                            <option value="">Select category...</option>
+                            {categories.map((cat: any) => (
+                              <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="py-3 px-2 text-center">
+                          <button
+                            disabled={isResolvingId === tx.id}
+                            onClick={() => {
+                              const select = document.getElementById(`resolve-cat-${tx.id}`) as HTMLSelectElement;
+                              if (!select?.value) { showNotification("Please select a category first", "warning"); return; }
+                              handleResolveTransaction(tx.id, select.value);
+                            }}
+                            className="px-3 py-1.5 bg-primary text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                          >
+                            {isResolvingId === tx.id ? "Saving..." : "Resolve"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* MAIN TABLE SECTION */}
+        {activeTab === "all" && (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-bold text-gray-700">Transaction List</h2>
@@ -824,6 +961,7 @@ export default function Transactions() {
             </div>
           )}
         </div>
+        )}
 
         {/* --- EXPORT RANGE & FORMAT MODAL --- */}
         {isExportModalOpen && (

@@ -56,4 +56,100 @@
 .animate-bell-ring {
   animation: bell-ring 0.6s ease-in-out infinite;
   transform-origin: top center;
+}
+
+/* --- DRIVER.JS PRODUCT TOUR OVERRIDES --- */
+.siro-tour-popover {
+  font-family: var(--font-poppins), 'Poppins', sans-serif !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(47, 110, 246, 0.15) !important;
+  padding: 0 !important;
+  max-width: 340px !important;
+}
+
+.siro-tour-popover .driver-popover-title {
+  font-family: var(--font-poppins), 'Poppins', sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #290619 !important;
+  padding: 20px 20px 4px !important;
+  margin: 0 !important;
+}
+
+.siro-tour-popover .driver-popover-description {
+  font-family: var(--font-poppins), 'Poppins', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  color: #6b7280 !important;
+  line-height: 1.6 !important;
+  padding: 0 20px 16px !important;
+  margin: 0 !important;
+}
+
+.siro-tour-popover .driver-popover-footer {
+  padding: 0 20px 16px !important;
+  border-top: none !important;
+}
+
+.siro-tour-popover .driver-popover-footer button {
+  font-family: var(--font-poppins), 'Poppins', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+}
+
+.siro-tour-popover .driver-popover-next-btn {
+  background-color: #2F6EF6 !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(47, 110, 246, 0.3) !important;
+}
+
+.siro-tour-popover .driver-popover-prev-btn {
+  background-color: transparent !important;
+  color: #6b7280 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+/* Dotted arrow connector from popover to target */
+.siro-tour-popover .driver-popover-arrow {
+  border: none !important;
+  background: none !important;
+}
+
+.siro-tour-popover .driver-popover-arrow::before {
+  content: '' !important;
+  display: block !important;
+  width: 2px !important;
+  height: 16px !important;
+  background: repeating-linear-gradient(
+    to bottom,
+    #2F6EF6 0px,
+    #2F6EF6 4px,
+    transparent 4px,
+    transparent 8px
+  ) !important;
+  margin: 0 auto !important;
+}
+
+.siro-tour-popover .driver-popover-arrow::after {
+  content: '' !important;
+  display: block !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-right: 2px solid #2F6EF6 !important;
+  border-bottom: 2px solid #2F6EF6 !important;
+  transform: rotate(45deg) !important;
+  margin: -2px auto 0 !important;
+}
+
+.siro-tour-popover .driver-popover-progress-text {
+  font-family: var(--font-poppins), 'Poppins', sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  color: #9ca3af !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
 }

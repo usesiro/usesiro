@@ -168,7 +168,7 @@ export default function Register() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to create business");
       
-      router.push("/welcome"); 
+      router.push("/pricing");
     } catch (err: any) {
       const msg = err.message === "Failed to fetch" || err.name === "TypeError"
         ? "Your connection has been cut off. Please check your internet and try again later."
@@ -294,9 +294,38 @@ export default function Register() {
             <label className="block text-xs font-medium text-dark mb-1.5 ml-1">Industry</label>
             <select name="industry" value={formData.industry} onChange={handleChange} className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-gray-500">
               <option value="">Pick Industry</option>
-              <option value="Fashion">Fashion</option>
+              <option value="Agriculture">Agriculture</option>
+              <option value="Automotive">Automotive</option>
+              <option value="Beauty & Personal Care">Beauty & Personal Care</option>
+              <option value="Construction">Construction</option>
+              <option value="Consulting">Consulting</option>
+              <option value="E-Commerce">E-Commerce</option>
+              <option value="Education">Education</option>
+              <option value="Energy & Power">Energy & Power</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Fashion & Textiles">Fashion & Textiles</option>
+              <option value="Finance & Banking">Finance & Banking</option>
+              <option value="Food & Beverage">Food & Beverage</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Hospitality & Tourism">Hospitality & Tourism</option>
+              <option value="Insurance">Insurance</option>
+              <option value="Legal Services">Legal Services</option>
+              <option value="Logistics & Supply Chain">Logistics & Supply Chain</option>
+              <option value="Manufacturing">Manufacturing</option>
+              <option value="Media & Advertising">Media & Advertising</option>
+              <option value="Mining & Quarrying">Mining & Quarrying</option>
+              <option value="Non-Profit & NGO">Non-Profit & NGO</option>
+              <option value="Oil & Gas">Oil & Gas</option>
+              <option value="Pharmaceuticals">Pharmaceuticals</option>
+              <option value="Professional Services">Professional Services</option>
+              <option value="Real Estate & Property">Real Estate & Property</option>
               <option value="Retail">Retail</option>
               <option value="Technology">Technology</option>
+              <option value="Telecommunications">Telecommunications</option>
+              <option value="Transportation">Transportation</option>
+              <option value="Waste Management">Waste Management</option>
+              <option value="Wholesale & Distribution">Wholesale & Distribution</option>
+              <option value="Other">Other</option>
             </select>
           </div>
           <button type="submit" disabled={!isStep3Valid || isLoading} className={`w-full py-3 rounded-lg font-semibold text-white transition mt-2 ${isStep3Valid && !isLoading ? "bg-primary hover:bg-blue-700 shadow-lg cursor-pointer" : "bg-primary opacity-50 cursor-not-allowed"}`}>
