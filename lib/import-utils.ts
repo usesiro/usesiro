@@ -48,7 +48,9 @@ export function detectColumnMapping(headers: string[]): Record<string, SiroField
 
 /**
  * Generates a unique signature for a transaction to prevent duplicates.
- * signature = sha256(amount + date + description + businessId)
+ * Uses amount + date + description + businessId + reference + balance + rowIndex
+ * The rowIndex ensures that same-day, same-amount, same-description transactions
+ * (e.g. multiple VAT charges of ₦0.75) each get a unique fingerprint.
  */
 export function generateTransactionIdempotencyKey(
   amount: number | string,
@@ -56,22 +58,29 @@ export function generateTransactionIdempotencyKey(
   description: string,
   businessId: string,
   reference?: string,
-  balance?: number | string
+  balance?: number | string,
+  rowIndex?: number
 ): string {
   const d = new Date(date).toISOString().split('T')[0];
   const normalizedDesc = description.trim().toLowerCase();
-  
+
   // Create a fingerprint string
   let fingerprint = `${Number(amount).toFixed(2)}|${d}|${normalizedDesc}|${businessId}`;
-  
+
   // Add optional but stable fields for better uniqueness
   if (reference && String(reference).trim().length > 0) {
     fingerprint += `|ref:${String(reference).trim().toLowerCase()}`;
   }
-  
+
   const numBalance = Number(balance);
   if (balance !== undefined && balance !== "" && !isNaN(numBalance)) {
     fingerprint += `|bal:${numBalance.toFixed(2)}`;
+  }
+
+  // Row index tiebreaker: ensures identical-looking transactions
+  // on the same day (e.g. multiple ₦0.75 VAT charges) get distinct keys
+  if (rowIndex !== undefined) {
+    fingerprint += `|idx:${rowIndex}`;
   }
 
   return crypto.createHash('sha256').update(fingerprint).digest('hex');

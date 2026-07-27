@@ -20,12 +20,17 @@ async function main() {
     { name: 'Salary & Wages', slug: 'salary-wages', type: 'EXPENSE', description: 'Employee payroll and contractor payments' },
     { name: 'Marketing & Ads', slug: 'marketing-ads', type: 'EXPENSE', description: 'Social media ads, printing, campaigns' },
     { name: 'Rent & Office', slug: 'rent-office', type: 'EXPENSE', description: 'Office rent, supplies, and maintenance' },
+    { name: 'Inventory & Supplies', slug: 'inventory-supplies', type: 'EXPENSE', description: 'Stock purchases, raw materials, and office supplies' },
+    { name: 'Transportation', slug: 'transportation', type: 'EXPENSE', description: 'Logistics, delivery, fuel for vehicles' },
+    { name: 'Insurance', slug: 'insurance', type: 'EXPENSE', description: 'Business insurance premiums' },
+    { name: 'Professional Fees', slug: 'professional-fees', type: 'EXPENSE', description: 'Legal, accounting, and consulting fees' },
+    { name: 'Repairs & Maintenance', slug: 'repairs-maintenance', type: 'EXPENSE', description: 'Equipment repairs, building maintenance' },
     { name: 'Uncategorized Expense', slug: 'uncategorized-expense', type: 'EXPENSE', description: 'Expenses pending review' },
   ];
 
   for (const category of standardCategories) {
     await prisma.category.upsert({
-      where: { slug: category.slug }, 
+      where: { slug_businessId: { slug: category.slug, businessId: null as any } },
       update: {},
       create: category,
     });

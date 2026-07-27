@@ -21,7 +21,13 @@ export async function recordAuditLog({
 
   try {
     const headersList = await headers();
-    ip = headersList.get("x-forwarded-for")?.split(",")[0] || headersList.get("x-real-ip") || "unknown";
+    // Vercel sets x-forwarded-for with the client IP first, followed by proxy IPs
+    // x-real-ip is also set by some reverse proxies
+    // x-vercel-forwarded-for is Vercel-specific
+    ip = headersList.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || headersList.get("x-real-ip")
+      || headersList.get("x-vercel-forwarded-for")?.split(",")[0]?.trim()
+      || "unknown";
     userAgent = headersList.get("user-agent") || "unknown";
   } catch (e) {
     // Headers not available (outside request context)

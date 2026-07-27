@@ -350,17 +350,20 @@ export default function Settings() {
           {/* --- AUTOMATION TAB --- */}
           {activeTab === "Automation" && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up">
-              <div className="bg-white/80 backdrop-blur-md p-8 rounded-[2.5rem] border border-gray-100 shadow-sm text-center group hover:shadow-md transition-all">
-                <div className={`w-20 h-20 mx-auto rounded-3xl mb-6 flex items-center justify-center transition-transform group-hover:scale-110 ${data?.monoAccountId ? 'bg-green-50 text-green-500' : 'bg-gray-50 text-gray-400'}`}>
+              <div className="bg-white/80 backdrop-blur-md p-8 rounded-[2.5rem] border border-gray-100 shadow-sm text-center opacity-75">
+                <div className="w-20 h-20 mx-auto rounded-3xl mb-6 flex items-center justify-center bg-gray-50 text-gray-400">
                   <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
                 </div>
                 <h3 className="font-black text-gray-900 text-xl mb-1">Bank Sync</h3>
-                <p className="text-xs font-black text-gray-400 mb-8 uppercase tracking-widest leading-loose">
-                  Status: <span className={data?.monoAccountId ? "text-green-500" : "text-gray-500"}>
-                    {data?.monoAccountId ? "Active & Linked" : "Disconnected"}
-                  </span>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-amber-200 mb-6">
+                  Coming Soon
+                </div>
+                <p className="text-xs text-gray-400 mb-8 leading-relaxed">
+                  Automatic bank syncing via Open Banking is under development. You&apos;ll be able to connect your Nigerian bank account and pull transactions automatically.
                 </p>
-                <MonoButton label={data?.monoAccountId ? "Reconnect Bank" : "Connect Bank"} className="w-full bg-primary text-white py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-blue-100 hover:bg-blue-600 transition" onSuccess={() => window.location.reload()} />
+                <button disabled className="w-full bg-gray-100 text-gray-400 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] cursor-not-allowed">
+                  Connect Bank
+                </button>
               </div>
             </div>
           )}

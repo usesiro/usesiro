@@ -84,16 +84,21 @@ model Business {
   transactions    Transaction[]
   savedMappings   SavedMapping[]
   categoryRules   BusinessCategoryRule[]
+  customCategories Category[] @relation("CustomCategories")
 }
 
 model Category {
   id         String   @id @default(uuid())
-  name       String   @unique
-  slug       String   @unique
+  name       String
+  slug       String
   isStandard Boolean  @default(true)
+  businessId String?  // null = global standard, set = custom per-business
+  business   Business? @relation("CustomCategories", fields: [businessId], references: [id], onDelete: Cascade)
 
   transactions  Transaction[]
   categoryRules BusinessCategoryRule[]
+
+  @@unique([slug, businessId])
 }
 
 model Transaction {

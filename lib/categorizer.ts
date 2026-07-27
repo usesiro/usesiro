@@ -2,12 +2,17 @@ import { Category, TransactionType, BusinessCategoryRule } from "@prisma/client"
 
 // Rules for money going OUT (Expenses)
 const expenseRules: Record<string, RegExp> = {
-  'software-it': /aws|amazon|google workspace|microsoft|vercel|github|netlify|zoom|slack|digitalocean/i,
-  'fuel-utilities': /total|nnpc|conoil|mtn|airtel|glo|9mobile|electricity|ikeja electric|ibedc|fuel|diesel|petrol/i,
-  'bank-pos-charges': /paystack|flutterwave|mono|moniepoint|opay|palmpay|charge|fee|sms|stamp duty|maintenance|transfer/i,
+  'software-it': /aws|amazon|google workspace|microsoft|vercel|github|netlify|zoom|slack|digitalocean|google play/i,
+  'fuel-utilities': /total|nnpc|conoil|mtn|airtel|glo|9mobile|electricity|ikeja electric|ibedc|fuel|diesel|petrol|data purchase|airtime/i,
+  'bank-pos-charges': /paystack|flutterwave|mono|moniepoint|opay|palmpay|charge|fee|sms|stamp duty|maintenance|transfer|ussd_charge|value added tax|vat|nibss/i,
   'marketing-ads': /facebook|instagram|twitter|linkedin|google ads|meta|print|billboard/i,
   'salary-wages': /salary|payroll|wage|allowance|stipend|bonus/i,
   'rent-office': /rent|lease|furniture|stationery|paper|desk/i,
+  'inventory-supplies': /inventory|stock|supplies|raw material|packaging|goods|merchandise/i,
+  'transportation': /logistics|delivery|dispatch|courier|bolt|uber|taxi|bus|transport/i,
+  'insurance': /insurance|premium|underwriter|policy/i,
+  'professional-fees': /legal|lawyer|solicitor|accountant|audit|consult/i,
+  'repairs-maintenance': /repair|maintenance|plumber|electrician|mechanic|servicing/i,
 };
 
 // Rules for money coming IN (Income)
