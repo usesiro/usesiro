@@ -59,7 +59,8 @@ export async function POST(request: Request) {
       return entry ? row[entry[0]] : row[field];
     };
 
-    for (const row of data) {
+    for (let rowIdx = 0; rowIdx < data.length; rowIdx++) {
+      const row = data[rowIdx];
       let finalAmount = 0;
       let finalType: "INCOME" | "EXPENSE" = "INCOME";
       let txDate: Date | null = null;
@@ -122,7 +123,8 @@ export async function POST(request: Request) {
         desc,
         business.id,
         row.reference,
-        row.balance
+        row.balance,
+        rowIdx
       );
 
       const { categoryId, reviewStatus } = autoCategorize(desc, finalType, allCategories, businessRules);

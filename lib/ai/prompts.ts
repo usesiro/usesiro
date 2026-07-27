@@ -1,19 +1,25 @@
 export const IMPORT_PROMPT = `
-You are a professional financial auditor.
+You are a professional financial auditor extracting transactions from bank statement data.
 
-Extract EVERY transaction from the provided data.
+CRITICAL RULES — FOLLOW EXACTLY:
 
-Rules:
+1. RETURN EVERY SINGLE ROW. Do NOT skip, merge, or summarize any transaction.
+2. Small amounts matter. ₦0.50, ₦0.75, ₦10 charges (VAT, stamp duty, SMS alerts, USSD charges) are REAL transactions. Include ALL of them.
+3. Multi-leg transactions: A transfer often has 2-3 related rows (the transfer itself + VAT charge + stamp duty). These are SEPARATE transactions. Return each one individually.
+4. Debit / Withdrawal / Money Out = EXPENSE. Always positive amount.
+5. Credit / Deposit / Money In = INCOME. Always positive amount.
+6. Negative amounts in a single amount column = EXPENSE (use the absolute value).
+7. If there are separate Debit and Credit columns: Debit column value = EXPENSE, Credit column value = INCOME. Use whichever column has a non-zero value for that row.
+8. Detect the opening/starting balance from statement metadata (header rows, first balance entry).
+9. Detect the account currency. Default to NGN if unclear.
+10. Detect exchange rate if the statement contains foreign currency transactions.
+11. Use the full description/narration text. Do NOT truncate or summarize descriptions.
+12. Return amounts as plain numbers (no currency symbols, no commas).
+13. Return dates in YYYY-MM-DD format.
+14. If a row has a balance column, include it — this helps with duplicate detection.
+15. If a row has a reference/transaction ID, include it.
 
-1. Return ALL rows.
-2. Count carefully.
-3. Debit / Withdrawal = EXPENSE.
-4. Credit / Deposit = INCOME.
-5. Negative amounts = EXPENSE.
-6. Detect opening balance.
-7. Detect account currency.
-8. Detect exchange rate.
-9. Return only structured data matching the schema.
+VALIDATION: Your output transaction count MUST match the number of transaction rows in the input data. If the input has 500 transaction rows, you must return 500 transactions.
 `;
 
 export const PDF_EXTRACT_PROMPT = `
@@ -22,12 +28,14 @@ Your task is to take raw text from a bank statement and extract EVERY transactio
 
 STRICT ACCURACY RULES:
 1. METADATA: Look for "Opening Balance", "Initial Balance", "Start Balance", or "Currency" in the text. If found, return them.
-2. DO NOT SUMMARIZE: Do not skip ANY rows. If it looks like a transaction, extract it.
-3. DATA FIELDS: Extract "date", "description", "amount", "type" (INCOME/EXPENSE), "balance", and "reference".
-4. DATES: Parse dates into a valid YYYY-MM-DD format.
-5. TYPE: Classify transactions as INCOME (credits, deposits) or EXPENSE (debits, withdrawals).
-6. CURRENCY: If no currency is found, default to 'NGN'.
-7. JSON FORMAT ONLY: Respond with a JSON object matching the provided schema. Omit any keys that are null or empty, such as 'reference' or 'balance' if they are not present on a transaction line.
+2. DO NOT SKIP ANY ROWS: Every transaction line must be extracted — including small charges (₦0.50, ₦0.75 VAT, ₦10 USSD, stamp duty). These are real transactions.
+3. MULTI-LEG TRANSACTIONS: A single transfer often generates 2-3 rows (the transfer + VAT + stamp duty). Extract each as a separate transaction.
+4. DATA FIELDS: Extract "date", "description", "amount", "type" (INCOME/EXPENSE), "balance", and "reference".
+5. DATES: Parse dates into a valid YYYY-MM-DD format.
+6. TYPE: Classify transactions as INCOME (credits, deposits, money in) or EXPENSE (debits, withdrawals, money out). Use absolute values for amounts.
+7. CURRENCY: If no currency is found, default to 'NGN'.
+8. JSON FORMAT ONLY: Respond with a JSON object matching the provided schema.
+9. VALIDATION: Your transaction count must match the number of transaction rows in the source text. Do not merge or summarize.
 `;
 
 export const AI_DETECT_PROMPT = (siroFields: readonly string[]) => `
