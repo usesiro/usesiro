@@ -32,12 +32,30 @@ export async function PATCH(request: Request) {
     const updated = await prisma.transaction.updateMany({
       where: {
         id: { in: transactionIds },
-        businessId: business.id // Security check: ensures a user can only update their own transactions
+        businessId: business.id
       },
       data: {
-        categoryId: categoryId
+        categoryId: categoryId,
+        reviewStatus: "HUMAN_RESOLVED"
       }
     });
+
+    // --- LEARNING: Save description→category patterns for future auto-categorization ---
+    const resolvedTransactions = await prisma.transaction.findMany({
+      where: { id: { in: transactionIds }, businessId: business.id },
+      select: { description: true }
+    });
+
+    for (const tx of resolvedTransactions) {
+      const pattern = tx.description.toLowerCase().trim().substring(0, 100);
+      if (pattern.length > 0) {
+        await prisma.businessCategoryRule.upsert({
+          where: { businessId_pattern: { businessId: business.id, pattern } },
+          update: { categoryId },
+          create: { businessId: business.id, pattern, categoryId }
+        }).catch(() => {}); // Ignore duplicate errors silently
+      }
+    }
 
     // --- NEW: Record Audit Log ---
     await recordAuditLog({
