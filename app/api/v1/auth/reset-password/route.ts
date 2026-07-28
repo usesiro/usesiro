@@ -1,52 +1,86 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { recordAuditLog } from "@/lib/logger";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import { z } from "zod";
+
+const MAX_OTP_ATTEMPTS = 5;
+
+const resetSchema = z.object({
+  email: z.string().email(),
+  otp: z.string().length(6),
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+});
 
 export async function POST(req: Request) {
   try {
-    const { email, otp, newPassword } = await req.json();
+    const body = await req.json();
 
-    if (!email || !otp || !newPassword) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    const validation = resetSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.issues[0]?.message || "Invalid input" }, { status: 400 });
     }
 
-    // 1. Find the user
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const { email, otp, newPassword } = validation.data;
 
-    if (!user) {
-      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    // Generic message to prevent enumeration
+    if (!user || !user.otpSecret || !user.otpExpiresAt) {
+      return NextResponse.json({ error: "Invalid or expired code." }, { status: 400 });
     }
 
-    // 2. Verify the OTP
-    if (user.otpSecret !== otp) {
-      return NextResponse.json({ error: "Invalid verification code" }, { status: 400 });
+    // Check attempt limit
+    if (user.otpAttempts >= MAX_OTP_ATTEMPTS) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { otpSecret: null, otpExpiresAt: null, otpAttempts: 0 }
+      });
+      return NextResponse.json({ error: "Too many failed attempts. Please request a new code." }, { status: 429 });
     }
 
-    // 3. Check if OTP is expired
-    if (!user.otpExpiresAt || new Date() > user.otpExpiresAt) {
-      return NextResponse.json({ error: "Verification code has expired. Please request a new one." }, { status: 400 });
+    // Check expiry
+    if (new Date() > user.otpExpiresAt) {
+      return NextResponse.json({ error: "Code has expired. Please request a new one." }, { status: 400 });
     }
 
-    // 4. Check if new password is the same as the old one
+    // Timing-safe OTP comparison
+    const otpMatch = user.otpSecret.length === otp.length &&
+      crypto.timingSafeEqual(Buffer.from(user.otpSecret), Buffer.from(otp));
+
+    if (!otpMatch) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { otpAttempts: { increment: 1 } }
+      });
+      return NextResponse.json({ error: "Invalid verification code." }, { status: 400 });
+    }
+
+    // Check if same as current password
     const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
     if (isSamePassword) {
       return NextResponse.json({ error: "New password cannot be the same as your current password." }, { status: 400 });
     }
 
-    // 5. Hash the new password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    // Hash and save
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-    // 6. Save new password and clear the OTP fields so it can't be reused
     await prisma.user.update({
       where: { id: user.id },
       data: {
         passwordHash: hashedPassword,
         otpSecret: null,
         otpExpiresAt: null,
+        otpAttempts: 0,
       },
+    });
+
+    await recordAuditLog({
+      userId: user.id,
+      action: "AUTH.PASSWORD_RESET",
+      status: "SUCCESS",
+      details: { email: user.email }
     });
 
     return NextResponse.json({ success: true, message: "Password reset successful" }, { status: 200 });

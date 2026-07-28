@@ -24,9 +24,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "File and transaction ID are required." }, { status: 400 });
     }
 
-    // 3. Upload the file to Vercel Blob
-    const blob = await put(file.name, file, {
-      access: 'public', // Makes the URL viewable
+    // Verify transaction belongs to this user's business
+    const business = await prisma.business.findUnique({ where: { userId } });
+    if (!business) {
+      return NextResponse.json({ error: "Business not found" }, { status: 404 });
+    }
+
+    const transaction = await prisma.transaction.findFirst({
+      where: { id: transactionId, businessId: business.id }
+    });
+    if (!transaction) {
+      return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
+    }
+
+    // Upload with randomized filename to prevent collisions
+    const ext = file.name.split('.').pop() || 'bin';
+    const safeName = `docs/${business.id}/${crypto.randomUUID()}.${ext}`;
+
+    const blob = await put(safeName, file, {
+      access: 'public',
     });
 
     // 4. Save the URL to your Prisma Database
