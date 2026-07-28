@@ -9,22 +9,30 @@ export async function POST(request: Request) {
     const body = await request.text();
     const signature = request.headers.get("x-paystack-signature");
 
-    // Verify webhook signature
+    // Verify webhook signature (timing-safe)
     const hash = crypto
       .createHmac("sha512", PAYSTACK_SECRET_KEY)
       .update(body)
       .digest("hex");
 
-    if (hash !== signature) {
+    if (!signature || hash.length !== signature.length ||
+        !crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(signature))) {
       console.error("Paystack webhook: invalid signature");
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
     const event = JSON.parse(body);
 
-    // Only handle charge.success
+    // Only handle charge.success with correct amount
     if (event.event === "charge.success") {
       const data = event.data;
+      const EXPECTED_AMOUNT_KOBO = 999900; // ₦9,999
+
+      // Reject test charges or tampered amounts
+      if (!data.amount || data.amount < EXPECTED_AMOUNT_KOBO) {
+        console.warn("Paystack webhook: amount too low", data.amount);
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
 
       await prisma.payment.upsert({
         where: { reference: data.reference },
