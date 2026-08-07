@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
 import { recordAuditLog } from "@/lib/logger";
+import { readLimitedJsonBody } from "@/lib/public-form-utils";
+import { z } from "zod";
+
+const transactionIdsSchema = z.array(z.string().uuid()).min(1).max(2_000);
+const updateSchema = z.object({ transactionIds: transactionIdsSchema, categoryId: z.string().uuid() }).strict();
+const deleteSchema = z.object({ transactionIds: transactionIdsSchema.optional(), deleteAll: z.boolean().optional() }).strict()
+  .refine((value) => Boolean(value.deleteAll) || Boolean(value.transactionIds?.length), "Select transactions to delete.");
 
 export async function PATCH(request: Request) {
   try {
@@ -21,12 +28,11 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
-    const body = await request.json();
-    const { transactionIds, categoryId } = body;
-
-    if (!transactionIds || !Array.isArray(transactionIds) || transactionIds.length === 0 || !categoryId) {
-      return NextResponse.json({ error: "Missing required fields: transactionIds and categoryId are required." }, { status: 400 });
-    }
+    const body = await readLimitedJsonBody(request, 256 * 1024);
+    if (!body.success) return NextResponse.json({ error: body.error }, { status: body.status });
+    const validation = updateSchema.safeParse(body.data);
+    if (!validation.success) return NextResponse.json({ error: "Invalid bulk update details" }, { status: 400 });
+    const { transactionIds, categoryId } = validation.data;
 
     // Update all selected transactions in one efficient database query
     const updated = await prisma.transaction.updateMany({
@@ -98,7 +104,11 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
-    const { transactionIds, deleteAll } = await request.json();
+    const body = await readLimitedJsonBody(request, 256 * 1024);
+    if (!body.success) return NextResponse.json({ error: body.error }, { status: body.status });
+    const validation = deleteSchema.safeParse(body.data);
+    if (!validation.success) return NextResponse.json({ error: "Invalid bulk delete details" }, { status: 400 });
+    const { transactionIds, deleteAll } = validation.data;
 
     let deleted;
     if (deleteAll) {
@@ -106,9 +116,6 @@ export async function DELETE(request: Request) {
         where: { businessId: business.id }
       });
     } else {
-      if (!transactionIds || !Array.isArray(transactionIds) || transactionIds.length === 0) {
-        return NextResponse.json({ error: "No transactions selected for deletion." }, { status: 400 });
-      }
       deleted = await prisma.transaction.deleteMany({
         where: {
           id: { in: transactionIds },
@@ -124,7 +131,7 @@ export async function DELETE(request: Request) {
       status: "SUCCESS",
       details: { 
         count: deleted.count,
-        transactionIds: deleteAll ? "ALL" : transactionIds.slice(0, 5)
+        transactionIds: deleteAll ? "ALL" : (transactionIds ?? []).slice(0, 5)
       }
     });
 

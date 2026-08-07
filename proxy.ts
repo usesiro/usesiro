@@ -2,6 +2,19 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
+const publicAuthApiRoutes = new Set([
+  '/api/v1/auth/bootstrap-admin',
+  '/api/v1/auth/forgot-password',
+  '/api/v1/auth/login',
+  '/api/v1/auth/logout',
+  '/api/v1/auth/register',
+  '/api/v1/auth/resend-otp',
+  '/api/v1/auth/reset-password',
+  '/api/v1/auth/session',
+  '/api/v1/auth/status',
+  '/api/v1/auth/verify-otp',
+]);
+
 async function hasActiveSession(request: NextRequest, token: string) {
   const response = await fetch(new URL('/api/v1/auth/session', request.url), {
     headers: { authorization: `Bearer ${token}` },
@@ -89,7 +102,7 @@ export default async function middleware(request: NextRequest) {
   if (pathname.startsWith('/api/v1/') || pathname.startsWith('/api/payments/')) {
     // Let public auth/waitlist/contact pass
     if (
-      pathname.startsWith('/api/v1/auth') ||
+      publicAuthApiRoutes.has(pathname) ||
       pathname.startsWith('/api/v1/waitlist') ||
       pathname.startsWith('/api/v1/contact') ||
       pathname.startsWith('/api/v1/bookings')

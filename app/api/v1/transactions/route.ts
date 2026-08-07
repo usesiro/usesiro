@@ -3,6 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
 import { autoCategorize } from "@/lib/categorizer";
 import { recordAuditLog } from "@/lib/logger";
+import { readLimitedJsonBody } from "@/lib/public-form-utils";
+import { z } from "zod";
+
+const transactionSchema = z.object({
+  amount: z.coerce.number().finite().positive().max(9_999_999_999.99),
+  description: z.string().trim().min(1).max(500),
+  type: z.enum(["INCOME", "EXPENSE"]),
+  date: z.coerce.date(),
+}).strict();
 
 // --- GET: Fetch all transactions ---
 export async function GET(request: Request) {
@@ -110,28 +119,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
-    const body = await request.json();
-    const { amount, description, type, date } = body;
-
-    // Basic Validation
-    if (!amount || !description || !type || !date) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
+    const body = await readLimitedJsonBody(request, 16 * 1024);
+    if (!body.success) return NextResponse.json({ error: body.error }, { status: body.status });
+    const validation = transactionSchema.safeParse(body.data);
+    if (!validation.success) return NextResponse.json({ error: "Invalid transaction details" }, { status: 400 });
+    const { amount, description, type, date } = validation.data;
 
     // 1. Fetch all available categories from the database
     const allCategories = await prisma.category.findMany();
     
     // 2. Pass the description through the categorizer
-    const matchedCategoryId = autoCategorize(description, type as any, allCategories);
+    const { categoryId: matchedCategoryId } = autoCategorize(description, type, allCategories);
 
     // Create the transaction
     const newTransaction = await prisma.transaction.create({
       data: {
         businessId: business.id,
-        amount: parseFloat(amount),
+        amount,
         description,
         type, // "INCOME" or "EXPENSE"
-        date: new Date(date),
+        date,
         source: "MANUAL",
         categoryId: matchedCategoryId, // Injects the matched category ID
         vatStatus: "MISSING_VAT", // Defaulting to missing so it flags in Tax Readiness

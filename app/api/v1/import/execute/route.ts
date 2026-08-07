@@ -5,6 +5,17 @@ import { generateHeaderHash, generateTransactionIdempotencyKey } from "@/lib/imp
 import { parseFlexibleDate, parseFlexibleAmount } from "@/lib/import-parsers";
 import { autoCategorize } from "@/lib/categorizer";
 import { recordAuditLog } from "@/lib/logger";
+import { readLimitedJsonBody } from "@/lib/public-form-utils";
+import { z } from "zod";
+
+const cellSchema = z.union([z.string().max(20_000), z.number().finite(), z.boolean(), z.null()]);
+const importSchema = z.object({
+  data: z.array(z.record(z.string().max(200), cellSchema)).min(1).max(2_000),
+  mapping: z.record(z.string().max(200), z.string().max(80).nullable()).optional(),
+  headers: z.array(z.string().trim().min(1).max(200)).min(1).max(100),
+  rate: z.number().finite().positive().max(1_000_000).nullable().optional(),
+  updateOpeningBalance: z.number().finite().nullable().optional(),
+}).strict();
 
 /**
  * Handles the actual import of mapped or standardized transactions.
@@ -28,10 +39,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
-    const { data, mapping, headers, rate, updateOpeningBalance } = await request.json();
-    if (!data || !headers) {
-      return NextResponse.json({ error: "Missing required import data" }, { status: 400 });
-    }
+    const body = await readLimitedJsonBody(request, 2 * 1024 * 1024);
+    if (!body.success) return NextResponse.json({ error: body.error }, { status: body.status });
+    const validation = importSchema.safeParse(body.data);
+    if (!validation.success) return NextResponse.json({ error: "Invalid import data" }, { status: 400 });
+    const { data, mapping, headers, rate, updateOpeningBalance } = validation.data;
 
     // --- STEP 1: Persist the Mapping (Only if manual mapping occurred) ---
     if (mapping && Object.keys(mapping).length > 0) {
@@ -71,7 +83,7 @@ export async function POST(request: Request) {
         txDate = parseFlexibleDate(row.date);
         finalAmount = parseFlexibleAmount(row.amount);
         finalType = row.type as "INCOME" | "EXPENSE";
-        desc = row.description || desc;
+        desc = String(row.description || desc).trim().slice(0, 500) || desc;
       } 
       // Case B: Raw data with manual mapping
       else {
@@ -82,7 +94,7 @@ export async function POST(request: Request) {
         const descVal = getMappedValue(row, 'description');
         const typeIndicatorVal = getMappedValue(row, 'transaction_type');
 
-        desc = descVal || "Imported transaction";
+        desc = String(descVal || "Imported transaction").trim().slice(0, 500) || "Imported transaction";
 
         if (amountVal !== undefined && amountVal !== "") {
           const val = parseFlexibleAmount(amountVal);
@@ -122,8 +134,8 @@ export async function POST(request: Request) {
         txDate,
         desc,
         business.id,
-        row.reference,
-        row.balance,
+        row.reference == null ? undefined : String(row.reference),
+        typeof row.balance === "string" || typeof row.balance === "number" ? row.balance : undefined,
         rowIdx
       );
 
