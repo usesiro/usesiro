@@ -6,6 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { recordAuditLog } from "@/lib/logger";
 import { checkRateLimit, getClientIp } from "../_lib/rate-limit";
+import type { Prisma } from "@prisma/client";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const bootstrapSchema = z.object({
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
     const otpCode = crypto.randomInt(100000, 1000000).toString();
     const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    const newAdmin = await prisma.$transaction(async (tx) => {
+    const newAdmin = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Serialize bootstrap attempts across every app instance.
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(734762901)`;
 

@@ -35,13 +35,14 @@ export async function GET(request: Request) {
       });
     }
 
-    // Check for a successful payment
+    // Access is tied to the authenticated user and expires after its billing period.
     const payment = await prisma.payment.findFirst({
       where: {
-        email: user.email,
+        userId,
         status: "SUCCESS",
+        accessEndsAt: { gt: new Date() },
       },
-      orderBy: { paidAt: "desc" },
+      orderBy: { accessEndsAt: "desc" },
     });
 
     return NextResponse.json({
@@ -51,6 +52,7 @@ export async function GET(request: Request) {
             reference: payment.reference,
             amount: payment.amount,
             paidAt: payment.paidAt,
+            accessEndsAt: payment.accessEndsAt,
             channel: payment.channel,
           }
         : null,

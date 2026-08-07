@@ -78,7 +78,7 @@ export default function PaywallModal({ isOpen, onClose, userEmail, featureName }
           </div>
 
           <p className="text-center text-[11px] text-gray-400 mt-4">
-            Secure payment via Paystack. Cancel anytime.
+            Secure one-time payment via Paystack. No automatic renewal.
           </p>
         </div>
       </div>

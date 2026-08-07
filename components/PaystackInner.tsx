@@ -31,7 +31,6 @@ function PaystackInner({ userEmail, amountInKobo, onPaymentSuccess }: PaystackIn
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("siro_access_token")}`,
         },
         body: JSON.stringify({ reference: response.reference }),
       });
@@ -74,7 +73,7 @@ function PaystackInner({ userEmail, amountInKobo, onPaymentSuccess }: PaystackIn
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" />
           </svg>
-          Pay ₦9,999 — Subscribe
+          Pay ₦9,999 — Get 30-day access
         </>
       )}
     </button>

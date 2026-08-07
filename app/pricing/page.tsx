@@ -26,15 +26,11 @@ export default function PricingPage() {
   const [isPro, setIsPro] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("siro_access_token");
-    if (!token) return;
-    setIsLoggedIn(true);
-
     async function checkStatus() {
       try {
         const [payRes, bizRes] = await Promise.all([
-          fetch("/api/payments/status", { headers: { Authorization: `Bearer ${token}` } }),
-          fetch("/api/v1/business/me", { headers: { Authorization: `Bearer ${token}` } })
+          fetch("/api/payments/status"),
+          fetch("/api/v1/business/me")
         ]);
         if (payRes.ok) {
           const data = await payRes.json();
@@ -43,6 +39,7 @@ export default function PricingPage() {
         }
         if (bizRes.ok) {
           const biz = await bizRes.json();
+          setIsLoggedIn(true);
           setUserEmail(biz.owner?.email || "");
         }
       } catch (err) { console.error(err); }
@@ -94,7 +91,7 @@ export default function PricingPage() {
                 </span>
               </div>
               <span className="text-5xl font-fraunces font-bold text-primary block mb-1">₦9,999</span>
-              <span className="text-gray-500 text-sm">per month</span>
+              <span className="text-gray-500 text-sm">for 30 days of access</span>
               <div className="relative group mt-2">
                 <p className="text-[11px] text-gray-400 cursor-help underline decoration-dotted underline-offset-2">
                   Why this price?
@@ -136,7 +133,7 @@ export default function PricingPage() {
           {isLoggedIn ? (
             <div className="w-full md:w-2/3 mx-auto flex flex-col items-center gap-3">
               <CheckoutButton userEmail={userEmail} onPaymentSuccess={() => router.push("/welcome")} />
-              <p className="text-[11px] text-gray-400">Secure payment via Paystack. Cancel anytime.</p>
+              <p className="text-[11px] text-gray-400">Secure one-time payment via Paystack. Renew when your access period ends.</p>
             </div>
           ) : (
             <Link href="/register" className="w-full md:w-2/3 mx-auto py-4 bg-primary text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center shadow-lg shadow-blue-500/30">
@@ -152,7 +149,7 @@ export default function PricingPage() {
           <LockClosedIcon className="w-4 h-4 text-gray-400" />
           <span className="text-gray-900 font-semibold whitespace-nowrap">No hidden fees.</span>
         </div>
-        <span className="whitespace-nowrap">Cancel anytime. Your data is always yours.</span>
+        <span className="whitespace-nowrap">No automatic renewal. Your data is always yours.</span>
       </div>
 
       {/* --- EVERYTHING EXPLAINED (6 Cards) --- */}

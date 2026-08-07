@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       const EXPECTED_AMOUNT_KOBO = 999900; // ₦9,999
 
       // Reject test charges or tampered amounts
-      if (!data.amount || data.amount < EXPECTED_AMOUNT_KOBO) {
+      if (data.amount !== EXPECTED_AMOUNT_KOBO || data.currency !== "NGN") {
         console.warn("Paystack webhook: amount too low", data.amount);
         return NextResponse.json({ received: true }, { status: 200 });
       }
@@ -46,6 +46,8 @@ export async function POST(request: Request) {
         },
         update: {
           status: "SUCCESS",
+          email: data.customer?.email || "unknown",
+          amount: data.amount,
           channel: data.channel || null,
           paidAt: data.paid_at ? new Date(data.paid_at) : new Date(),
         },

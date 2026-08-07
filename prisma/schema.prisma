@@ -64,8 +64,9 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  business     Business? 
+  business     Business?
   auditLogs    AuditLog[]
+  payments     Payment[]
 }
 
 model Business {
@@ -215,15 +216,20 @@ enum PaymentStatus {
 model Payment {
   id        String        @id @default(uuid())
   reference String        @unique
+  userId    String?
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   email     String
   amount    Int           // Amount in kobo
   status    PaymentStatus @default(PENDING)
   channel   String?       // e.g. "card", "bank", "ussd"
   paidAt    DateTime?
+  accessStartsAt DateTime?
+  accessEndsAt   DateTime?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
   @@index([email])
+  @@index([userId, accessEndsAt])
   @@index([createdAt])
 }
 
