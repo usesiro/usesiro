@@ -3,8 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
 import { z } from "zod";
 import { recordAuditLog } from "@/lib/logger";
+import crypto from "crypto";
+import { checkRateLimit, getClientIp } from "../_lib/rate-limit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 
 // 1. Zod Schema: We only need the email for a resend
 const resendSchema = z.object({
@@ -13,6 +16,18 @@ const resendSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const ipLimit = checkRateLimit(
+      `resend-otp:ip:${getClientIp(request)}`,
+      5,
+      RATE_LIMIT_WINDOW_MS
+    );
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(ipLimit.retryAfterSeconds) } }
+      );
+    }
+
     const body = await request.json();
 
     // 2. Validate Payload
@@ -25,6 +40,17 @@ export async function POST(request: Request) {
     }
 
     const { email } = validation.data;
+    const emailLimit = checkRateLimit(
+      `resend-otp:email:${email.trim().toLowerCase()}`,
+      3,
+      RATE_LIMIT_WINDOW_MS
+    );
+    if (!emailLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(emailLimit.retryAfterSeconds) } }
+      );
+    }
 
     // 3. Find the user
     const user = await prisma.user.findUnique({ where: { email } });
@@ -38,7 +64,7 @@ export async function POST(request: Request) {
     }
 
     // 4. Generate a NEW 6-digit OTP and set expiration (5 mins)
-    const newOtpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const newOtpCode = crypto.randomInt(100000, 1000000).toString();
     const newOtpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
     // 5. Update the user in the database
@@ -47,6 +73,7 @@ export async function POST(request: Request) {
       data: {
         otpSecret: newOtpCode,
         otpExpiresAt: newOtpExpiresAt,
+        otpAttempts: 0,
       },
     });
 

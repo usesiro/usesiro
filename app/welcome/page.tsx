@@ -19,12 +19,9 @@ export default function WelcomePage() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const token = localStorage.getItem("siro_access_token");
-        if (!token) { router.push("/login"); return; }
-
         const [authRes, payRes] = await Promise.all([
-          fetch("/api/v1/auth/status", { headers: { Authorization: `Bearer ${token}` } }),
-          fetch("/api/payments/status", { headers: { Authorization: `Bearer ${token}` } })
+          fetch("/api/v1/auth/status"),
+          fetch("/api/payments/status")
         ]);
 
         // Payment guard — redirect to pricing if not paid

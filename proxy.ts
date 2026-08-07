@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
+async function hasActiveSession(request: NextRequest, token: string) {
+  const response = await fetch(new URL('/api/v1/auth/session', request.url), {
+    headers: { authorization: `Bearer ${token}` },
+  });
+  return response.ok;
+}
+
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -51,6 +58,9 @@ export default async function middleware(request: NextRequest) {
       try {
         const secret = new TextEncoder().encode(process.env.JWT_SECRET);
         const { payload } = await jwtVerify(pageToken, secret);
+        if (!(await hasActiveSession(request, pageToken))) {
+          throw new Error('Session revoked');
+        }
         
         // RBAC Check for Admin Routes
         if (isAdminRoute && !isAuthPage) {
@@ -87,20 +97,27 @@ export default async function middleware(request: NextRequest) {
     }
 
     const authHeader = request.headers.get('authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    // Prefer the HttpOnly cookie. This lets same-origin clients authenticate
+    // without exposing a long-lived bearer token to JavaScript/localStorage.
+    const apiToken = pageToken || bearerToken;
+
+    if (!apiToken) {
       return NextResponse.json(
         { error: 'Unauthorized: Missing token' }, 
         { status: 401 }
       );
     }
 
-    const apiToken = authHeader.split(' ')[1];
-
     try {
       const secret = new TextEncoder().encode(process.env.JWT_SECRET);
       await jwtVerify(apiToken, secret);
-      return NextResponse.next();
+      if (!(await hasActiveSession(request, apiToken))) {
+        return NextResponse.json({ error: 'Unauthorized: Session revoked' }, { status: 401 });
+      }
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('authorization', `Bearer ${apiToken}`);
+      return NextResponse.next({ request: { headers: requestHeaders } });
     } catch (error) {
       return NextResponse.json(
         { error: 'Unauthorized: Invalid token' }, 

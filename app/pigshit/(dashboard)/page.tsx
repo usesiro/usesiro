@@ -6,6 +6,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminOverviewPage() {
   // --- DATABASE FETCHES ---
   const [totalUsers, activeSubscribers, recentSignupsData, auditLogs] = await Promise.all([

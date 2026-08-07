@@ -8,6 +8,10 @@ import { MappingSchema } from "@/lib/ai/import-schema";
 import { SIRO_FIELDS } from "@/lib/bank-mappings";
 import { google } from "@/lib/ai/google-client";
 
+const MAX_HEADERS = 100;
+const MAX_HEADER_LENGTH = 200;
+const MAX_AI_PAYLOAD_CHARS = 50_000;
+
 export async function POST(request: Request) {
   try {
     // 1. Authenticate Request
@@ -36,6 +40,19 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Invalid data format provided." },
         { status: 400 },
+      );
+    }
+
+    if (
+      headers.length === 0 ||
+      headers.length > MAX_HEADERS ||
+      headers.some((header) =>
+        typeof header !== "string" || header.length > MAX_HEADER_LENGTH
+      )
+    ) {
+      return NextResponse.json(
+        { error: "Too many columns or an invalid column name was provided." },
+        { status: 413 },
       );
     }
 
@@ -84,6 +101,13 @@ export async function POST(request: Request) {
       userHeaders: headers,
       sampleData: sampleRows.slice(0, 3), // Hard limit to top 3 rows for token economy and privacy
     });
+
+    if (userMessage.length > MAX_AI_PAYLOAD_CHARS) {
+      return NextResponse.json(
+        { error: "The sample data is too large to analyze safely." },
+        { status: 413 },
+      );
+    }
 
     const { object: aiMapping } = await generateObject({
       model: google("gemini-2.5-flash"),

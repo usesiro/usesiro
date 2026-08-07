@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
 import { detectColumnMapping, generateHeaderHash } from "@/lib/import-utils";
 
+const MAX_HEADERS = 100;
+const MAX_HEADER_LENGTH = 200;
+
 /**
  * Endpoint to analyze uploaded file headers and suggest Siro column mappings.
  * Checks for previously saved mappings first, then falls back to fuzzy matching.
@@ -28,6 +31,19 @@ export async function POST(request: Request) {
     const { headers } = await request.json();
     if (!headers || !Array.isArray(headers)) {
       return NextResponse.json({ error: "No headers provided" }, { status: 400 });
+    }
+
+    if (
+      headers.length === 0 ||
+      headers.length > MAX_HEADERS ||
+      headers.some((header) =>
+        typeof header !== "string" || header.length > MAX_HEADER_LENGTH
+      )
+    ) {
+      return NextResponse.json(
+        { error: "Too many columns or an invalid column name was provided." },
+        { status: 413 },
+      );
     }
 
     // 1. Generate a hash for the current header structure

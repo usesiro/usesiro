@@ -133,7 +133,6 @@ export default function Register() {
       const loginData = await loginRes.json();
       if (!loginRes.ok) throw new Error("Auto-login failed. Please go to login page.");
 
-      localStorage.setItem("siro_access_token", loginData.accessToken);
       setStep(3);
     } catch (err: any) {
       const msg = err.message === "Failed to fetch" || err.name === "TypeError"
@@ -151,12 +150,10 @@ export default function Register() {
     setIsLoading(true);
     setErrorMsg("");
     try {
-      const token = localStorage.getItem("siro_access_token");
       const res = await fetch("/api/v1/business", {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` 
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           name: formData.businessName,

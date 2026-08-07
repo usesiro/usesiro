@@ -45,10 +45,7 @@ export default function Login() {
         throw new Error(data.error || "Login failed");
       }
 
-      // 1. Save the token
-      localStorage.setItem("siro_access_token", data.accessToken);
-      
-      // 2. Redirect to dashboard
+      // The server stores the session in an HttpOnly cookie.
       router.push("/dashboard");
 
     } catch (err: any) {

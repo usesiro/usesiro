@@ -352,7 +352,7 @@ export default function Reconciliation() {
                 <div className="border border-gray-100 rounded-xl overflow-hidden">
                   <div className="p-4 border-b border-gray-50 flex justify-between items-center bg-white">
                     <span className="font-bold text-gray-800 text-sm">Receipts & Documents</span>
-                    <input type="file" id="receipt-upload" className="hidden" accept=".pdf,image/*" onChange={handleFileChange} />
+                    <input type="file" id="receipt-upload" className="hidden" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={handleFileChange} />
                     <label htmlFor="receipt-upload" className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg cursor-pointer hover:bg-blue-700 transition shadow-sm">
                       <PlusIcon className="w-4 h-4" /> {selectedFile ? "Change File" : "Attach File"}
                     </label>
@@ -373,7 +373,7 @@ export default function Reconciliation() {
                            <div className="w-8 h-8 bg-green-50 text-green-500 rounded flex items-center justify-center"><DocumentIcon className="w-5 h-5"/></div>
                            <span className="text-sm font-medium text-gray-700">Document Uploaded</span>
                         </div>
-                        <a href={selectedTransaction.document.url} target="_blank" className="text-xs font-bold text-primary hover:underline">View</a>
+                        <a href={`/api/v1/documents/${selectedTransaction.document.id}`} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-primary hover:underline">View</a>
                       </div>
                     ) : (
                        <p className="text-xs text-gray-400 italic px-2">No documents attached yet.</p>

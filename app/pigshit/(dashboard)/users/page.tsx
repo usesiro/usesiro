@@ -2,6 +2,8 @@ import { MagnifyingGlassIcon, ChevronDownIcon } from "@heroicons/react/24/outlin
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function AllUsersPage() {
   const businesses = await prisma.business.findMany({
     include: { user: true },

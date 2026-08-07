@@ -57,6 +57,7 @@ model User {
   otpSecret    String?
   otpExpiresAt DateTime?
   otpAttempts  Int       @default(0)
+  sessionVersion Int     @default(0)
   isVerified   Boolean   @default(false)
   role         Role      @default(USER)
   lastReadNotificationsAt DateTime? @default(now())

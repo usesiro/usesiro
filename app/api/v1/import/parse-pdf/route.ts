@@ -5,6 +5,8 @@ import { ResponseSchema } from "@/lib/ai/import-schema";
 import { PDF_EXTRACT_PROMPT } from "@/lib/ai/prompts";
 import { google } from '@/lib/ai/google-client';
 
+const MAX_TEXT_CHARS = 60_000;
+
 /**
  * AI-Powered Text Chunk Parser.
  * Takes a slice of bank statement text and returns structured rows.
@@ -18,6 +20,13 @@ export async function POST(request: Request) {
 
     if (!text || text.trim().length < 10) {
       return NextResponse.json({ rows: [] });
+    }
+
+    if (typeof text !== "string" || text.length > MAX_TEXT_CHARS) {
+      return NextResponse.json(
+        { error: "This statement section is too large to process safely." },
+        { status: 413 },
+      );
     }
 
     if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {

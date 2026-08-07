@@ -4,6 +4,7 @@ import { recordAuditLog } from "@/lib/logger";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { z } from "zod";
+import { reserveOtpAttempt } from "../_lib/otp-attempt";
 
 const MAX_OTP_ATTEMPTS = 5;
 
@@ -31,18 +32,46 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid or expired code." }, { status: 400 });
     }
 
-    // Check attempt limit
-    if (user.otpAttempts >= MAX_OTP_ATTEMPTS) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { otpSecret: null, otpExpiresAt: null, otpAttempts: 0 }
-      });
-      return NextResponse.json({ error: "Too many failed attempts. Please request a new code." }, { status: 429 });
+    // Check expiry
+    const now = new Date();
+    if (now >= user.otpExpiresAt) {
+      return NextResponse.json({ error: "Code has expired. Please request a new one." }, { status: 400 });
     }
 
-    // Check expiry
-    if (new Date() > user.otpExpiresAt) {
-      return NextResponse.json({ error: "Code has expired. Please request a new one." }, { status: 400 });
+    // Atomically reserve one attempt so parallel guesses cannot bypass the cap.
+    const reservedAttempt = await reserveOtpAttempt(
+      user.id,
+      user.otpSecret,
+      now,
+      MAX_OTP_ATTEMPTS
+    );
+
+    if (reservedAttempt === null) {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { otpSecret: true, otpAttempts: true },
+      });
+
+      if (
+        currentUser?.otpSecret === user.otpSecret &&
+        currentUser.otpAttempts >= MAX_OTP_ATTEMPTS
+      ) {
+        await prisma.user.updateMany({
+          where: {
+            id: user.id,
+            otpSecret: user.otpSecret,
+            otpAttempts: { gte: MAX_OTP_ATTEMPTS },
+          },
+          data: { otpSecret: null, otpExpiresAt: null, otpAttempts: 0 },
+        });
+
+        return NextResponse.json(
+          { error: "Too many failed attempts. Please request a new code." },
+          { status: 429 }
+        );
+      }
+
+      return NextResponse.json({ error: "Invalid or expired code." }, { status: 400 });
     }
 
     // Timing-safe OTP comparison
@@ -50,11 +79,24 @@ export async function POST(req: Request) {
       crypto.timingSafeEqual(Buffer.from(user.otpSecret), Buffer.from(otp));
 
     if (!otpMatch) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { otpAttempts: { increment: 1 } }
-      });
-      return NextResponse.json({ error: "Invalid verification code." }, { status: 400 });
+      const attempts = reservedAttempt;
+      const locked = attempts >= MAX_OTP_ATTEMPTS;
+
+      if (locked) {
+        await prisma.user.updateMany({
+          where: {
+            id: user.id,
+            otpSecret: user.otpSecret,
+            otpAttempts: { gte: MAX_OTP_ATTEMPTS },
+          },
+          data: { otpSecret: null, otpExpiresAt: null, otpAttempts: 0 },
+        });
+      }
+
+      return NextResponse.json(
+        { error: locked ? "Too many failed attempts. Please request a new code." : "Invalid verification code." },
+        { status: locked ? 429 : 400 }
+      );
     }
 
     // Check if same as current password
@@ -66,15 +108,25 @@ export async function POST(req: Request) {
     // Hash and save
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-    await prisma.user.update({
-      where: { id: user.id },
+    const passwordUpdated = await prisma.user.updateMany({
+      where: {
+        id: user.id,
+        otpSecret: user.otpSecret,
+        otpExpiresAt: { gt: new Date() },
+        otpAttempts: { lte: MAX_OTP_ATTEMPTS },
+      },
       data: {
         passwordHash: hashedPassword,
+        sessionVersion: { increment: 1 },
         otpSecret: null,
         otpExpiresAt: null,
         otpAttempts: 0,
       },
     });
+
+    if (passwordUpdated.count === 0) {
+      return NextResponse.json({ error: "Invalid or expired code." }, { status: 400 });
+    }
 
     await recordAuditLog({
       userId: user.id,

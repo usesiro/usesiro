@@ -2,15 +2,48 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
 import crypto from "crypto";
+import { z } from "zod";
+import { checkRateLimit, getClientIp } from "../_lib/rate-limit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email format"),
+});
 
 export async function POST(req: Request) {
   try {
-    const { email } = await req.json();
+    const ipLimit = checkRateLimit(
+      `forgot-password:ip:${getClientIp(req)}`,
+      5,
+      RATE_LIMIT_WINDOW_MS
+    );
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(ipLimit.retryAfterSeconds) } }
+      );
+    }
 
-    if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    const validation = forgotPasswordSchema.safeParse(await req.json());
+
+    if (!validation.success) {
+      return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
+    }
+
+    const { email } = validation.data;
+    const normalizedEmail = email.trim().toLowerCase();
+    const emailLimit = checkRateLimit(
+      `forgot-password:email:${normalizedEmail}`,
+      3,
+      RATE_LIMIT_WINDOW_MS
+    );
+    if (!emailLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(emailLimit.retryAfterSeconds) } }
+      );
     }
 
     // 1. Find the user
@@ -36,6 +69,7 @@ export async function POST(req: Request) {
       data: {
         otpSecret: otp,
         otpExpiresAt: expiresAt,
+        otpAttempts: 0,
       },
     });
 

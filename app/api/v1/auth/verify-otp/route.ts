@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { recordAuditLog } from "@/lib/logger";
 import { z } from "zod";
 import crypto from "crypto";
+import { reserveOtpAttempt } from "../_lib/otp-attempt";
 
 const MAX_OTP_ATTEMPTS = 5;
 
@@ -32,27 +33,57 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid or expired code. Please try again." }, { status: 400 });
     }
 
-    // Check if too many attempts
-    if (user.otpAttempts >= MAX_OTP_ATTEMPTS) {
-      // Invalidate the OTP entirely
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { otpSecret: null, otpExpiresAt: null, otpAttempts: 0 }
-      });
-
-      await recordAuditLog({
-        userId: user.id,
-        action: "AUTH.OTP_LOCKED",
-        status: "FAILURE",
-        details: { email: user.email, reason: "Max attempts exceeded" }
-      });
-
-      return NextResponse.json({ error: "Too many failed attempts. Please request a new code." }, { status: 429 });
+    // Check expiry
+    const now = new Date();
+    if (user.otpExpiresAt <= now) {
+      return NextResponse.json({ error: "Code has expired. Please request a new one." }, { status: 400 });
     }
 
-    // Check expiry
-    if (user.otpExpiresAt < new Date()) {
-      return NextResponse.json({ error: "Code has expired. Please request a new one." }, { status: 400 });
+    // Atomically reserve one attempt. The conditional update prevents concurrent
+    // requests from all passing a stale attempt-count check.
+    const reservedAttempt = await reserveOtpAttempt(
+      user.id,
+      user.otpSecret,
+      now,
+      MAX_OTP_ATTEMPTS
+    );
+
+    if (reservedAttempt === null) {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { otpSecret: true, otpAttempts: true },
+      });
+
+      if (
+        currentUser?.otpSecret === user.otpSecret &&
+        currentUser.otpAttempts >= MAX_OTP_ATTEMPTS
+      ) {
+        await prisma.user.updateMany({
+          where: {
+            id: user.id,
+            otpSecret: user.otpSecret,
+            otpAttempts: { gte: MAX_OTP_ATTEMPTS },
+          },
+          data: { otpSecret: null, otpExpiresAt: null, otpAttempts: 0 },
+        });
+
+        await recordAuditLog({
+          userId: user.id,
+          action: "AUTH.OTP_LOCKED",
+          status: "FAILURE",
+          details: { email: user.email, reason: "Max attempts exceeded" },
+        });
+
+        return NextResponse.json(
+          { error: "Too many failed attempts. Please request a new code." },
+          { status: 429 }
+        );
+      }
+
+      return NextResponse.json(
+        { error: "Invalid or expired code. Please try again." },
+        { status: 400 }
+      );
     }
 
     // Timing-safe comparison
@@ -60,30 +91,42 @@ export async function POST(request: Request) {
       crypto.timingSafeEqual(Buffer.from(user.otpSecret), Buffer.from(otp));
 
     if (!otpMatch) {
-      // Increment attempts
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { otpAttempts: { increment: 1 } }
-      });
+      const attempts = reservedAttempt;
+      const remaining = Math.max(0, MAX_OTP_ATTEMPTS - attempts);
+
+      if (remaining === 0) {
+        await prisma.user.updateMany({
+          where: {
+            id: user.id,
+            otpSecret: user.otpSecret,
+            otpAttempts: { gte: MAX_OTP_ATTEMPTS },
+          },
+          data: { otpSecret: null, otpExpiresAt: null, otpAttempts: 0 },
+        });
+      }
 
       await recordAuditLog({
         userId: user.id,
         action: "AUTH.OTP_FAILED",
         status: "FAILURE",
-        details: { email: user.email, attempts: user.otpAttempts + 1 }
+        details: { email: user.email, attempts },
       });
 
-      const remaining = MAX_OTP_ATTEMPTS - (user.otpAttempts + 1);
       return NextResponse.json({
         error: remaining > 0
           ? `Invalid code. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`
           : "Too many failed attempts. Please request a new code."
-      }, { status: 400 });
+      }, { status: remaining > 0 ? 400 : 429 });
     }
 
     // Success — verify user and clear OTP
-    await prisma.user.update({
-      where: { id: user.id },
+    const verified = await prisma.user.updateMany({
+      where: {
+        id: user.id,
+        otpSecret: user.otpSecret,
+        otpExpiresAt: { gt: new Date() },
+        otpAttempts: { lte: MAX_OTP_ATTEMPTS },
+      },
       data: {
         isVerified: true,
         otpSecret: null,
@@ -91,6 +134,13 @@ export async function POST(request: Request) {
         otpAttempts: 0,
       },
     });
+
+    if (verified.count === 0) {
+      return NextResponse.json(
+        { error: "Invalid or expired code. Please try again." },
+        { status: 400 }
+      );
+    }
 
     await recordAuditLog({
       userId: user.id,

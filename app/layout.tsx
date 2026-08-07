@@ -7,6 +7,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import { NotificationProvider } from "@/context/NotificationContext";
 import { BookingProvider } from "@/components/booking/BookingProvider";
 import Script from "next/script";
+import LegacyTokenCleanup from "@/components/LegacyTokenCleanup";
 
 // Setup Poppins
 const poppins = Poppins({
@@ -87,6 +88,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${poppins.variable} ${fraunces.variable} font-sans`}>
+        <LegacyTokenCleanup />
         
         {/* --- GOOGLE ORGANIZATION SCHEMA --- */}
         <Script

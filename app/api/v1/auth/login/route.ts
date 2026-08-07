@@ -68,7 +68,11 @@ export async function POST(request: Request) {
     // 5. Generate the JWT (Edge Compatible)
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
     
-    const accessToken = await new SignJWT({ userId: user.id, role: user.role })
+    const accessToken = await new SignJWT({
+      userId: user.id,
+      role: user.role,
+      sessionVersion: user.sessionVersion,
+    })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
       .setExpirationTime("24h") 
@@ -78,7 +82,6 @@ export async function POST(request: Request) {
     const response = NextResponse.json(
       { 
         message: "Login successful", 
-        accessToken,
         user: {
             id: user.id,
             email: user.email,
