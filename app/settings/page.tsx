@@ -30,7 +30,7 @@ export default function Settings() {
     industry: "",
   });
 
-  const [passwords, setPasswords] = useState({ newPassword: "", confirmPassword: "" });
+  const [passwords, setPasswords] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
 
   // --- PREFERENCES STATE ---
   const [preferences, setPreferences] = useState({ emailNotifications: true, loginAlerts: true });
@@ -48,10 +48,9 @@ export default function Settings() {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem("siro_access_token");
       const [bizRes, payRes] = await Promise.all([
-        fetch("/api/v1/business/me", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("/api/payments/status", { headers: { Authorization: `Bearer ${token}` } })
+        fetch("/api/v1/business/me"),
+        fetch("/api/payments/status")
       ]);
       if (bizRes.ok) {
         const fetchedData = await bizRes.json();
@@ -80,9 +79,7 @@ export default function Settings() {
   const fetchAuditLogs = async () => {
     setIsLogsLoading(true);
     try {
-      const res = await fetch("/api/v1/audit-logs", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` }
-      });
+      const res = await fetch("/api/v1/audit-logs");
       if (res.ok) {
         const data = await res.json();
         setAuditLogs(data.logs);
@@ -116,7 +113,6 @@ export default function Settings() {
         method: "PATCH", 
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("siro_access_token")}`
         },
         body: JSON.stringify(payload)
       });
@@ -150,16 +146,17 @@ export default function Settings() {
         method: "PATCH", 
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("siro_access_token")}`
         },
-        body: JSON.stringify({ newPassword: passwords.newPassword })
+        body: JSON.stringify({ currentPassword: passwords.currentPassword, newPassword: passwords.newPassword })
       });
 
       if (res.ok) {
-        showNotification("Password updated successfully!", "success");
-        setPasswords({ newPassword: "", confirmPassword: "" });
+        showNotification("Password updated. Please sign in again.", "success");
+        setPasswords({ currentPassword: "", newPassword: "", confirmPassword: "" });
+        setTimeout(() => router.replace("/login"), 800);
       } else {
-        showNotification("Failed to update password.", "error");
+        const result = await res.json();
+        showNotification(result.error || "Failed to update password.", "error");
       }
     } catch (error: any) {
       const msg = error.message === "Failed to fetch" || error.name === "TypeError"
@@ -405,9 +402,21 @@ export default function Settings() {
               
               <div className="space-y-5">
                 <div>
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Current Password</label>
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="Enter current password"
+                    value={passwords.currentPassword}
+                    onChange={(e) => setPasswords({...passwords, currentPassword: e.target.value})}
+                    className="w-full border border-gray-200 bg-gray-50/50 p-3.5 rounded-xl text-sm focus:bg-white focus:outline-none focus:border-primary transition"
+                  />
+                </div>
+                <div>
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">New Password</label>
                   <input 
                     type="password" 
+                    autoComplete="new-password"
                     placeholder="Enter new password"
                     value={passwords.newPassword}
                     onChange={(e) => setPasswords({...passwords, newPassword: e.target.value})}
@@ -418,6 +427,7 @@ export default function Settings() {
                   <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Confirm Password</label>
                   <input 
                     type="password" 
+                    autoComplete="new-password"
                     placeholder="Confirm new password"
                     value={passwords.confirmPassword}
                     onChange={(e) => setPasswords({...passwords, confirmPassword: e.target.value})}
@@ -427,7 +437,7 @@ export default function Settings() {
                 <div className="pt-2">
                   <button 
                     onClick={handleUpdatePassword}
-                    disabled={!passwords.newPassword || isSaving}
+                    disabled={!passwords.currentPassword || !passwords.newPassword || !passwords.confirmPassword || isSaving}
                     className="w-full bg-primary text-white py-3.5 rounded-xl font-bold text-sm hover:bg-blue-600 transition disabled:opacity-50"
                   >
                     {isSaving ? "Updating..." : "Update Password"}

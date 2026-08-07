@@ -100,9 +100,7 @@ export default function Transactions() {
       if (filters.startDate) queryParams.append("startDate", filters.startDate);
       if (filters.endDate) queryParams.append("endDate", filters.endDate);
 
-      const res = await fetch(`/api/v1/transactions?${queryParams.toString()}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` }
-      });
+      const res = await fetch(`/api/v1/transactions?${queryParams.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setTransactions(data.transactions);
@@ -124,9 +122,7 @@ export default function Transactions() {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch("/api/v1/categories", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` }
-      });
+      const res = await fetch("/api/v1/categories");
       if (res.ok) {
         const data = await res.json();
         setCategories(data.categories || []);
@@ -149,10 +145,9 @@ export default function Transactions() {
     // Fetch payment status for paywall
     async function fetchPaymentStatus() {
       try {
-        const token = localStorage.getItem("siro_access_token");
         const [payRes, bizRes] = await Promise.all([
-          fetch("/api/payments/status", { headers: { Authorization: `Bearer ${token}` } }),
-          fetch("/api/v1/business/me", { headers: { Authorization: `Bearer ${token}` } })
+          fetch("/api/payments/status"),
+          fetch("/api/v1/business/me")
         ]);
         if (payRes.ok) {
           const data = await payRes.json();
@@ -170,10 +165,7 @@ export default function Transactions() {
   // Fetch pending review transactions
   const fetchPendingReview = async () => {
     try {
-      const token = localStorage.getItem("siro_access_token");
-      const res = await fetch("/api/v1/transactions/pending-review", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch("/api/v1/transactions/pending-review");
       if (res.ok) {
         const data = await res.json();
         setPendingTransactions(data.transactions || []);
@@ -190,12 +182,10 @@ export default function Transactions() {
   const handleResolveTransaction = async (transactionId: string, categoryId: string) => {
     setIsResolvingId(transactionId);
     try {
-      const token = localStorage.getItem("siro_access_token");
       const res = await fetch("/api/v1/transactions/pending-review", {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ transactionId, categoryId })
       });
@@ -258,8 +248,7 @@ export default function Transactions() {
       const res = await fetch("/api/v1/transactions/bulk", {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("siro_access_token")}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           transactionIds: selectedIds,
@@ -291,8 +280,7 @@ export default function Transactions() {
       const res = await fetch("/api/v1/transactions/bulk", {
         method: "DELETE",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("siro_access_token")}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           transactionIds: deleteModal.ids,
@@ -330,8 +318,7 @@ export default function Transactions() {
       const res = await fetch("/api/v1/transactions/vat", {
         method: "PATCH",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("siro_access_token")}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ transactionId, vatStatus: newVatStatus }),
       });
@@ -360,8 +347,7 @@ export default function Transactions() {
       const res = await fetch("/api/v1/transactions", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("siro_access_token")}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify(formData),
       });

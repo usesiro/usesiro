@@ -23,8 +23,7 @@ export default function ConnectBank({ onSuccess }: ConnectBankProps) {
         const response = await fetch('/api/mono/exchange', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`, 
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ code: data.code }),
         });
@@ -61,9 +60,6 @@ export default function ConnectBank({ onSuccess }: ConnectBankProps) {
       // Pointing directly to the AI Import Pipeline built by Morenike
       const response = await fetch('/api/import/standardize', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('siro_access_token')}`, 
-        },
         body: formData,
       });
 

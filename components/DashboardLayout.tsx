@@ -42,9 +42,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const fetchUnreadCount = async () => {
     try {
-      const res = await fetch("/api/v1/notifications", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` }
-      });
+      const res = await fetch("/api/v1/notifications");
       if (res.ok) {
         const data = await res.json();
         const latestNotifs = data.notifications || [];
@@ -74,9 +72,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     async function fetchProfile() {
       try {
-        const res = await fetch("/api/v1/business/me", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` }
-        });
+        const res = await fetch("/api/v1/business/me");
         if (res.ok) setBusinessData(await res.json());
       } catch (err) { console.error(err); }
     }
@@ -91,7 +87,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleLogout = async () => {
     try {
       await fetch("/api/v1/auth/logout", { method: "POST" });
-      localStorage.removeItem("siro_access_token");
       router.push("/login");
     } catch (error) {
       console.error("Logout failed:", error);

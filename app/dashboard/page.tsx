@@ -73,11 +73,10 @@ export default function Overview() {
   useEffect(() => {
     async function getDashboardData() {
       try {
-        const token = localStorage.getItem("siro_access_token");
         const [bizRes, txRes, payRes] = await Promise.all([
-          fetch("/api/v1/business/me", { headers: { Authorization: `Bearer ${token}` } }),
-          fetch("/api/v1/transactions", { headers: { Authorization: `Bearer ${token}` } }),
-          fetch("/api/payments/status", { headers: { Authorization: `Bearer ${token}` } })
+          fetch("/api/v1/business/me"),
+          fetch("/api/v1/transactions"),
+          fetch("/api/payments/status")
         ]);
         if (bizRes.ok) setBusiness(await bizRes.json());
         if (txRes.ok) {

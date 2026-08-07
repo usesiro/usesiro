@@ -50,9 +50,7 @@ export default function TaxReadiness() {
         if (filters.search) queryParams.append("search", filters.search);
         if (filters.source !== "All Sources") queryParams.append("source", filters.source);
 
-        const res = await fetch(`/api/v1/transactions?${queryParams.toString()}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` }
-        });
+        const res = await fetch(`/api/v1/transactions?${queryParams.toString()}`);
         
         if (res.ok) {
           const data = await res.json();

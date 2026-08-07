@@ -46,8 +46,7 @@ export default function NotificationDropdown({ onOpenModal, externalUnreadCount 
   const markAllAsRead = async () => {
     try {
       const res = await fetch("/api/v1/notifications/mark-read", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` }
+        method: "POST"
       });
       if (res.ok) {
         setUnreadCount(0);
@@ -60,9 +59,7 @@ export default function NotificationDropdown({ onOpenModal, externalUnreadCount 
   const fetchNotifications = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/v1/notifications", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` }
-      });
+      const res = await fetch("/api/v1/notifications");
       if (res.ok) {
         const data = await res.json();
         setNotifications(data.notifications);

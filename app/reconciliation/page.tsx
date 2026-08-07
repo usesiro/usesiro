@@ -37,8 +37,8 @@ export default function Reconciliation() {
     setIsLoading(true);
     try {
       const [txRes, catRes] = await Promise.all([
-        fetch(`/api/v1/transactions`, { headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` } }),
-        fetch(`/api/v1/categories`, { headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` } })
+        fetch(`/api/v1/transactions`),
+        fetch(`/api/v1/categories`)
       ]);
       
       if (txRes.ok) {
@@ -94,8 +94,7 @@ export default function Reconciliation() {
 
     try {
       const headers = { 
-        'Content-Type': 'application/json', 
-        Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` 
+        'Content-Type': 'application/json'
       };
 
       // 1. Save VAT Tag
@@ -126,7 +125,6 @@ export default function Reconciliation() {
 
         const uploadRes = await fetch('/api/v1/documents', {
           method: 'POST',
-          headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` }, 
           // Note: When sending FormData, do NOT set 'Content-Type'. The browser sets it automatically with the correct boundary.
           body: formData
         });

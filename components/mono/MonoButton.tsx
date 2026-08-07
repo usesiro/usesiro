@@ -32,8 +32,7 @@ export default function MonoButton({ className, label, onSuccess }: MonoButtonPr
           const response = await fetch(API_PATH, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('siro_access_token')}`, 
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify({ code: data.code }),
           });

@@ -112,8 +112,7 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
         const response = await fetch('/api/v1/import/standardize', {
           method: 'POST',
           headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('siro_access_token')}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ headers: rawHeaders, data: batches[i] }),
         });
@@ -187,7 +186,6 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
         
         const extractRes = await fetch('/api/v1/import/extract-text', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('siro_access_token')}` },
           body: formData,
         });
 
@@ -214,8 +212,7 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
             const parseRes = await fetch('/api/v1/import/parse-pdf', {
               method: 'POST',
               headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('siro_access_token')}` 
+                'Content-Type': 'application/json'
               },
               body: JSON.stringify({ text: lines.join('\n') }),
             });
@@ -318,8 +315,7 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
       const response = await fetch('/api/v1/import/execute', {
         method: 'POST',
         headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('siro_access_token')}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ 
           data: dataToImport, 

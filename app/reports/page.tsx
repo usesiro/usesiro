@@ -30,9 +30,7 @@ export default function Reports() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch(`/api/v1/transactions`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("siro_access_token")}` }
-        });
+        const res = await fetch(`/api/v1/transactions`);
         if (res.ok) {
           const data = await res.json();
           setTransactions(data.transactions || []);
