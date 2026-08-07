@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { readLimitedJsonBody } from "@/lib/public-form-utils";
 
 const STORED_STEPS = ["REPORT_GENERATED", "TOUR_COMPLETED"] as const;
 const ALL_STEPS = [
@@ -99,7 +100,9 @@ export async function PATCH(request: Request) {
     const userId = await authenticatedUserId(request);
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const validation = updateSchema.safeParse(await request.json());
+    const body = await readLimitedJsonBody(request, 8 * 1024);
+    if (!body.success) return NextResponse.json({ error: body.error }, { status: body.status });
+    const validation = updateSchema.safeParse(body.data);
     if (!validation.success) {
       return NextResponse.json({ error: "Invalid onboarding update" }, { status: 400 });
     }

@@ -3,6 +3,7 @@ import { jwtVerify } from "jose";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { readLimitedJsonBody } from "@/lib/public-form-utils";
 
 const EXPECTED_AMOUNT_KOBO = 999900;
 const ACCESS_PERIOD_MS = 30 * 24 * 60 * 60 * 1000;
@@ -23,7 +24,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const validation = verifySchema.safeParse(await request.json());
+    const body = await readLimitedJsonBody(request, 8 * 1024);
+    if (!body.success) return NextResponse.json({ error: body.error }, { status: body.status });
+    const validation = verifySchema.safeParse(body.data);
     if (!validation.success) {
       return NextResponse.json({ error: "Invalid payment reference" }, { status: 400 });
     }
