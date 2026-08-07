@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useMemo } from 'react';
-import * as XLSX from 'xlsx';
+import Papa from 'papaparse';
+import readXlsxFile from 'read-excel-file/browser';
 import { 
   XMarkIcon, 
   ArrowUpTrayIcon, 
@@ -281,15 +282,31 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
         );
 
       } else {
-        // XLSX/CSV Logic
-        const bstr = await file.arrayBuffer();
-        const wb = XLSX.read(bstr, { type: 'array' });
-        const wsname = wb.SheetNames[0];
-        const ws = wb.Sheets[wsname];
-        const data = XLSX.utils.sheet_to_json(ws, { defval: "" });
-        
-        if (data.length === 0) throw new Error("The file is empty.");
-        const fileHeaders = Object.keys(data[0] as object);
+        const fileName = file.name.toLowerCase();
+        let data: Record<string, unknown>[];
+        let fileHeaders: string[];
+
+        if (fileName.endsWith('.csv')) {
+          const parsed = Papa.parse<Record<string, unknown>>(await file.text(), {
+            header: true,
+            skipEmptyLines: 'greedy',
+          });
+          if (parsed.errors.length > 0) throw new Error('Could not read the CSV file. Check its formatting and try again.');
+          fileHeaders = parsed.meta.fields || [];
+          data = parsed.data.filter((row) => Object.values(row).some((value) => String(value ?? '').trim() !== ''));
+        } else if (fileName.endsWith('.xlsx')) {
+          const sheets = await readXlsxFile(file);
+          const rows = sheets[0]?.data ?? [];
+          if (rows.length === 0) throw new Error('The file is empty.');
+          fileHeaders = rows[0].map((value) => String(value ?? '').trim());
+          data = rows.slice(1)
+            .filter((row) => row.some((value) => String(value ?? '').trim() !== ''))
+            .map((row) => Object.fromEntries(fileHeaders.map((header, index) => [header, row[index] ?? ''])));
+        } else {
+          throw new Error('Unsupported file type. Upload a CSV, XLSX, or PDF statement.');
+        }
+
+        if (data.length === 0 || fileHeaders.length === 0) throw new Error("The file is empty.");
         
         setFileData(data);
         setHeaders(fileHeaders);
@@ -407,12 +424,12 @@ export default function TransactionImportModal({ isOpen, onClose, onSuccess }: T
                   {isUploading ? <ArrowPathIcon className="w-8 h-8 animate-spin" /> : <ArrowUpTrayIcon className="w-8 h-8" />}
                 </div>
                 <h3 className="text-lg font-bold text-gray-800">{isUploading ? 'Reading file...' : 'Choose a file to upload'}</h3>
-                <p className="text-xs text-gray-500 mt-2 font-medium">Accepts .csv, .xlsx, .xls, .pdf</p>
+                              <p className="text-xs text-gray-500 mt-2 font-medium">Accepts .csv, .xlsx, .pdf</p>
                 <input 
                   type="file" 
                   ref={fileInputRef}
                   onChange={handleFileUpload}
-                  accept=".csv,.xlsx,.xls,.pdf"
+                  accept=".csv,.xlsx,.pdf"
                   className="hidden" 
                 />
               </div>
