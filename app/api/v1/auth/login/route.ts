@@ -4,19 +4,30 @@ import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
 import { z } from "zod";
 import { recordAuditLog } from "@/lib/logger";
+import { readLimitedJsonBody } from "@/lib/public-form-security";
+import { checkRateLimit, getClientIp } from "../_lib/rate-limit";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email format"),
-  password: z.string().min(1, "Password is required"),
+  email: z.string().trim().email("Invalid email format").max(254).transform((value) => value.toLowerCase()),
+  password: z.string().min(1, "Password is required").max(128),
   portal: z.enum(["USER", "ADMIN"]).optional().default("USER"), // Added portal field
 });
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const ipLimit = await checkRateLimit(`login:ip:${getClientIp(request)}`, 20, 15 * 60 * 1000);
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many login attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(ipLimit.retryAfterSeconds) } },
+      );
+    }
+
+    const body = await readLimitedJsonBody(request, 8 * 1024);
+    if (!body.success) return NextResponse.json({ error: body.error }, { status: body.status });
 
     // 1. Validate Payload
-    const validation = loginSchema.safeParse(body);
+    const validation = loginSchema.safeParse(body.data);
     if (!validation.success) {
       return NextResponse.json(
         { error: "Validation Failed", details: validation.error.issues },
@@ -25,6 +36,13 @@ export async function POST(request: Request) {
     }
 
     const { email, password, portal } = validation.data;
+    const emailLimit = await checkRateLimit(`login:email:${email}`, 8, 15 * 60 * 1000);
+    if (!emailLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many login attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(emailLimit.retryAfterSeconds) } },
+      );
+    }
 
     // 2. Find user
     const user = await prisma.user.findUnique({ 

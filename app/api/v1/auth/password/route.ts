@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { recordAuditLog } from "@/lib/logger";
 import { checkRateLimit } from "../_lib/rate-limit";
+import { readLimitedJsonBody } from "@/lib/public-form-security";
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1).max(128),
@@ -23,7 +24,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const limit = checkRateLimit(`change-password:${payload.userId}`, 5, 15 * 60 * 1000);
+    const limit = await checkRateLimit(`change-password:${payload.userId}`, 5, 15 * 60 * 1000);
     if (!limit.allowed) {
       return NextResponse.json(
         { error: "Too many password attempts. Please try again later." },
@@ -31,7 +32,9 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const validation = passwordSchema.safeParse(await request.json());
+    const body = await readLimitedJsonBody(request, 8 * 1024);
+    if (!body.success) return NextResponse.json({ error: body.error }, { status: body.status });
+    const validation = passwordSchema.safeParse(body.data);
     if (!validation.success) {
       return NextResponse.json(
         { error: validation.error.issues[0]?.message || "Invalid password details" },

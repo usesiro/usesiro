@@ -5,18 +5,19 @@ import { z } from "zod";
 import { recordAuditLog } from "@/lib/logger";
 import crypto from "crypto";
 import { checkRateLimit, getClientIp } from "../_lib/rate-limit";
+import { readLimitedJsonBody } from "@/lib/public-form-security";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 
 // 1. Zod Schema: We only need the email for a resend
 const resendSchema = z.object({
-  email: z.string().email("Invalid email format"),
+  email: z.string().trim().email("Invalid email format").max(254).transform((value) => value.toLowerCase()),
 });
 
 export async function POST(request: Request) {
   try {
-    const ipLimit = checkRateLimit(
+    const ipLimit = await checkRateLimit(
       `resend-otp:ip:${getClientIp(request)}`,
       5,
       RATE_LIMIT_WINDOW_MS
@@ -28,10 +29,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
+    const body = await readLimitedJsonBody(request, 8 * 1024);
+    if (!body.success) return NextResponse.json({ error: body.error }, { status: body.status });
 
     // 2. Validate Payload
-    const validation = resendSchema.safeParse(body);
+    const validation = resendSchema.safeParse(body.data);
     if (!validation.success) {
       return NextResponse.json(
         { error: "Validation Failed", details: validation.error.issues },
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
     }
 
     const { email } = validation.data;
-    const emailLimit = checkRateLimit(
+    const emailLimit = await checkRateLimit(
       `resend-otp:email:${email.trim().toLowerCase()}`,
       3,
       RATE_LIMIT_WINDOW_MS
@@ -55,12 +57,11 @@ export async function POST(request: Request) {
     // 3. Find the user
     const user = await prisma.user.findUnique({ where: { email } });
     
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    if (user.isVerified) {
-      return NextResponse.json({ error: "User is already verified" }, { status: 400 });
+    if (!user || user.isVerified) {
+      return NextResponse.json(
+        { message: "If the account requires verification, a new code was sent." },
+        { status: 200 },
+      );
     }
 
     // 4. Generate a NEW 6-digit OTP and set expiration (5 mins)

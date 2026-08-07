@@ -78,7 +78,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const ipLimit = consumeRateLimit({
+    const ipLimit = await consumeRateLimit({
       scope: "booking:ip",
       identifier: getClientIdentifier(req),
       limit: 5,
@@ -100,7 +100,7 @@ export async function POST(req: Request) {
     }
 
     const { fullName, email, companyName, notes, startTime, endTime } = validation.data;
-    const emailLimit = consumeRateLimit({
+    const emailLimit = await consumeRateLimit({
       scope: "booking:email",
       identifier: email,
       limit: 3,

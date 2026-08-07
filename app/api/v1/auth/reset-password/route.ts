@@ -5,25 +5,43 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { z } from "zod";
 import { reserveOtpAttempt } from "../_lib/otp-attempt";
+import { readLimitedJsonBody } from "@/lib/public-form-security";
+import { checkRateLimit, getClientIp } from "../_lib/rate-limit";
 
 const MAX_OTP_ATTEMPTS = 5;
 
 const resetSchema = z.object({
-  email: z.string().email(),
-  otp: z.string().length(6),
-  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+  email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
+  otp: z.string().regex(/^\d{6}$/),
+  newPassword: z.string().min(12, "Password must be at least 12 characters").max(128),
 });
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const ipLimit = await checkRateLimit(`reset-password:ip:${getClientIp(req)}`, 10, 15 * 60 * 1000);
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many reset attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(ipLimit.retryAfterSeconds) } },
+      );
+    }
 
-    const validation = resetSchema.safeParse(body);
+    const body = await readLimitedJsonBody(req, 8 * 1024);
+    if (!body.success) return NextResponse.json({ error: body.error }, { status: body.status });
+
+    const validation = resetSchema.safeParse(body.data);
     if (!validation.success) {
       return NextResponse.json({ error: validation.error.issues[0]?.message || "Invalid input" }, { status: 400 });
     }
 
     const { email, otp, newPassword } = validation.data;
+    const emailLimit = await checkRateLimit(`reset-password:email:${email}`, 5, 15 * 60 * 1000);
+    if (!emailLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many reset attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(emailLimit.retryAfterSeconds) } },
+      );
+    }
 
     const user = await prisma.user.findUnique({ where: { email } });
 

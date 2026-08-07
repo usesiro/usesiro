@@ -29,7 +29,7 @@ function rateLimited(retryAfterSeconds: number) {
 
 export async function POST(req: Request) {
   try {
-    const ipLimit = consumeRateLimit({
+    const ipLimit = await consumeRateLimit({
       scope: "contact:ip",
       identifier: getClientIdentifier(req),
       limit: 5,
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     }
 
     const { fullName, email, topic, message } = validation.data;
-    const emailLimit = consumeRateLimit({
+    const emailLimit = await consumeRateLimit({
       scope: "contact:email",
       identifier: email,
       limit: 3,

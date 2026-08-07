@@ -1,20 +1,6 @@
+import { consumeDistributedRateLimit } from "@/lib/distributed-rate-limit";
+
 const DEFAULT_MAX_BODY_BYTES = 16 * 1024;
-
-type RateLimitEntry = {
-  count: number;
-  resetAt: number;
-};
-
-type RateLimitStore = Map<string, RateLimitEntry>;
-
-const globalWithPublicFormLimits = globalThis as typeof globalThis & {
-  publicFormRateLimits?: RateLimitStore;
-};
-
-const rateLimits =
-  globalWithPublicFormLimits.publicFormRateLimits ?? new Map<string, RateLimitEntry>();
-
-globalWithPublicFormLimits.publicFormRateLimits = rateLimits;
 
 export type JsonBodyResult =
   | { success: true; data: unknown }
@@ -108,34 +94,6 @@ export function consumeRateLimit({
   identifier: string;
   limit: number;
   windowMs: number;
-}): { allowed: boolean; retryAfterSeconds: number } {
-  const now = Date.now();
-  const key = `${scope}:${identifier.toLowerCase()}`;
-  const current = rateLimits.get(key);
-
-  // Keep the process-local fallback bounded even under a high-cardinality attack.
-  if (rateLimits.size > 1_000) {
-    for (const [storedKey, entry] of rateLimits) {
-      if (entry.resetAt <= now) rateLimits.delete(storedKey);
-    }
-  }
-  if (!current && rateLimits.size >= 10_000) {
-    const oldestKey = rateLimits.keys().next().value;
-    if (oldestKey) rateLimits.delete(oldestKey);
-  }
-
-  if (!current || current.resetAt <= now) {
-    rateLimits.set(key, { count: 1, resetAt: now + windowMs });
-    return { allowed: true, retryAfterSeconds: 0 };
-  }
-
-  if (current.count >= limit) {
-    return {
-      allowed: false,
-      retryAfterSeconds: Math.max(1, Math.ceil((current.resetAt - now) / 1000)),
-    };
-  }
-
-  current.count += 1;
-  return { allowed: true, retryAfterSeconds: 0 };
+}) {
+  return consumeDistributedRateLimit({ scope, identifier, limit, windowMs });
 }

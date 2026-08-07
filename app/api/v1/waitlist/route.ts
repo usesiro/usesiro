@@ -32,7 +32,7 @@ function rateLimited(retryAfterSeconds: number) {
 
 export async function POST(request: Request) {
   try {
-    const ipLimit = consumeRateLimit({
+    const ipLimit = await consumeRateLimit({
       scope: "waitlist:ip",
       identifier: getClientIdentifier(request),
       limit: 5,
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     }
 
     const { fullName, email, businessName, businessType, state, referralSource } = validation.data;
-    const emailLimit = consumeRateLimit({
+    const emailLimit = await consumeRateLimit({
       scope: "waitlist:email",
       identifier: email,
       limit: 3,

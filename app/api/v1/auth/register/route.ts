@@ -5,22 +5,33 @@ import { Resend } from "resend";
 import { z } from "zod";
 import { recordAuditLog } from "@/lib/logger";
 import crypto from "crypto";
+import { readLimitedJsonBody } from "@/lib/public-form-security";
+import { checkRateLimit, getClientIp } from "../_lib/rate-limit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // 1. Zod Schema: We strictly validate the incoming data
 const registerSchema = z.object({
   email: z.string().trim().email("Invalid email format").transform((value) => value.toLowerCase()),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  firstName: z.string().min(1, "First name is required"),
+  password: z.string().min(12, "Password must be at least 12 characters").max(128),
+  firstName: z.string().trim().min(1, "First name is required").max(80),
 }).strict();
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const ipLimit = await checkRateLimit(`register:ip:${getClientIp(request)}`, 10, 60 * 60 * 1000);
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many registration attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(ipLimit.retryAfterSeconds) } },
+      );
+    }
+
+    const body = await readLimitedJsonBody(request, 8 * 1024);
+    if (!body.success) return NextResponse.json({ error: body.error }, { status: body.status });
 
     // 2. Validate Payload
-    const validation = registerSchema.safeParse(body);
+    const validation = registerSchema.safeParse(body.data);
     if (!validation.success) {
       return NextResponse.json(
         { error: "Validation Failed", details: validation.error.issues },
@@ -29,6 +40,13 @@ export async function POST(request: Request) {
     }
 
     const { email, password, firstName } = validation.data;
+    const emailLimit = await checkRateLimit(`register:email:${email}`, 5, 24 * 60 * 60 * 1000);
+    if (!emailLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many registration attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(emailLimit.retryAfterSeconds) } },
+      );
+    }
 
     // 3. Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });

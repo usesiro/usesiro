@@ -4,19 +4,30 @@ import { recordAuditLog } from "@/lib/logger";
 import { z } from "zod";
 import crypto from "crypto";
 import { reserveOtpAttempt } from "../_lib/otp-attempt";
+import { readLimitedJsonBody } from "@/lib/public-form-security";
+import { checkRateLimit, getClientIp } from "../_lib/rate-limit";
 
 const MAX_OTP_ATTEMPTS = 5;
 
 const verifySchema = z.object({
-  email: z.string().email("Invalid email format"),
-  otp: z.string().length(6, "OTP must be exactly 6 digits"),
+  email: z.string().trim().email("Invalid email format").max(254).transform((value) => value.toLowerCase()),
+  otp: z.string().regex(/^\d{6}$/, "OTP must be exactly 6 digits"),
 });
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const ipLimit = await checkRateLimit(`verify-otp:ip:${getClientIp(request)}`, 20, 15 * 60 * 1000);
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many verification attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(ipLimit.retryAfterSeconds) } },
+      );
+    }
 
-    const validation = verifySchema.safeParse(body);
+    const body = await readLimitedJsonBody(request, 8 * 1024);
+    if (!body.success) return NextResponse.json({ error: body.error }, { status: body.status });
+
+    const validation = verifySchema.safeParse(body.data);
     if (!validation.success) {
       return NextResponse.json(
         { error: "Validation Failed", details: validation.error.issues },
@@ -25,6 +36,13 @@ export async function POST(request: Request) {
     }
 
     const { email, otp } = validation.data;
+    const emailLimit = await checkRateLimit(`verify-otp:email:${email}`, 10, 15 * 60 * 1000);
+    if (!emailLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many verification attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(emailLimit.retryAfterSeconds) } },
+      );
+    }
 
     const user = await prisma.user.findUnique({ where: { email } });
 

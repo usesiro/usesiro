@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { recordAuditLog } from "@/lib/logger";
 import { checkRateLimit, getClientIp } from "../_lib/rate-limit";
 import type { Prisma } from "@prisma/client";
+import { readLimitedJsonBody } from "@/lib/public-form-security";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const bootstrapSchema = z.object({
@@ -26,7 +27,7 @@ function secretsMatch(provided: string, configured: string) {
 
 export async function POST(request: Request) {
   try {
-    const limit = checkRateLimit(
+    const limit = await checkRateLimit(
       `bootstrap-admin:${getClientIp(request)}`,
       5,
       15 * 60 * 1000,
@@ -38,7 +39,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const validation = bootstrapSchema.safeParse(await request.json());
+    const body = await readLimitedJsonBody(request, 8 * 1024);
+    if (!body.success) return NextResponse.json({ error: body.error }, { status: body.status });
+    const validation = bootstrapSchema.safeParse(body.data);
     if (!validation.success) {
       return NextResponse.json({ error: "Invalid administrator setup details." }, { status: 400 });
     }

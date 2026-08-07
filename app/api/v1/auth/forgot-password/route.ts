@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import crypto from "crypto";
 import { z } from "zod";
 import { checkRateLimit, getClientIp } from "../_lib/rate-limit";
+import { readLimitedJsonBody } from "@/lib/public-form-security";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
@@ -14,7 +15,7 @@ const forgotPasswordSchema = z.object({
 
 export async function POST(req: Request) {
   try {
-    const ipLimit = checkRateLimit(
+    const ipLimit = await checkRateLimit(
       `forgot-password:ip:${getClientIp(req)}`,
       5,
       RATE_LIMIT_WINDOW_MS
@@ -26,7 +27,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const validation = forgotPasswordSchema.safeParse(await req.json());
+    const body = await readLimitedJsonBody(req, 8 * 1024);
+    if (!body.success) return NextResponse.json({ error: body.error }, { status: body.status });
+    const validation = forgotPasswordSchema.safeParse(body.data);
 
     if (!validation.success) {
       return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
@@ -34,7 +37,7 @@ export async function POST(req: Request) {
 
     const { email } = validation.data;
     const normalizedEmail = email.trim().toLowerCase();
-    const emailLimit = checkRateLimit(
+    const emailLimit = await checkRateLimit(
       `forgot-password:email:${normalizedEmail}`,
       3,
       RATE_LIMIT_WINDOW_MS
@@ -48,7 +51,7 @@ export async function POST(req: Request) {
 
     // 1. Find the user
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!user) {
@@ -77,7 +80,7 @@ export async function POST(req: Request) {
     try {
       await resend.emails.send({
         from: 'Siro Security <info@usesiro.com>',
-        to: email, 
+        to: normalizedEmail,
         subject: `Your Siro Password Reset Code: ${otp}`,
         html: `
           <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto;">
@@ -90,7 +93,7 @@ export async function POST(req: Request) {
           </div>
         `
       });
-      console.log(`Password reset OTP sent to ${email}`);
+      console.log(`Password reset OTP sent to ${normalizedEmail}`);
     } catch (emailError) {
       console.error("Failed to send OTP email:", emailError);
       return NextResponse.json({ error: "Failed to send email. Try again later." }, { status: 500 });
