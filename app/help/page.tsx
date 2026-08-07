@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/DashboardLayout"; 
 import { useNotification } from "@/context/NotificationContext";
 import Link from "next/link";
 import { 
   ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon,
   RocketLaunchIcon, BuildingLibraryIcon, WrenchScrewdriverIcon,
-  LinkIcon, DocumentArrowDownIcon, PlusCircleIcon
+  LinkIcon, DocumentArrowDownIcon, PlusCircleIcon, ListBulletIcon
 } from "@heroicons/react/24/outline";
 
 // --- DUMMY DATA ---
@@ -38,6 +39,7 @@ const tabs = ["All Topics", "Getting Started", "Importing Transactions", "Troubl
 
 export default function HelpCenterPage() {
   const { showNotification } = useNotification();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("All Topics");
   const [openFaq, setOpenFaq] = useState<string | null>("Getting Started-0"); 
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,6 +84,20 @@ export default function HelpCenterPage() {
       showNotification(error.message || "An error occurred. Please try again.", "error");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const showOnboardingChecklist = async () => {
+    try {
+      const response = await fetch("/api/v1/onboarding", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "resume" }),
+      });
+      if (!response.ok) throw new Error("Unable to restore the checklist.");
+      router.push("/dashboard");
+    } catch (error: any) {
+      showNotification(error.message || "Unable to restore the checklist.", "error");
     }
   };
 
@@ -264,6 +280,13 @@ export default function HelpCenterPage() {
             <div className="bg-white p-6 md:p-8 rounded-3xl border border-gray-100 shadow-sm">
               <h3 className="font-bold text-lg text-gray-800 mb-6">Common Quick Actions</h3>
               <div className="space-y-4">
+
+                <button onClick={showOnboardingChecklist} className="w-full flex items-center gap-4 hover:bg-gray-50 p-2 -ml-2 rounded-xl transition-colors group text-left">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
+                    <ListBulletIcon className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <span className="text-sm font-bold text-gray-800">Show Getting-Started Checklist</span>
+                </button>
                 
                 <Link href="/transactions" className="flex items-center gap-4 hover:bg-gray-50 p-2 -ml-2 rounded-xl transition-colors group">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">

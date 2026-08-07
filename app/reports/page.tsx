@@ -212,6 +212,11 @@ export default function Reports() {
       doc.save(`${reportTitle}.pdf`);
     }
 
+    void fetch("/api/v1/onboarding", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "complete_step", step: "REPORT_GENERATED" }),
+    }).catch(() => undefined);
     setIsExportModalOpen(false); 
   };
 
@@ -220,7 +225,7 @@ export default function Reports() {
   return (
     <DashboardLayout>
       <div className="space-y-6 pb-12">
-        <div className="flex justify-between items-center print:hidden">
+        <div id="tour-report-export" className="flex justify-between items-center print:hidden">
           <h1 className="text-2xl font-bold text-gray-800">Reports</h1>
           <button 
             onClick={() => setIsExportModalOpen(true)} 
@@ -231,7 +236,7 @@ export default function Reports() {
         </div>
 
         {/* FINANCIAL STATS ROW */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div id="tour-report-overview" className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <StatCard title="Total Income" amount={formatCurrency(totalIncome)} icon={<WalletIcon className="w-5 h-5"/>} color="blue" />
           <StatCard title="Total Expense" amount={formatCurrency(totalExpense)} icon={<CreditCardIcon className="w-5 h-5"/>} color="red" />
           <div className="col-span-2 lg:col-span-1">

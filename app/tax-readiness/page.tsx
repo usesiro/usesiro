@@ -179,7 +179,7 @@ export default function TaxReadiness() {
     <DashboardLayout>
       <div className="space-y-10">
 
-        <div className="space-y-6">
+        <div id="tour-tax-overview" className="space-y-6">
 
           {/* --- ROW 1: CORE STATS & COMPLIANCE --- */}
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -284,7 +284,7 @@ export default function TaxReadiness() {
         </div>
 
         {/* --- SUMMARY TABLE SECTION --- */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+        <div id="tour-tax-summary" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
           <h2 className="text-xl font-black text-gray-800 mb-8">Tax Summary</h2>
 
           {/* Filters Bar */}

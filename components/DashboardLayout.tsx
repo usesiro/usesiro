@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const { isMuted } = useNotification();
-  const { startTour } = useProductTour();
+  const { startTour, hasTour } = useProductTour(pathname);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
@@ -107,7 +107,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       
 
       {/* --- DESKTOP SIDEBAR --- */}
-      <aside className={`hidden lg:flex flex-col border-r border-gray-100 fixed h-full z-30 bg-white transition-all duration-300 ${isDesktopSidebarOpen ? "w-64" : "w-20"}`}>
+      <aside id="tour-navigation" className={`hidden lg:flex flex-col border-r border-gray-100 fixed h-full z-30 bg-white transition-all duration-300 ${isDesktopSidebarOpen ? "w-64" : "w-20"}`}>
         <div className="h-20 flex items-center px-6 border-b border-gray-50">
           <Image src="/logo.svg" alt="Logo" width={100} height={40} className={`${!isDesktopSidebarOpen && "hidden"}`} />
           {!isDesktopSidebarOpen && <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold">S</div>}
@@ -171,24 +171,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           
           <div className="flex items-center gap-3 md:gap-4">
-            <button
-              onClick={() => {
-                if (pathname === "/transactions") {
-                  // Already on transactions, start tour directly
-                  setTimeout(() => startTour(), 300);
-                } else {
-                  // Navigate to transactions first, then start tour
-                  router.push("/transactions");
-                  setTimeout(() => startTour(), 800);
-                }
-              }}
-              className="hidden md:flex items-center gap-2 px-3 py-2 text-xs font-bold text-primary bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition"
+            {hasTour && <button
+              onClick={startTour}
+              className="flex items-center gap-2 px-2.5 md:px-3 py-2 text-xs font-bold text-primary bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition"
+              aria-label="Start page guide"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Start Tour
-            </button>
+              <span className="hidden sm:inline">Page Guide</span>
+            </button>}
             <NotificationDropdown 
               onOpenModal={() => setIsNotificationModalOpen(true)} 
               externalUnreadCount={unreadCount}

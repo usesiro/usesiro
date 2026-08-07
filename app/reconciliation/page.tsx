@@ -169,7 +169,7 @@ export default function Reconciliation() {
       <div className="space-y-8">
         
         {/* --- STAT CARDS --- */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div id="tour-reconciliation-summary" className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <StatCard title="Unmatched" count={transactions.filter(t => !t.categoryId).length} subtitle="Review" trend="Needs Category" icon={<DocumentMagnifyingGlassIcon className="w-5 h-5 text-blue-500"/>} />
           <StatCard title="VAT Tags" count={transactions.filter(t => t.vatStatus === 'MISSING_VAT').length} subtitle="Alerts" trend="Compliance Risk" icon={<DocumentDuplicateIcon className="w-5 h-5 text-gray-500"/>} />
           <div className="col-span-2 lg:col-span-1">
@@ -178,7 +178,7 @@ export default function Reconciliation() {
         </div>
 
         {/* --- MAIN TABLE SECTION --- */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div id="tour-reconciliation-list" className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-gray-50">
             <h2 className="text-lg font-bold text-gray-700">Pending Review</h2>
           </div>

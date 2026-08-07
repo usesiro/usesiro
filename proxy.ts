@@ -20,6 +20,7 @@ export default async function middleware(request: NextRequest) {
     '/reconciliation',
     '/reports',
     '/settings',
+    '/help',
     '/pigshit' // New admin protection
   ];
 
@@ -141,6 +142,7 @@ export const config = {
     '/tax-readiness/:path*',
     '/reconciliation/:path*',
     '/reports/:path*',
-    '/settings/:path*'
+    '/settings/:path*',
+    '/help/:path*'
   ],
 };

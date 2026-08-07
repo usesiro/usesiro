@@ -7,6 +7,7 @@ import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 import CheckoutButton from "@/components/CheckoutButton";
 import Link from "next/link";
+import OnboardingChecklist from "@/components/onboarding/OnboardingChecklist";
 
 // --- GREETING UTILITIES (UNTOUCHED) ---
 const getGreeting = () => {
@@ -156,7 +157,7 @@ export default function Overview() {
       )}
 
       {/* GREETINGS & HUMOR (UNTOUCHED) */}
-      <div className="mb-10">
+      <div id="tour-dashboard-welcome" className="mb-10">
         <h1 className="text-2xl md:text-3xl font-black text-gray-900">
           {greeting}, {business?.owner?.firstName || "there"} 👋
         </h1>
@@ -165,7 +166,9 @@ export default function Overview() {
         </p>
       </div>
 
-      <div className="space-y-10">
+      <OnboardingChecklist />
+
+      <div id="tour-dashboard-main" className="space-y-10">
 
         {/* --- DEMO: SUBSCRIPTION CHECKOUT --- */}
         {!isPro && (

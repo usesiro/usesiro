@@ -633,7 +633,7 @@ export default function Transactions() {
 
         {/* MAIN TABLE SECTION */}
         {activeTab === "all" && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div id="tour-transaction-list" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-bold text-gray-700">Transaction List</h2>
           </div>
@@ -699,7 +699,7 @@ export default function Transactions() {
             </div>
 
             {/* RIGHT: Secondary & Primary Actions */}
-            <div className="flex items-center gap-3 w-full xl:w-auto justify-end">
+            <div id="tour-record-actions" className="flex items-center gap-3 w-full xl:w-auto justify-end">
               <button 
                 onClick={() => setDeleteModal({ isOpen: true, type: "CLEAR_ALL", ids: [] })}
                 className="flex items-center gap-2 px-3 py-2.5 text-red-500 hover:bg-red-50 rounded-lg text-sm font-semibold transition-colors"
