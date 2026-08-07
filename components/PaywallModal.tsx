@@ -48,7 +48,7 @@ export default function PaywallModal({ isOpen, onClose, userEmail, featureName }
 
           <div className="space-y-3 mb-8">
             {[
-              "Automated bank syncing via Mono",
+              "AI-powered statement imports",
               "AI-powered file imports (CSV, Excel, PDF)",
               "Tax-ready report exports (PDF & CSV)",
               "Unlimited transaction history",
@@ -65,7 +65,7 @@ export default function PaywallModal({ isOpen, onClose, userEmail, featureName }
           <div className="bg-gray-50 rounded-2xl p-4 mb-6 flex items-center justify-between">
             <div>
               <span className="text-2xl font-black text-gray-900">₦9,999</span>
-              <span className="text-gray-500 text-sm">/month</span>
+              <span className="text-gray-500 text-sm">/30 days</span>
             </div>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-widest rounded-full border border-amber-200">
               Early Adopter Rate

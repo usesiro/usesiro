@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import Connect from '@mono.co/connect.js';
+import { useNotification } from '@/context/NotificationContext';
 
 interface MonoButtonProps {
   className?: string;
@@ -10,6 +11,7 @@ interface MonoButtonProps {
 }
 
 export default function MonoButton({ className, label, onSuccess }: MonoButtonProps) {
+  const { showNotification } = useNotification();
   // Matches your folder: app/api/v1/mono/exchange/route.ts
   const API_PATH = '/api/v1/mono/exchange'; 
 
@@ -43,33 +45,33 @@ export default function MonoButton({ className, label, onSuccess }: MonoButtonPr
           if (!contentType || !contentType.includes("application/json")) {
             const errorText = await response.text();
             console.error("Server Error Response:", errorText);
-            alert("The server encountered an error. Check the terminal logs.");
+            showNotification("The bank service returned an unexpected response.", "error");
             return;
           }
 
           const result = await response.json();
 
           if (response.ok) {
-            alert("Bank linked successfully!");
+            showNotification("Bank linked successfully!", "success");
             if (onSuccess) onSuccess();
           } else {
             console.error("Exchange API Error:", result);
-            alert(`Link Failed: ${result.error || "Check server logs"}`);
+            showNotification(result.error || "Bank linking failed.", "error");
           }
         } catch (err) {
           console.error("Network Exception:", err);
-          alert("Could not connect to the server.");
+          showNotification("Could not connect to the bank service.", "error");
         }
       },
       onClose: () => console.log("Mono widget closed."),
     };
 
     return new Connect(config);
-  }, [onSuccess]);
+  }, [onSuccess, showNotification]);
 
   const handleOpen = () => {
     if (!monoInstance) {
-      alert("Mono is not ready. Check your .env setup.");
+      showNotification("Bank connection is not available yet.", "warning");
       return;
     }
     monoInstance.setup();

@@ -110,7 +110,7 @@ export default function Overview() {
       if (!t.document) undocumented++;
     });
 
-    const total = transactions.length || 1;
+    const total = transactions.length;
 
     // Extract the 5 most recent transactions
     const recent = [...transactions]
@@ -120,9 +120,9 @@ export default function Overview() {
     return {
       stats: { totalIncome: inc, totalExpense: exp, netBalance: inc - exp },
       compliance: {
-        vat: { count: untaggedVat, score: Math.round(((total - untaggedVat) / total) * 100) },
-        category: { count: uncategorized, score: Math.round(((total - uncategorized) / total) * 100) },
-        document: { count: undocumented, score: Math.round(((total - undocumented) / total) * 100) },
+        vat: { count: untaggedVat, score: total === 0 ? 0 : Math.round(((total - untaggedVat) / total) * 100) },
+        category: { count: uncategorized, score: total === 0 ? 0 : Math.round(((total - uncategorized) / total) * 100) },
+        document: { count: undocumented, score: total === 0 ? 0 : Math.round(((total - undocumented) / total) * 100) },
         totalIssues: untaggedVat + uncategorized + undocumented
       },
       readinessScore: calculateTaxReadinessScore(transactions),
@@ -172,12 +172,32 @@ export default function Overview() {
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <h3 className="text-lg font-bold text-gray-900">Upgrade to Siro Pro</h3>
-              <p className="text-sm text-gray-500 mt-1">₦9,999/month — Full access to automated bank syncing, AI imports & more.</p>
+              <p className="text-sm text-gray-500 mt-1">₦9,999 for 30 days — Full access to AI imports, reports, and reconciliation.</p>
             </div>
             <CheckoutButton userEmail={business?.owner?.email || ""} />
           </div>
         )}
 
+        {transactions.length === 0 ? (
+          <div className="bg-white border border-blue-100 rounded-3xl p-8 md:p-12 text-center shadow-sm">
+            <div className="w-16 h-16 rounded-2xl bg-blue-50 text-primary flex items-center justify-center mx-auto mb-6">
+              <InformationCircleIcon className="w-8 h-8" />
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 mb-3">Add your first financial record</h2>
+            <p className="text-sm text-gray-500 max-w-xl mx-auto mb-8 leading-relaxed">
+              Your readiness score will appear after Siro has real transactions to analyse. Upload a statement or add a cash transaction to get started.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/transactions" className="px-6 py-3.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-blue-700 transition">
+                Upload statement
+              </Link>
+              <Link href="/transactions" className="px-6 py-3.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-bold hover:bg-gray-50 transition">
+                Add manually
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <>
         {/* --- DARK SCOREBOARD BANNER --- */}
         <div className="bg-[#1A1C23] rounded-2xl p-6 md:p-10 flex flex-col md:flex-row items-center gap-8 md:gap-12">
           {/* Circular Gauge */}
@@ -339,6 +359,8 @@ export default function Overview() {
           </div>
           
         </div>
+          </>
+        )}
       </div>
     </DashboardLayout>
   );

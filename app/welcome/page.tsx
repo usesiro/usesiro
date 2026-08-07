@@ -19,8 +19,8 @@ export default function WelcomePage() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const [authRes, payRes] = await Promise.all([
-          fetch("/api/v1/auth/status"),
+        const [businessRes, payRes] = await Promise.all([
+          fetch("/api/v1/business/me"),
           fetch("/api/payments/status")
         ]);
 
@@ -30,9 +30,9 @@ export default function WelcomePage() {
           if (!payData.isPro) { router.push("/pricing"); return; }
         }
 
-        if (authRes.ok) {
-          const data = await authRes.json();
-          setFirstName(data.user?.firstName || data.firstName || "");
+        if (businessRes.ok) {
+          const data = await businessRes.json();
+          setFirstName(data.owner?.firstName || "");
         }
       } catch (error) {
         console.error("Failed to fetch user data", error);

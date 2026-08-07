@@ -293,7 +293,15 @@ export default function Settings() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center py-4 border-b border-gray-100">
                       <span className="text-sm text-gray-500 font-medium">Plan</span>
-                      <span className="text-sm font-bold text-gray-900">Siro Pro — ₦9,999/month</span>
+                      <span className="text-sm font-bold text-gray-900">Siro Pro — 30-day access</span>
+                    </div>
+                    <div className="flex justify-between items-center py-4 border-b border-gray-100">
+                      <span className="text-sm text-gray-500 font-medium">Access until</span>
+                      <span className="text-sm font-bold text-gray-900">
+                        {subscriptionData.payment?.accessEndsAt
+                          ? new Date(subscriptionData.payment.accessEndsAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                          : "Founder access"}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center py-4 border-b border-gray-100">
                       <span className="text-sm text-gray-500 font-medium">Status</span>
@@ -319,7 +327,7 @@ export default function Settings() {
 
                   <div className="mt-8 p-4 bg-green-50/50 border border-green-100 rounded-xl">
                     <p className="text-xs text-green-700 font-medium">
-                      You have full access to all Siro features including automated bank syncing, AI-powered imports, and unlimited reporting.
+                      You have full access to AI-powered imports, reconciliation, tax-readiness tools, and reporting.
                     </p>
                   </div>
                 </>
@@ -333,10 +341,10 @@ export default function Settings() {
                     </div>
                     <h2 className="text-xl font-bold text-gray-800 mb-2">No active subscription</h2>
                     <p className="text-sm text-gray-500 mb-8 max-w-sm mx-auto">
-                      Upgrade to Siro Pro to unlock automated bank syncing, AI imports, and unlimited tax reporting.
+                      Upgrade to Siro Pro to unlock AI imports, reconciliation, and unlimited tax reporting.
                     </p>
                     <a href="/dashboard" className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white text-sm font-bold rounded-xl hover:bg-blue-600 transition shadow-lg shadow-blue-100">
-                      Subscribe — ₦9,999/month
+                      Get 30-day access — ₦9,999
                     </a>
                   </div>
                 </>

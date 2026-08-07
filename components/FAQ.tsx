@@ -18,15 +18,15 @@ const faqs = [
   },
   {
     question: "What happens to my records if I join Siro after the year has started?",
-    answer: "When you connect your bank, Siro pulls your full transaction history, not just from the day you sign up. Depending on your bank, that can go back several months automatically. You do not start from zero."
+    answer: "Upload a CSV, XLSX, or digital PDF statement for the period you want to review. Direct bank syncing is still being prepared."
   },
   {
     question: "Can I still add transactions manually?",
     answer: "Yes! While we focus on automation, you can easily add cash transactions or manual entries for anything that does not go through your bank."
   },
   {
-    question: "Can I cancel anytime?",
-    answer: "Yes. No lock in contracts. Cancel at any time and your data remains accessible until the end of your billing period."
+    question: "Does access renew automatically?",
+    answer: "No. The current beta payment gives you 30 days of access and does not renew automatically."
   }
 ];
 

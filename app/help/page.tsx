@@ -3,6 +3,7 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout"; 
 import { useNotification } from "@/context/NotificationContext";
+import Link from "next/link";
 import { 
   ChevronDownIcon, ChevronUpIcon, MagnifyingGlassIcon,
   RocketLaunchIcon, BuildingLibraryIcon, WrenchScrewdriverIcon,
@@ -16,24 +17,24 @@ const faqs = {
     { question: "Can I still add transactions manually?", answer: "Yes, you can easily add manual transactions via the dashboard." },
     { question: "Can this help me file taxes automatically?", answer: "We prepare reports that make filing seamless for you or your accountant." }
   ],
-  "Connecting your Bank Account": [
-    { question: "How do I link my business account?", answer: "Navigate to Settings > Bank Accounts and follow the prompts to authenticate securely." },
-    { question: "Which banks are supported?", answer: "We support all major Nigerian banks through our secure open-banking partner." },
+  "Importing Transactions": [
+    { question: "How do I add my bank transactions?", answer: "Open Transactions and choose Upload Records. Siro currently supports CSV, XLSX, and digital PDF statements." },
+    { question: "Can I connect my bank directly?", answer: "Direct bank syncing is still being prepared. Statement upload and manual entry are available now." },
   ],
   "Troubleshooting": [
-    { question: "Why didn't my recent transaction show up?", answer: "Transactions sync every 24 hours. You can force a manual sync from the Transactions tab." },
+    { question: "Why didn't my recent transaction show up?", answer: "Check the import review screen for skipped rows, then confirm that the date and amount columns were mapped correctly." },
     { question: "I categorized something wrong, how do I fix it?", answer: "Go to the Transactions list, click the transaction, and select a new category from the dropdown." },
   ]
 };
 
 const getCategoryIcon = (category: string) => {
   if (category === "Getting Started") return <RocketLaunchIcon className="w-5 h-5 text-blue-500" />;
-  if (category === "Connecting your Bank Account") return <BuildingLibraryIcon className="w-5 h-5 text-blue-500" />;
+  if (category === "Importing Transactions") return <BuildingLibraryIcon className="w-5 h-5 text-blue-500" />;
   if (category === "Troubleshooting") return <WrenchScrewdriverIcon className="w-5 h-5 text-blue-500" />;
   return null;
 };
 
-const tabs = ["All Topics", "Getting Started", "Connecting Bank Account", "Troubleshooting"];
+const tabs = ["All Topics", "Getting Started", "Importing Transactions", "Troubleshooting"];
 
 export default function HelpCenterPage() {
   const { showNotification } = useNotification();
@@ -264,26 +265,26 @@ export default function HelpCenterPage() {
               <h3 className="font-bold text-lg text-gray-800 mb-6">Common Quick Actions</h3>
               <div className="space-y-4">
                 
-                <div className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-2 -ml-2 rounded-xl transition-colors group">
+                <Link href="/transactions" className="flex items-center gap-4 hover:bg-gray-50 p-2 -ml-2 rounded-xl transition-colors group">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
                     <LinkIcon className="w-5 h-5 text-blue-500" />
                   </div>
-                  <span className="text-sm font-bold text-gray-800">Connect Bank Account</span>
-                </div>
+                  <span className="text-sm font-bold text-gray-800">Upload Bank Statement</span>
+                </Link>
                 
-                <div className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-2 -ml-2 rounded-xl transition-colors group">
+                <Link href="/reports" className="flex items-center gap-4 hover:bg-gray-50 p-2 -ml-2 rounded-xl transition-colors group">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
                     <DocumentArrowDownIcon className="w-5 h-5 text-blue-500" />
                   </div>
                   <span className="text-sm font-bold text-gray-800">Export VAT Report</span>
-                </div>
+                </Link>
 
-                <div className="flex items-center gap-4 cursor-pointer hover:bg-gray-50 p-2 -ml-2 rounded-xl transition-colors group">
+                <Link href="/transactions" className="flex items-center gap-4 hover:bg-gray-50 p-2 -ml-2 rounded-xl transition-colors group">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-100 transition-colors">
                     <PlusCircleIcon className="w-5 h-5 text-blue-500" />
                   </div>
                   <span className="text-sm font-bold text-gray-800">Add Manual Transaction</span>
-                </div>
+                </Link>
 
               </div>
             </div>

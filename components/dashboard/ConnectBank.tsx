@@ -2,12 +2,14 @@
 
 import React, { useMemo, useState } from 'react';
 import Connect from '@mono.co/connect.js';
+import { useNotification } from '@/context/NotificationContext';
 
 interface ConnectBankProps {
   onSuccess: () => void;
 }
 
 export default function ConnectBank({ onSuccess }: ConnectBankProps) {
+  const { showNotification } = useNotification();
   const [isUploading, setIsUploading] = useState(false);
   
   // Read the feature flag from the environment
@@ -20,7 +22,7 @@ export default function ConnectBank({ onSuccess }: ConnectBankProps) {
     const config = {
       publicKey: process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY!,
       onSuccess: async (data: { code: string }) => {
-        const response = await fetch('/api/mono/exchange', {
+        const response = await fetch('/api/v1/mono/exchange', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -31,14 +33,14 @@ export default function ConnectBank({ onSuccess }: ConnectBankProps) {
         if (response.ok) {
           onSuccess();
         } else {
-          alert("Failed to link bank. Please try again.");
+          showNotification("Failed to link bank. Please try again.", "error");
         }
       },
       onClose: () => console.log("Widget closed"),
     };
 
     return new Connect(config);
-  }, [onSuccess, enableMono]);
+  }, [onSuccess, enableMono, showNotification]);
 
   const handleMonoOpen = () => {
     monoInstance?.setup();
@@ -58,7 +60,7 @@ export default function ConnectBank({ onSuccess }: ConnectBankProps) {
 
     try {
       // Pointing directly to the AI Import Pipeline built by Morenike
-      const response = await fetch('/api/import/standardize', {
+      const response = await fetch('/api/v1/import/extract-text', {
         method: 'POST',
         body: formData,
       });
@@ -66,10 +68,11 @@ export default function ConnectBank({ onSuccess }: ConnectBankProps) {
       if (response.ok) {
         onSuccess(); 
       } else {
-        alert("Failed to process document. Please check the file format.");
+        showNotification("Failed to process document. Please check the file format.", "error");
       }
     } catch (error) {
       console.error("Upload error:", error);
+      showNotification("Could not upload the statement.", "error");
     } finally {
       setIsUploading(false);
       // Clear the input so the user can upload the same file again if needed
@@ -98,13 +101,13 @@ export default function ConnectBank({ onSuccess }: ConnectBankProps) {
         {isUploading ? "Extracting via AI..." : "Upload Bank Statement"}
         <input 
           type="file" 
-          accept=".pdf,.csv" 
+          accept="application/pdf" 
           className="hidden" 
           onChange={handleManualUpload}
           disabled={isUploading}
         />
       </label>
-      <p className="text-xs text-gray-500 font-medium">Supports PDF and CSV</p>
+      <p className="text-xs text-gray-500 font-medium">Supports digital PDF statements</p>
     </div>
   );
 }

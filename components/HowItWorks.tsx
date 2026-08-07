@@ -9,7 +9,7 @@ const steps = [
   {
     num: "2",
     title: "Connect your bank",
-    desc: "Link your bank account securely. Transactions start syncing immediately.",
+    desc: "Upload a bank statement or add transactions manually to build your records.",
   },
   {
     num: "3",

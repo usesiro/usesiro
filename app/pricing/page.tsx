@@ -105,14 +105,14 @@ export default function PricingPage() {
           </div>
 
           <p className="text-gray-600 leading-relaxed mb-8 pb-8 border-b border-gray-100">
-            Everything your business needs to stay tax-ready. Automatic bank sync, VAT tagging, categorization, reconciliation, and clean NRS-compliant reports. No limits, no upgrades required.
+            Everything your business needs to stay tax-ready: statement imports, VAT tagging, categorization, reconciliation, and clean NRS-compliant reports.
           </p>
 
           <p className="text-xs font-semibold text-gray-400 tracking-widest uppercase mb-6">WHAT'S INCLUDED</p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 mb-10">
             {[
-              "Automatic transaction sync", 
+              "AI-powered statement imports", 
               "VAT tagging",
               "Smart categorization", 
               "Manual transaction entry",
@@ -163,7 +163,7 @@ export default function PricingPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
-              {title: "Automatic Transaction Sync", desc: "Connect your bank account securely. Transactions pull in automatically on a weekly basis, with manual sync available anytime.", icon: ArrowPathIcon}, 
+              {title: "Statement Imports", desc: "Upload CSV, XLSX, or digital PDF statements and review the extracted transactions before saving.", icon: ArrowPathIcon}, 
               {title: "VAT Tagging", desc: "Every transaction is reviewed for VAT applicability. You see exactly what you've collected and what you owe.", icon: TagIcon}, 
               {title: "Smart Categorization", desc: "Income and expenses are automatically sorted. Review, correct, and confirm with a single click.", icon: FolderIcon}, 
               {title: "Reconciliation", desc: "Match your transactions against records and flag any discrepancies before they become compliance issues.", icon: CheckCircleIcon},

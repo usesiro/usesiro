@@ -24,8 +24,10 @@ import {
 } from "@heroicons/react/24/outline";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import TableSkeleton from "@/components/TableSkeleton";
+import { useNotification } from "@/context/NotificationContext";
 
 export default function TaxReadiness() {
+  const { showNotification } = useNotification();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -118,7 +120,7 @@ export default function TaxReadiness() {
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     if (dataToExport.length === 0) {
-      alert("No transactions found in this date range.");
+      showNotification("No transactions found in this date range.", "warning");
       return;
     }
 

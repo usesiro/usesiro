@@ -14,8 +14,10 @@ import {
   ResponsiveContainer, PieChart, Pie, Cell 
 } from 'recharts';
 import DashboardSkeleton from "@/components/DashboardSkeleton";
+import { useNotification } from "@/context/NotificationContext";
 
 export default function Reports() {
+  const { showNotification } = useNotification();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -127,7 +129,7 @@ export default function Reports() {
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     if (dataToExport.length === 0) {
-      alert("No transactions found in this date range.");
+      showNotification("No transactions found in this date range.", "warning");
       return;
     }
 

@@ -26,8 +26,6 @@ export async function POST(request: Request) {
     });
 
     const monoData = await monoResponse.json();
-    console.log("MONO EXCHANGE RAW RESPONSE:", monoData); // <-- This will tell us exactly what Mono sent
-
     if (!monoResponse.ok) {
       return NextResponse.json({ error: "Mono Exchange Failed", details: monoData }, { status: 400 });
     }
