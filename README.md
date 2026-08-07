@@ -100,6 +100,7 @@ DATABASE_URL="postgresql://user:password@localhost:5432/siro_db"
 
 # Security
 JWT_SECRET="your_super_secret_jwt_key_here"
+ADMIN_BOOTSTRAP_SECRET="a-random-secret-of-at-least-24-characters"
 
 # Resend (Emails)
 RESEND_API_KEY="re_..."

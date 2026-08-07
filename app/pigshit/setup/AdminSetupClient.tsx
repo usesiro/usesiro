@@ -12,6 +12,7 @@ export default function AdminSetupClient() {
     lastName: "",
     email: "",
     password: "",
+    bootstrapSecret: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -22,7 +23,7 @@ export default function AdminSetupClient() {
     setError("");
 
     try {
-      const res = await fetch("/api/v1/auth/register", {
+      const res = await fetch("/api/v1/auth/bootstrap-admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -90,6 +91,22 @@ export default function AdminSetupClient() {
                 className="w-full px-4 py-3.5 text-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary text-gray-900 bg-gray-50/50 transition-all font-medium"
               />
             </div>
+        </div>
+
+        <div>
+          <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Setup Secret</label>
+          <div className="relative">
+            <LockClosedIcon className="h-5 w-5 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              required
+              type="password"
+              value={formData.bootstrapSecret}
+              onChange={(e) => setFormData({...formData, bootstrapSecret: e.target.value})}
+              placeholder="Enter deployment setup secret"
+              autoComplete="off"
+              className="w-full pl-11 pr-4 py-3.5 text-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary text-gray-900 bg-gray-50/50 transition-all font-mono"
+            />
+          </div>
         </div>
 
         <div>

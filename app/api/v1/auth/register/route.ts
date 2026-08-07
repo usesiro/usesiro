@@ -4,15 +4,16 @@ import bcrypt from "bcryptjs";
 import { Resend } from "resend";
 import { z } from "zod";
 import { recordAuditLog } from "@/lib/logger";
+import crypto from "crypto";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // 1. Zod Schema: We strictly validate the incoming data
 const registerSchema = z.object({
-  email: z.string().email("Invalid email format"),
+  email: z.string().trim().email("Invalid email format").transform((value) => value.toLowerCase()),
   password: z.string().min(8, "Password must be at least 8 characters"),
   firstName: z.string().min(1, "First name is required"),
-});
+}).strict();
 
 export async function POST(request: Request) {
   try {
@@ -39,14 +40,10 @@ export async function POST(request: Request) {
     const passwordHash = await bcrypt.hash(password, 12);
 
     // 5. Generate a 6-digit OTP and set expiration (5 mins)
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpCode = crypto.randomInt(100000, 1000000).toString();
     const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    // 6. Bootstrap Logic: Assign SUPER_ADMIN role if no admins exist
-    const adminCount = await prisma.user.count({ where: { role: "SUPER_ADMIN" as any } });
-    const role = adminCount === 0 ? "SUPER_ADMIN" : "USER";
-
-    // 7. Save the user to the database
+    // Public registration must never grant an administrative role.
     const newUser = await prisma.user.create({
       data: {
         email,
@@ -54,7 +51,7 @@ export async function POST(request: Request) {
         firstName, // Fixed: Added this line to save the first name
         otpSecret: otpCode,
         otpExpiresAt,
-        role: role as any,
+        role: "USER",
       },
     });
 

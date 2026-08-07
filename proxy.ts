@@ -40,8 +40,8 @@ export default async function middleware(request: NextRequest) {
       try {
         const statusRes = await fetch(new URL('/api/v1/auth/status', request.url));
         if (statusRes.ok) {
-           const { adminCount } = await statusRes.json();
-           if (adminCount === 0) {
+           const { initialized } = await statusRes.json();
+           if (!initialized) {
              return NextResponse.redirect(new URL('/pigshit/setup', request.url));
            }
         }

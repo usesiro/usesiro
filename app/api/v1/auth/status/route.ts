@@ -3,10 +3,12 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const userCount = await prisma.user.count();
-    const adminCount = await prisma.user.count({ where: { role: 'SUPER_ADMIN' as any } });
-    return NextResponse.json({ userCount, adminCount }, { status: 200 });
+    const admin = await prisma.user.findFirst({
+      where: { role: "SUPER_ADMIN" },
+      select: { id: true },
+    });
+    return NextResponse.json({ initialized: Boolean(admin) }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ userCount: 0, adminCount: 0 }, { status: 500 });
+    return NextResponse.json({ initialized: true }, { status: 500 });
   }
 }
