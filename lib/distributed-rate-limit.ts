@@ -1,10 +1,12 @@
-import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
+import { hashRateLimitKey } from "@/lib/rate-limit-key";
 
 export type RateLimitResult = {
   allowed: boolean;
   retryAfterSeconds: number;
 };
+
+export { hashRateLimitKey } from "@/lib/rate-limit-key";
 
 export async function consumeDistributedRateLimit({
   scope,
@@ -23,10 +25,7 @@ export async function consumeDistributedRateLimit({
 
   const now = new Date();
   const nextResetAt = new Date(now.getTime() + windowMs);
-  const key = crypto
-    .createHash("sha256")
-    .update(`${scope}:${identifier.trim().toLowerCase()}`)
-    .digest("hex");
+  const key = hashRateLimitKey(scope, identifier);
 
   const [bucket] = await prisma.$queryRaw<Array<{ count: number; resetAt: Date }>>`
     INSERT INTO "rate_limit_buckets" ("key", "count", "resetAt", "updatedAt")
