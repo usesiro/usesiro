@@ -179,11 +179,11 @@ export default function Reconciliation() {
 
         {/* --- MAIN TABLE SECTION --- */}
         <div id="tour-reconciliation-list" className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-gray-50">
+          <div className="p-4 sm:p-6 border-b border-gray-50">
             <h2 className="text-lg font-bold text-gray-700">Pending Review</h2>
           </div>
 
-          <div className="p-6">
+          <div className="p-4 sm:p-6 min-w-0">
             <div className="flex flex-col lg:flex-row gap-4 justify-between mb-6">
               <div className="flex flex-col md:flex-row gap-3 flex-1">
                 <div className="relative w-full md:w-64">
@@ -208,10 +208,10 @@ export default function Reconciliation() {
                   <p className="text-center py-10 text-gray-500 font-bold uppercase text-[10px] tracking-widest">No pending items</p>
                 ) : (
                   paginatedItems.map((item) => (
-                    <div key={item.id} className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 space-y-4 transition active:scale-[0.98]">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1 pr-4">
-                          <p className="text-sm font-black text-gray-900 leading-tight">{item.description}</p>
+                    <div key={item.id} className="bg-gray-50/50 rounded-2xl p-4 sm:p-5 border border-gray-100 space-y-4 transition active:scale-[0.98] min-w-0">
+                      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                        <div className="min-w-0">
+                          <p className="break-words text-sm font-black text-gray-900 leading-tight">{item.description}</p>
                           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
                             {new Date(item.date).toLocaleDateString('en-GB')} • {item.source === 'MONO' ? 'Bank' : 'Manual'}
                           </p>
@@ -221,8 +221,8 @@ export default function Reconciliation() {
                         </div>
                       </div>
                       
-                      <div className="flex items-center justify-between pt-3 border-t border-gray-100/50">
-                        <span className="text-[10px] font-black text-red-500 uppercase tracking-tight bg-red-50 px-3 py-1 rounded-full border border-red-100">
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-gray-100/50">
+                        <span className="max-w-full truncate text-[10px] font-black text-red-500 uppercase tracking-tight bg-red-50 px-3 py-1 rounded-full border border-red-100">
                           {getPrimaryIssue(item)}
                         </span>
                         <button 
@@ -303,29 +303,29 @@ export default function Reconciliation() {
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto">
             <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl my-8 animate-fade-in-up">
               
-              <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+              <div className="p-4 sm:p-6 border-b border-gray-100 flex justify-between items-center gap-3">
                 <h3 className="text-xl font-bold text-gray-900">Resolve Transaction</h3>
                 <button onClick={() => setIsDetailsModalOpen(false)}><XMarkIcon className="w-6 h-6 text-gray-400 hover:text-gray-700"/></button>
               </div>
               
-              <div className="p-8 space-y-6">
+              <div className="p-4 sm:p-8 space-y-6">
                 
                 <div className="bg-gray-50/50 p-5 rounded-xl border border-gray-100">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start mb-2">
+                    <div className="min-w-0">
                       <span className="font-bold text-gray-800">{selectedTransaction?.source === 'MONO' ? 'Bank Synced (Auto)' : 'Manual Entry'}</span>
                       <span className="text-gray-500 text-sm ml-2">- {new Date(selectedTransaction?.date).toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})}</span>
                       <p className="text-sm font-medium text-gray-600 mt-1">{selectedTransaction?.description}</p>
                     </div>
-                    <span className="text-lg font-black text-gray-600">{formatCurrency(selectedTransaction?.amount || 0)}</span>
+                    <span className="text-lg font-black text-gray-600 whitespace-nowrap">{formatCurrency(selectedTransaction?.amount || 0)}</span>
                   </div>
-                  <div className="text-sm text-gray-500 flex items-center gap-2 mt-4">
+                  <div className="text-sm text-gray-500 flex flex-wrap items-center gap-2 mt-4">
                     <span className="font-bold">{selectedTransaction?.type === 'INCOME' ? 'Income' : 'Expense'}</span>
                     <span>&raquo;</span>
                     <select 
                       value={editCategory} 
                       onChange={(e) => setEditCategory(e.target.value)}
-                      className="bg-white p-1.5 rounded border border-gray-200 font-medium text-gray-700 outline-none cursor-pointer focus:border-primary"
+                      className="min-w-0 max-w-full bg-white p-1.5 rounded border border-gray-200 font-medium text-gray-700 outline-none cursor-pointer focus:border-primary"
                     >
                       <option value="">Select Category...</option>
                       {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -348,7 +348,7 @@ export default function Reconciliation() {
 
                 {/* RECEIPTS UPLOAD SECTION */}
                 <div className="border border-gray-100 rounded-xl overflow-hidden">
-                  <div className="p-4 border-b border-gray-50 flex justify-between items-center bg-white">
+                  <div className="p-4 border-b border-gray-50 flex flex-col items-start gap-3 sm:flex-row sm:justify-between sm:items-center bg-white">
                     <span className="font-bold text-gray-800 text-sm">Receipts & Documents</span>
                     <input type="file" id="receipt-upload" className="hidden" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={handleFileChange} />
                     <label htmlFor="receipt-upload" className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg cursor-pointer hover:bg-blue-700 transition shadow-sm">
@@ -381,7 +381,7 @@ export default function Reconciliation() {
 
               </div>
 
-              <div className="p-6 border-t border-gray-50 flex gap-4 bg-gray-50/50 rounded-b-2xl">
+              <div className="p-4 sm:p-6 border-t border-gray-50 flex flex-col-reverse sm:flex-row gap-3 sm:gap-4 bg-gray-50/50 rounded-b-2xl">
                 <button onClick={() => setIsDetailsModalOpen(false)} className="flex-1 py-3 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 transition">
                   Cancel
                 </button>

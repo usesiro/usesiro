@@ -512,11 +512,11 @@ export default function Transactions() {
     <DashboardLayout>
       <div className="space-y-6 relative">
 
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-bold text-gray-800">Transactions</h1>
           <button
             disabled
-            className="flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed opacity-50"
+            className="flex w-fit items-center gap-2 px-3 sm:px-4 py-2 border rounded-lg text-xs sm:text-sm font-medium bg-gray-50 text-gray-400 border-gray-100 cursor-not-allowed opacity-50"
           >
             <ArrowPathIcon className="w-4 h-4 text-gray-300" />
             Sync Bank
@@ -537,13 +537,13 @@ export default function Transactions() {
         <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6">
           <button
             onClick={() => setActiveTab("all")}
-            className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition ${activeTab === "all" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+            className={`flex-1 px-2 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition ${activeTab === "all" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
           >
             All Transactions
           </button>
           <button
             onClick={() => { setActiveTab("pending"); fetchPendingReview(); }}
-            className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition flex items-center justify-center gap-2 ${activeTab === "pending" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+            className={`flex-1 px-2 py-2.5 text-xs sm:text-sm font-semibold rounded-lg transition flex items-center justify-center gap-1.5 sm:gap-2 ${activeTab === "pending" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
           >
             Pending Review
             {pendingCount > 0 && (
@@ -556,10 +556,10 @@ export default function Transactions() {
 
         {/* PENDING REVIEW TABLE */}
         {activeTab === "pending" && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 mb-6 min-w-0">
             <h2 className="text-lg font-bold text-gray-700 mb-4">
               Transactions Needing Review
-              <span className="text-sm font-normal text-gray-400 ml-2">
+              <span className="block text-sm font-normal text-gray-400 mt-1 sm:inline sm:ml-2 sm:mt-0">
                 Assign a category — the pattern will be memorized for future imports.
               </span>
             </h2>
@@ -570,7 +570,48 @@ export default function Transactions() {
                 <p className="text-xs mt-1">All imported transactions have been categorized.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              <div className="space-y-3 md:hidden">
+                {pendingTransactions.map((tx: any) => (
+                  <div key={tx.id} className="rounded-xl border border-gray-100 bg-gray-50/50 p-4 min-w-0">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-gray-800">{tx.description}</p>
+                        <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                          {new Date(tx.date).toLocaleDateString("en-NG", { day: "2-digit", month: "short", year: "numeric" })} · {tx.type}
+                        </p>
+                      </div>
+                      <p className="whitespace-nowrap text-xs font-black text-gray-900">
+                        {new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(Number(tx.amount))}
+                      </p>
+                    </div>
+                    <div className="mt-3 flex flex-col gap-2 border-t border-gray-100 pt-3 sm:flex-row">
+                      <select
+                        id={`resolve-mobile-cat-${tx.id}`}
+                        defaultValue=""
+                        className="min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 focus:border-primary focus:outline-none"
+                      >
+                        <option value="">Select category...</option>
+                        {categories.map((cat: any) => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        disabled={isResolvingId === tx.id}
+                        onClick={() => {
+                          const select = document.getElementById(`resolve-mobile-cat-${tx.id}`) as HTMLSelectElement;
+                          if (!select?.value) { showNotification("Please select a category first", "warning"); return; }
+                          handleResolveTransaction(tx.id, select.value);
+                        }}
+                        className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        {isResolvingId === tx.id ? "Saving..." : "Resolve"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="hidden overflow-x-auto md:block">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 text-gray-400 text-xs uppercase tracking-wider">
@@ -627,13 +668,14 @@ export default function Transactions() {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </div>
         )}
 
         {/* MAIN TABLE SECTION */}
         {activeTab === "all" && (
-        <div id="tour-transaction-list" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div id="tour-transaction-list" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 min-w-0">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-bold text-gray-700">Transaction List</h2>
           </div>
@@ -642,7 +684,7 @@ export default function Transactions() {
           <div id="tour-search-filter" className="flex flex-col xl:flex-row items-center justify-between gap-4 mb-8">
 
             {/* LEFT: Search & Filter */}
-            <div className="flex items-center gap-3 w-full xl:w-auto flex-1">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3 w-full xl:w-auto flex-1">
               {/* Search Bar */}
               <div className="relative w-full sm:max-w-md">
                 <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -699,7 +741,7 @@ export default function Transactions() {
             </div>
 
             {/* RIGHT: Secondary & Primary Actions */}
-            <div id="tour-record-actions" className="flex items-center gap-3 w-full xl:w-auto justify-end">
+            <div id="tour-record-actions" className="flex min-w-0 items-center gap-2 sm:gap-3 w-full xl:w-auto justify-end">
               <button 
                 onClick={() => setDeleteModal({ isOpen: true, type: "CLEAR_ALL", ids: [] })}
                 className="flex items-center gap-2 px-3 py-2.5 text-red-500 hover:bg-red-50 rounded-lg text-sm font-semibold transition-colors"
@@ -713,7 +755,7 @@ export default function Transactions() {
                   if (!isPro) { setPaywallModal({ isOpen: true, feature: "Export Report" }); return; }
                   setIsExportModalOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-semibold transition-all shadow-sm"
+                className="flex shrink-0 items-center gap-2 px-3 sm:px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg text-sm font-semibold transition-all shadow-sm"
               >
                 <ArrowDownTrayIcon className="w-4 h-4" />
                 <span className="hidden sm:inline">Export Report</span>
@@ -723,10 +765,10 @@ export default function Transactions() {
               <div className="relative">
                 <button 
                   onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
-                  className="flex items-center gap-2 bg-primary hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-md"
+                  className="flex shrink-0 items-center gap-1.5 sm:gap-2 bg-primary hover:bg-blue-700 text-white px-3 sm:px-5 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-md"
                 >
                   <PlusIcon className="w-4 h-4" />
-                  <span>Add Record</span>
+                  <span><span className="sm:hidden">Add</span><span className="hidden sm:inline">Add Record</span></span>
                   <ChevronDownIcon className={`w-3 h-3 transition-transform duration-200 ${isAddMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -765,11 +807,11 @@ export default function Transactions() {
               <div className="text-sm font-bold text-blue-800">
                 {selectedIds.length} transaction{selectedIds.length > 1 ? 's' : ''} selected
               </div>
-              <div className="flex items-center gap-3">
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-3">
                 <select 
                   value={selectedCategory} 
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="px-4 py-2 border border-blue-200 rounded-lg text-sm focus:outline-none focus:border-primary bg-white text-gray-700"
+                  className="col-span-2 w-full min-w-0 px-3 sm:px-4 py-2 border border-blue-200 rounded-lg text-sm focus:outline-none focus:border-primary bg-white text-gray-700 sm:col-auto sm:w-auto"
                 >
                   <option value="">Select new category...</option>
                   {categories.map((cat: any) => (
@@ -779,13 +821,13 @@ export default function Transactions() {
                 <button 
                   onClick={handleBulkCategorize}
                   disabled={isBulkUpdating || !selectedCategory}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
+                  className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
                 >
                   {isBulkUpdating ? "Applying..." : "Apply Category"}
                 </button>
                 <button 
                   onClick={() => setDeleteModal({ isOpen: true, type: "BULK", ids: selectedIds })}
-                  className="px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-lg text-sm font-bold hover:bg-red-100 transition"
+                  className="px-3 sm:px-4 py-2 bg-red-50 text-red-600 border border-red-100 rounded-lg text-xs sm:text-sm font-bold hover:bg-red-100 transition"
                 >
                   Delete Selected
                 </button>
@@ -802,9 +844,9 @@ export default function Transactions() {
               ) : (
                 paginatedTransactions.map((t) => (
                   <div key={t.id} className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 pr-4">
-                        <p className="text-sm font-black text-gray-900 leading-tight">{t.description}</p>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                      <div className="min-w-0">
+                        <p className="break-words text-sm font-black text-gray-900 leading-tight">{t.description}</p>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
                           {formatDate(t.date)} • {t.source === 'MONO' ? 'Bank' : 'Manual'}
                         </p>
@@ -822,8 +864,8 @@ export default function Transactions() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-100/50">
-                      <span className="bg-white border border-gray-100 text-gray-500 px-3 h-6 inline-flex items-center rounded-full text-[9px] font-black uppercase tracking-tight">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-100/50">
+                      <span className="max-w-full truncate bg-white border border-gray-100 text-gray-500 px-3 h-6 inline-flex items-center rounded-full text-[9px] font-black uppercase tracking-tight">
                         {t.category?.name || 'Uncategorized'}
                       </span>
                       <div className="relative">
@@ -953,15 +995,15 @@ export default function Transactions() {
         {isExportModalOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={() => setIsExportModalOpen(false)}></div>
-            <div className="relative bg-white rounded-2xl w-full max-w-md p-8 animate-fade-in-up">
+            <div className="relative bg-white rounded-2xl w-full max-w-md p-5 sm:p-8 animate-fade-in-up">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-gray-700">Export Tax Report</h3>
                 <button onClick={() => setIsExportModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition"><XMarkIcon className="w-6 h-6" /></button>
               </div>
               
               <div className="space-y-5">
-                <div className="flex gap-4">
-                   <div className="w-1/2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">Start Date</label>
                     <input 
                       type="date" 
@@ -971,7 +1013,7 @@ export default function Transactions() {
                       className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:border-primary outline-none text-gray-600"
                     />
                   </div>
-                  <div className="w-1/2">
+                  <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">End Date</label>
                     <input 
                       type="date" 
@@ -1020,7 +1062,7 @@ export default function Transactions() {
         {isAddModalOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={() => setIsAddModalOpen(false)}></div>
-            <div className="relative bg-white rounded-2xl w-full max-w-lg p-8 animate-fade-in-up">
+            <div className="relative bg-white rounded-2xl w-full max-w-lg p-5 sm:p-8 animate-fade-in-up max-h-[calc(100vh-2rem)] overflow-y-auto">
               {isSuccess ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center space-y-4">
                   <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center text-green-500 animate-bounce"><CheckCircleIcon className="w-10 h-10" /></div>
@@ -1034,7 +1076,7 @@ export default function Transactions() {
                   </div>
                   
                   <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div>
                         <label className="block text-sm font-medium text-gray-600 mb-1">Amount</label>
                         <div className="relative">

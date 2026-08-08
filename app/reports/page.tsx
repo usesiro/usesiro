@@ -225,11 +225,11 @@ export default function Reports() {
   return (
     <DashboardLayout>
       <div className="space-y-6 pb-12">
-        <div id="tour-report-export" className="flex justify-between items-center print:hidden">
+        <div id="tour-report-export" className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center print:hidden">
           <h1 className="text-2xl font-bold text-gray-800">Reports</h1>
           <button 
             onClick={() => setIsExportModalOpen(true)} 
-            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition"
+            className="flex w-fit items-center gap-2 px-4 sm:px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition"
           >
             <ArrowDownTrayIcon className="w-4 h-4" /> Export Report
           </button>
@@ -254,7 +254,7 @@ export default function Reports() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* INCOME VS EXPENSE */}
-          <div className="lg:col-span-2 bg-white p-8 rounded-2xl border border-gray-200 h-[450px]">
+          <div className="lg:col-span-2 bg-white p-4 sm:p-8 rounded-2xl border border-gray-200 h-[400px] sm:h-[450px] min-w-0">
             <h2 className="text-gray-800 font-bold mb-8">Income vs Expense (k)</h2>
             <ResponsiveContainer width="100%" height="85%">
               <BarChart data={barData} barGap={8}>
@@ -268,7 +268,7 @@ export default function Reports() {
           </div>
 
           {/* EXPENSE PIE CHART */}
-          <div className="bg-white p-8 rounded-3xl border border-gray-200 flex flex-col h-[450px]">
+          <div className="bg-white p-4 sm:p-8 rounded-3xl border border-gray-200 flex flex-col h-[400px] sm:h-[450px] min-w-0">
             <h2 className="text-gray-800 font-bold mb-4">Expense Breakdown</h2>
             <div className="flex-1 w-full min-h-0">
               <ResponsiveContainer width="100%" height="100%">
@@ -310,7 +310,7 @@ export default function Reports() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* SALES HISTOGRAM */}
-          <div className="lg:col-span-2 bg-white p-8 rounded-2xl border border-gray-200 h-[450px]">
+          <div className="lg:col-span-2 bg-white p-4 sm:p-8 rounded-2xl border border-gray-200 h-[400px] sm:h-[450px] min-w-0">
             <div className="mb-8">
               <h2 className="text-gray-800 font-bold">Sales Histogram</h2>
               <p className="text-xs text-gray-500 font-medium mt-1">Monthly revenue derived strictly from categorized sales.</p>
@@ -337,14 +337,14 @@ export default function Reports() {
                 <p className="text-sm text-gray-500 text-center mt-10">No recent transactions.</p>
               ) : (
                 recentActivity.map((t: any) => (
-                  <div key={t.id} className="flex justify-between items-center py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 rounded-lg px-2 transition-colors">
-                    <div className="overflow-hidden">
+                  <div key={t.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 rounded-lg px-2 transition-colors min-w-0">
+                    <div className="min-w-0 overflow-hidden">
                       <p className="text-sm font-bold text-gray-800 truncate">{t.description}</p>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {new Date(t.date).toLocaleDateString('en-GB')} • {t.source === 'MONO' ? 'Bank Sync' : 'Manual'}
                       </p>
                     </div>
-                    <span className={`text-sm font-bold whitespace-nowrap ml-4 ${t.type === 'INCOME' ? 'text-green-600' : 'text-gray-800'}`}>
+                    <span className={`text-xs sm:text-sm font-bold whitespace-nowrap ${t.type === 'INCOME' ? 'text-green-600' : 'text-gray-800'}`}>
                       {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
                     </span>
                   </div>
@@ -359,15 +359,15 @@ export default function Reports() {
         {isExportModalOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={() => setIsExportModalOpen(false)}></div>
-            <div className="relative bg-white rounded-2xl w-full max-w-md p-8 animate-fade-in-up border border-gray-200">
+            <div className="relative bg-white rounded-2xl w-full max-w-md p-5 sm:p-8 animate-fade-in-up border border-gray-200">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-gray-700">Export Financial Report</h3>
                 <button onClick={() => setIsExportModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition"><XMarkIcon className="w-6 h-6" /></button>
               </div>
               
               <div className="space-y-5">
-                <div className="flex gap-4">
-                  <div className="w-1/2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">Start Date</label>
                     <input 
                       type="date" 
@@ -377,7 +377,7 @@ export default function Reports() {
                       className="w-full px-4 py-3 text-sm border border-gray-200 rounded-xl focus:border-primary outline-none text-gray-600"
                     />
                   </div>
-                  <div className="w-1/2">
+                  <div>
                     <label className="block text-sm font-medium text-gray-600 mb-1">End Date</label>
                     <input 
                       type="date" 

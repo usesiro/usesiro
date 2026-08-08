@@ -284,7 +284,7 @@ export default function TaxReadiness() {
         </div>
 
         {/* --- SUMMARY TABLE SECTION --- */}
-        <div id="tour-tax-summary" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+        <div id="tour-tax-summary" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-8 min-w-0">
           <h2 className="text-xl font-black text-gray-800 mb-8">Tax Summary</h2>
 
           {/* Filters Bar */}
@@ -331,10 +331,10 @@ export default function TaxReadiness() {
                 <p className="text-center py-8 text-gray-500 font-medium uppercase text-[10px] tracking-widest">No matching records</p>
               ) : (
                 transactions.map((t) => (
-                  <div key={t.id} className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 pr-4">
-                        <p className="text-sm font-black text-gray-900 leading-tight">{t.description}</p>
+                  <div key={t.id} className="bg-gray-50/50 rounded-2xl p-4 sm:p-5 border border-gray-100 space-y-4 min-w-0">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                      <div className="min-w-0">
+                        <p className="break-words text-sm font-black text-gray-900 leading-tight">{t.description}</p>
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
                           {formatDate(t.date)} • {t.source === 'MONO' ? 'POS' : 'Manual'}
                         </p>
@@ -343,7 +343,7 @@ export default function TaxReadiness() {
                         {t.type === 'INCOME' ? '+' : '-'}{formatCurrency(t.amount)}
                       </div>
                     </div>
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100/50">
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-gray-100/50">
                       <div className="flex items-center gap-2">
                         <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tight shadow-sm ${
                           t.vatStatus === "TAGGED" ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-600 border border-red-100"
@@ -415,7 +415,7 @@ export default function TaxReadiness() {
         {/* --- EXPORT MODAL --- */}
         {isExportModalOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-            <div className="bg-white rounded-3xl w-full max-w-md p-10 animate-fade-in-up">
+            <div className="bg-white rounded-3xl w-full max-w-md p-5 sm:p-10 animate-fade-in-up">
               <div className="flex justify-between items-center mb-8">
                 <h3 className="text-2xl font-black text-gray-800">Export Report</h3>
                 <button onClick={() => setIsExportModalOpen(false)} className="text-gray-400 hover:text-gray-600">
