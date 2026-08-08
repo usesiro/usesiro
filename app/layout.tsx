@@ -8,6 +8,7 @@ import { NotificationProvider } from "@/context/NotificationContext";
 import { BookingProvider } from "@/components/booking/BookingProvider";
 import Script from "next/script";
 import LegacyTokenCleanup from "@/components/LegacyTokenCleanup";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 // Setup Poppins
 const poppins = Poppins({
@@ -78,6 +79,7 @@ export const metadata: Metadata = {
     shortcut: '/favicon.png',
     apple: '/favicon.png',
   },
+  themeColor: '#2F6EF6',
 };
 
 export default function RootLayout({
@@ -89,6 +91,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${poppins.variable} ${fraunces.variable} font-sans`}>
         <LegacyTokenCleanup />
+        <ServiceWorkerRegistration />
         
         {/* --- GOOGLE ORGANIZATION SCHEMA --- */}
         <Script
