@@ -20,8 +20,8 @@ export default function DashboardBottomNav({ handleLogout }: DashboardBottomNavP
 
   const navItems = [
     { name: "Overview", href: "/dashboard", icon: Squares2X2Icon },
-    { name: "Records", href: "/transactions", icon: DocumentTextIcon },
-    { name: "Ready", href: "/tax-readiness", icon: MapPinIcon },
+    { name: "Transactions", href: "/transactions", icon: DocumentTextIcon },
+    { name: "Tax Ready", href: "/tax-readiness", icon: MapPinIcon },
     { name: "Reports", href: "/reports", icon: ChartBarIcon },
   ];
 
