@@ -26,6 +26,8 @@ import { CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import TableSkeleton from "@/components/TableSkeleton";
 import { useNotification } from "@/context/NotificationContext";
 
+const ITEMS_PER_PAGE = 10;
+
 export default function TaxReadiness() {
   const { showNotification } = useNotification();
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -43,6 +45,7 @@ export default function TaxReadiness() {
     source: "All Sources",
     vatStatus: "All Statuses",
   });
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,6 +69,7 @@ export default function TaxReadiness() {
             filteredTxns = filteredTxns.filter((t: any) => t.vatStatus === statusMap[filters.vatStatus]);
           }
           setTransactions(filteredTxns);
+          setCurrentPage(1);
         }
       } catch (err) {
         console.error("Failed to load transactions", err);
@@ -103,6 +107,7 @@ export default function TaxReadiness() {
 
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
+    setCurrentPage(1);
   };
 
   const handleExportParamChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -172,6 +177,12 @@ export default function TaxReadiness() {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
+
+  const totalPages = Math.max(1, Math.ceil(transactions.length / ITEMS_PER_PAGE));
+  const paginatedTransactions = transactions.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
 
   if (isLoading) return <TableSkeleton />;
 
@@ -330,7 +341,7 @@ export default function TaxReadiness() {
               {transactions.length === 0 ? (
                 <p className="text-center py-8 text-gray-500 font-medium uppercase text-[10px] tracking-widest">No matching records</p>
               ) : (
-                transactions.map((t) => (
+                paginatedTransactions.map((t) => (
                   <div key={t.id} className="bg-gray-50/50 rounded-2xl p-4 sm:p-5 border border-gray-100 space-y-4 min-w-0">
                     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                       <div className="min-w-0">
@@ -375,7 +386,7 @@ export default function TaxReadiness() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {transactions.map((t) => (
+                  {paginatedTransactions.map((t) => (
                     <tr key={t.id} className="hover:bg-gray-50/50 transition duration-150">
                       <td className="py-5 px-6 text-sm font-medium text-gray-700">{t.description}</td>
                       <td className="py-5 px-6 text-sm font-bold">
@@ -409,6 +420,33 @@ export default function TaxReadiness() {
                 </tbody>
               </table>
             </div>
+
+            {transactions.length > 0 && (
+              <div className="flex flex-col gap-3 border-t border-gray-100 pt-5 mt-5 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-gray-500 font-medium">
+                  Showing <span className="font-bold text-gray-800">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span>–<span className="font-bold text-gray-800">{Math.min(currentPage * ITEMS_PER_PAGE, transactions.length)}</span> of <span className="font-bold text-gray-800">{transactions.length}</span>
+                </p>
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                    disabled={currentPage === 1}
+                    className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-gray-600 transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+                  <span className="min-w-[76px] text-center text-xs font-bold text-gray-500">Page {currentPage} of {totalPages}</span>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                    disabled={currentPage === totalPages}
+                    className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-gray-600 transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
