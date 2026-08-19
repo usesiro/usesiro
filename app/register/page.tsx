@@ -24,13 +24,13 @@ export default function Register() {
   const [formData, setFormData] = useState({
     firstName: "", lastName: "", phone: "", email: "", password: "", confirmPassword: "",
     otp: "", 
-    businessName: "", businessType: "", industry: "", tin: ""
+    businessName: "", businessType: "", industry: "", tin: "", annualTurnover: "", fixedAssets: "", isProfessionalServices: false
   });
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({ ...formData, [e.target.name]: e.target.type === "checkbox" ? (e.target as HTMLInputElement).checked : e.target.value });
     setErrorMsg("");
     setSuccessMsg("");
   };
@@ -159,7 +159,10 @@ export default function Register() {
           name: formData.businessName,
           type: formData.businessType,
           industry: formData.industry,
-          tin: formData.tin || undefined 
+          tin: formData.tin || undefined,
+          annualTurnover: Number(formData.annualTurnover || 0),
+          fixedAssets: Number(formData.fixedAssets || 0),
+          isProfessionalServices: formData.isProfessionalServices,
         }),
       });
       const data = await res.json();
@@ -202,6 +205,20 @@ export default function Register() {
             <h1 className="text-2xl font-bold text-dark mb-2">Create A New Account</h1>
             <p className="text-gray-500 text-sm">Input your personal details</p>
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-dark mb-1.5 ml-1">Annual Turnover (NGN)</label>
+              <input name="annualTurnover" min="0" type="number" value={formData.annualTurnover} onChange={handleChange} placeholder="0" className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-dark" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-dark mb-1.5 ml-1">Fixed Assets (NGN)</label>
+              <input name="fixedAssets" min="0" type="number" value={formData.fixedAssets} onChange={handleChange} placeholder="0" className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-dark" />
+            </div>
+          </div>
+          <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+            <input name="isProfessionalServices" type="checkbox" checked={formData.isProfessionalServices} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-primary" />
+            This business provides professional services
+          </label>
           
           <div className="relative">
             <UserIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -325,6 +342,20 @@ export default function Register() {
               <option value="Other">Other</option>
             </select>
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-dark mb-1.5 ml-1">Annual Turnover (NGN)</label>
+              <input name="annualTurnover" min="0" type="number" value={formData.annualTurnover} onChange={handleChange} placeholder="0" className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-dark" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-dark mb-1.5 ml-1">Fixed Assets (NGN)</label>
+              <input name="fixedAssets" min="0" type="number" value={formData.fixedAssets} onChange={handleChange} placeholder="0" className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-dark" />
+            </div>
+          </div>
+          <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+            <input name="isProfessionalServices" type="checkbox" checked={formData.isProfessionalServices} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-primary" />
+            This business provides professional services
+          </label>
           <button type="submit" disabled={!isStep3Valid || isLoading} className={`w-full py-3 rounded-lg font-semibold text-white transition mt-2 ${isStep3Valid && !isLoading ? "bg-primary hover:bg-blue-700 shadow-lg cursor-pointer" : "bg-primary opacity-50 cursor-not-allowed"}`}>
              {isLoading ? "Finalizing..." : "Complete Setup"}
           </button>

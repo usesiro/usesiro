@@ -9,6 +9,9 @@ const businessSchema = z.object({
   type: z.enum(["SOLE_PROPRIETORSHIP", "PARTNERSHIP", "LIMITED_LIABILITY"]),
   industry: z.string().min(2, "Industry is required"),
   tin: z.string().optional(),
+  annualTurnover: z.coerce.number().min(0).default(0),
+  fixedAssets: z.coerce.number().min(0).default(0),
+  isProfessionalServices: z.boolean().default(false),
 });
 
 export async function POST(request: Request) {
@@ -33,7 +36,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { name, type, industry, tin } = validation.data;
+    const { name, type, industry, tin, annualTurnover, fixedAssets, isProfessionalServices } = validation.data;
 
     // 4. Check if this user already has a business set up
     const existingBusiness = await prisma.business.findUnique({
@@ -55,6 +58,9 @@ export async function POST(request: Request) {
         type,
         industry,
         tin,
+        annualTurnover,
+        fixedAssets,
+        isProfessionalServices,
       },
     });
 

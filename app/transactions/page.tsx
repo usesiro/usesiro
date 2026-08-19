@@ -16,6 +16,7 @@ import { useNotification } from "@/context/NotificationContext";
 import TableSkeleton from "@/components/TableSkeleton";
 import TransactionImportModal from "@/components/TransactionImportModal";
 import PaywallModal from "@/components/PaywallModal";
+import { calculateTaxMetrics, TAX_CONFIG } from "@/lib/tax/tax-engine";
 
 const ITEMS_PER_PAGE = 15;
 
@@ -49,6 +50,7 @@ export default function Transactions() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalIncome: 0, totalExpense: 0, netBalance: 0 });
+  const [businessProfile, setBusinessProfile] = useState({ annualTurnover: 0, fixedAssets: 0, isProfessionalServices: false });
   const [isLoading, setIsLoading] = useState(true);
 
   // Bulk Categorization State
@@ -156,6 +158,7 @@ export default function Transactions() {
         if (bizRes.ok) {
           const biz = await bizRes.json();
           setUserEmail(biz.owner?.email || "");
+          setBusinessProfile({ annualTurnover: Number(biz.annualTurnover || 0), fixedAssets: Number(biz.fixedAssets || 0), isProfessionalServices: Boolean(biz.isProfessionalServices) });
         }
       } catch (err) { console.error(err); }
     }
@@ -395,10 +398,6 @@ export default function Transactions() {
       return;
     }
 
-    const expOutputVat = dataToExport.reduce((acc, t) => t.vatStatus === 'TAGGED' && t.type === 'INCOME' ? acc + (t.vatAmount ? Number(t.vatAmount) : Number(t.amount) * 0.075) : acc, 0);
-    const expInputVat = dataToExport.reduce((acc, t) => t.vatStatus === 'TAGGED' && t.type === 'EXPENSE' ? acc + (t.vatAmount ? Number(t.vatAmount) : Number(t.amount) * 0.075) : acc, 0);
-    const expNetVat = expOutputVat - expInputVat;
-
     const reportTitle = `Siro_Tax_Report_${new Date().toISOString().split('T')[0]}`;
 
     if (exportParams.format === 'CSV') {
@@ -437,39 +436,36 @@ export default function Transactions() {
       doc.text(dateRangeStr, 14, 30);
       doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB')}`, 14, 35);
 
-      doc.setFillColor(243, 244, 246); 
-      doc.rect(14, 45, 182, 25, 'F');
-      
-      doc.setFontSize(10);
-      doc.setTextColor(50);
-      doc.text("Output VAT (Collected):", 20, 55);
-      doc.text("Input VAT (Paid):", 85, 55);
-      doc.text("Net VAT Payable:", 145, 55);
-
-      doc.setFontSize(12);
-      doc.setTextColor(0); 
-      doc.text(`NGN ${expOutputVat.toLocaleString('en-NG', {minimumFractionDigits: 2})}`, 20, 62);
-      doc.text(`NGN ${expInputVat.toLocaleString('en-NG', {minimumFractionDigits: 2})}`, 85, 62);
-      doc.setTextColor(47, 110, 246); 
-      doc.text(`NGN ${expNetVat.toLocaleString('en-NG', {minimumFractionDigits: 2})}`, 145, 62);
-
       const tableColumn = ["Date", "Description", "Type", "Amount (NGN)", "Category", "VAT Status"];
-      const tableRows = dataToExport.map(t => [
-        new Date(t.date).toLocaleDateString('en-GB'),
-        t.description,
-        t.type,
-        Number(t.amount).toLocaleString('en-NG', {minimumFractionDigits: 2}),
-        t.category?.name || 'Uncategorized',
-        t.vatStatus || 'MISSING_VAT'
-      ]);
-
-      autoTable(doc, {
-        head: [tableColumn],
-        body: tableRows,
-        startY: 80,
-        styles: { fontSize: 8, cellPadding: 3 },
-        headStyles: { fillColor: [47, 110, 246] },
-        alternateRowStyles: { fillColor: [249, 250, 251] },
+      const monthlyGroups = dataToExport.reduce<Record<string, any[]>>((groups, transaction) => {
+        const key = new Date(transaction.date).toLocaleDateString('en-NG', { month: 'long', year: 'numeric' });
+        (groups[key] ||= []).push(transaction);
+        return groups;
+      }, {});
+      let cursorY = 45;
+      Object.entries(monthlyGroups).forEach(([month, monthTransactions], monthIndex) => {
+        const metrics = calculateTaxMetrics(monthTransactions, businessProfile);
+        if (monthIndex > 0 && cursorY > 245) { doc.addPage(); cursorY = 20; }
+        if (cursorY > 245) { doc.addPage(); cursorY = 20; }
+        doc.setFontSize(14); doc.setTextColor(47, 110, 246); doc.text(month, 14, cursorY); cursorY += 7;
+        doc.setFontSize(9); doc.setTextColor(70);
+        doc.text(`CIT Rate: ${metrics.isSmallCompany ? '0% — Small Company Exemption' : `${TAX_CONFIG.STANDARD_CIT_RATE * 100}% — Standard Rate`}`, 14, cursorY); cursorY += 5;
+        if (!metrics.isVatRegistered) { doc.text('VAT does not apply: turnover is below the ₦25m registration threshold.', 14, cursorY); cursorY += 5; }
+        const money = (value: number) => `NGN ${value.toLocaleString('en-NG', { minimumFractionDigits: 2 })}`;
+        const summary = [
+          ["Total Income", metrics.totalIncome], ["Total Expenses", metrics.totalExpenses],
+          ["Exempt Expenses", metrics.exemptExpenses], ["Taxable Profit", metrics.taxableProfit],
+          ["Net VAT Payable", metrics.netVatPayable], ["CIT", metrics.cit], ["Development Levy", metrics.developmentLevy],
+        ];
+        doc.setFontSize(8);
+        summary.forEach(([label, value], index) => {
+          const column = index % 2;
+          const row = Math.floor(index / 2);
+          doc.text(`${label}: ${money(value as number)}`, 14 + column * 92, cursorY + row * 5);
+        });
+        cursorY += Math.ceil(summary.length / 2) * 5 + 2;
+        autoTable(doc, { head: [tableColumn], body: monthTransactions.map(t => [new Date(t.date).toLocaleDateString('en-GB'), t.description, t.type, Number(t.amount).toLocaleString('en-NG', { minimumFractionDigits: 2 }), t.category?.name || 'Uncategorized', t.vatStatus || 'MISSING_VAT']), startY: cursorY + 2, styles: { fontSize: 8, cellPadding: 3 }, headStyles: { fillColor: [47, 110, 246] }, alternateRowStyles: { fillColor: [249, 250, 251] } });
+        cursorY = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 12;
       });
 
       doc.save(`${reportTitle}.pdf`);

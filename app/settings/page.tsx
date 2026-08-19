@@ -28,6 +28,9 @@ export default function Settings() {
     phone: "",
     businessName: "",
     industry: "",
+    annualTurnover: "",
+    fixedAssets: "",
+    isProfessionalServices: false,
   });
 
   const [passwords, setPasswords] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
@@ -62,6 +65,9 @@ export default function Settings() {
           phone: fetchedData?.owner?.phone || "",
           businessName: fetchedData?.name || "",
           industry: fetchedData?.industry || "",
+          annualTurnover: String(fetchedData?.annualTurnover || ""),
+          fixedAssets: String(fetchedData?.fixedAssets || ""),
+          isProfessionalServices: Boolean(fetchedData?.isProfessionalServices),
         });
         setPreferences({
           emailNotifications: fetchedData?.owner?.marketingEmails,
@@ -98,7 +104,7 @@ export default function Settings() {
 
   // --- HANDLERS ---
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({ ...formData, [e.target.name]: e.target.type === "checkbox" ? e.target.checked : e.target.value });
   };
 
   const handleUpdateSection = async (section: "personal" | "business") => {
@@ -107,7 +113,7 @@ export default function Settings() {
       // Build payload based on which section is being saved
       const payload = section === "personal" 
         ? { owner: { firstName: formData.firstName, lastName: formData.lastName, phone: formData.phone } }
-        : { name: formData.businessName, industry: formData.industry };
+        : { name: formData.businessName, industry: formData.industry, annualTurnover: Number(formData.annualTurnover || 0), fixedAssets: Number(formData.fixedAssets || 0), isProfessionalServices: formData.isProfessionalServices };
 
       const res = await fetch("/api/v1/business/me", {
         method: "PATCH", 
@@ -258,12 +264,21 @@ export default function Settings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in-up">
                   <EditField label="Business Name" name="businessName" value={formData.businessName} onChange={handleInputChange} />
                   <EditField label="Industry" name="industry" value={formData.industry} onChange={handleInputChange} />
+                  <EditField label="Annual Turnover (NGN)" name="annualTurnover" value={formData.annualTurnover} onChange={handleInputChange} type="number" />
+                  <EditField label="Fixed Assets (NGN)" name="fixedAssets" value={formData.fixedAssets} onChange={handleInputChange} type="number" />
+                  <label className="flex items-center gap-3 rounded-xl border border-gray-100 p-4 text-sm font-bold text-gray-700">
+                    <input type="checkbox" name="isProfessionalServices" checked={formData.isProfessionalServices} onChange={handleInputChange} className="h-4 w-4 rounded border-gray-300 text-primary" />
+                    Professional services business
+                  </label>
                   <EditField label="Business Type" name="type" value="Sole Business" disabled={true} note="Contact support to upgrade entity type" />
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <Field label="Business Name" value={data?.name} />
                   <Field label="Industry" value={data?.industry} />
+                  <Field label="Annual Turnover" value={`NGN ${Number(data?.annualTurnover || 0).toLocaleString('en-NG')}`} />
+                  <Field label="Fixed Assets" value={`NGN ${Number(data?.fixedAssets || 0).toLocaleString('en-NG')}`} />
+                  <Field label="Professional Services" value={data?.isProfessionalServices ? "Yes" : "No"} />
                   <Field label="Type" value="Sole Business" />
                 </div>
               )}
@@ -600,12 +615,13 @@ function Field({ label, value }: { label: string, value: string }) {
   );
 }
 
-function EditField({ label, name, value, onChange, disabled = false, note }: any) {
+function EditField({ label, name, value, onChange, disabled = false, note, type = "text" }: any) {
   return (
     <div>
       <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">{label}</label>
       <input
-        type="text"
+        type={type}
+        min={type === "number" ? "0" : undefined}
         name={name}
         value={value}
         onChange={onChange}

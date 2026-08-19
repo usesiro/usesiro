@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Poppins, Fraunces } from "next/font/google"; 
 import "./globals.css";
 import { AOSInit } from "@/components/AOSInit";
@@ -79,6 +79,9 @@ export const metadata: Metadata = {
     shortcut: '/favicon.png',
     apple: '/favicon.png',
   },
+};
+
+export const viewport: Viewport = {
   themeColor: '#2F6EF6',
 };
 

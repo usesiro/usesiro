@@ -2,6 +2,16 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { jwtVerify } from "jose";
 import { recordAuditLog } from "@/lib/logger";
+import { z } from "zod";
+
+const businessUpdateSchema = z.object({
+  name: z.string().min(2).optional(),
+  industry: z.string().min(2).optional(),
+  annualTurnover: z.coerce.number().min(0).optional(),
+  fixedAssets: z.coerce.number().min(0).optional(),
+  isProfessionalServices: z.boolean().optional(),
+  owner: z.object({ firstName: z.string().optional(), lastName: z.string().optional(), phone: z.string().optional() }).optional(),
+});
 
 export async function GET(request: Request) {
   try {
@@ -56,15 +66,20 @@ export async function PATCH(request: Request) {
     const userId = payload.userId as string;
 
     // Parse the incoming update data
-    const body = await request.json();
+    const validation = businessUpdateSchema.safeParse(await request.json());
+    if (!validation.success) return NextResponse.json({ error: "Invalid profile data", details: validation.error.issues }, { status: 400 });
+    const body = validation.data;
 
     // 1. Handle Business Info Updates
-    if (body.name || body.industry) {
+    if (body.name !== undefined || body.industry !== undefined || body.annualTurnover !== undefined || body.fixedAssets !== undefined || body.isProfessionalServices !== undefined) {
       await prisma.business.update({
         where: { userId },
         data: {
           ...(body.name && { name: body.name }),
           ...(body.industry && { industry: body.industry }),
+          ...(body.annualTurnover !== undefined && { annualTurnover: body.annualTurnover }),
+          ...(body.fixedAssets !== undefined && { fixedAssets: body.fixedAssets }),
+          ...(body.isProfessionalServices !== undefined && { isProfessionalServices: body.isProfessionalServices }),
         }
       });
     }

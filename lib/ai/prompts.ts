@@ -19,6 +19,11 @@ CRITICAL RULES — FOLLOW EXACTLY:
 14. If a row has a balance column, include it — this helps with duplicate detection.
 15. If a row has a reference/transaction ID, include it.
 
+TAX CLASSIFICATION (Nigeria Tax Act 2025, effective 2026):
+- Mark basic food (rice, beans, yam, garri, maize), agricultural produce, medical drugs, educational materials, healthcare services, education services, and exports as VAT EXEMPT.
+- Treat all other goods and services as standard-rated at 7.5% VAT.
+- Flag personal/domestic expenses, capital withdrawals for personal use, fines and penalties, and non-business-related expenses as disallowable expenses.
+
 VALIDATION: Your output transaction count MUST match the number of transaction rows in the input data. If the input has 500 transaction rows, you must return 500 transactions.
 `;
 
@@ -36,6 +41,8 @@ STRICT ACCURACY RULES:
 7. CURRENCY: If no currency is found, default to 'NGN'.
 8. JSON FORMAT ONLY: Respond with a JSON object matching the provided schema.
 9. VALIDATION: Your transaction count must match the number of transaction rows in the source text. Do not merge or summarize.
+10. TAX CLASSIFICATION: Mark basic food (rice, beans, yam, garri, maize), agricultural produce, medical drugs, educational materials, healthcare services, education services, and exports as VAT EXEMPT. Treat everything else as standard-rated at 7.5% VAT.
+11. DISALLOWABLE EXPENSES: Flag personal/domestic expenses, capital withdrawals for personal use, fines and penalties, and non-business-related expenses as disallowable.
 `;
 
 export const AI_DETECT_PROMPT = (siroFields: readonly string[]) => `
