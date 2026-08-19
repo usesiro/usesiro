@@ -140,6 +140,9 @@ export async function POST(request: Request) {
       );
 
       const { categoryId, reviewStatus } = autoCategorize(desc, finalType, allCategories, businessRules);
+      const importedVatStatus = ["TAGGED", "MISSING_VAT", "EXEMPT"].includes(String(row.vatStatus))
+        ? row.vatStatus
+        : "MISSING_VAT";
 
       if (reviewStatus === "PENDING_REVIEW") pendingReviewCount++;
 
@@ -153,7 +156,8 @@ export async function POST(request: Request) {
         categoryId,
         reviewStatus,
         externalId,
-        vatStatus: "MISSING_VAT"
+        vatStatus: importedVatStatus,
+        isDisallowable: finalType === "EXPENSE" && Boolean(row.isDisallowable)
       });
     }
 

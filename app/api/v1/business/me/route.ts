@@ -10,6 +10,7 @@ const businessUpdateSchema = z.object({
   annualTurnover: z.coerce.number().min(0).optional(),
   fixedAssets: z.coerce.number().min(0).optional(),
   isProfessionalServices: z.boolean().optional(),
+  taxProfileCompleted: z.boolean().optional(),
   owner: z.object({ firstName: z.string().optional(), lastName: z.string().optional(), phone: z.string().optional() }).optional(),
 });
 
@@ -80,6 +81,7 @@ export async function PATCH(request: Request) {
           ...(body.annualTurnover !== undefined && { annualTurnover: body.annualTurnover }),
           ...(body.fixedAssets !== undefined && { fixedAssets: body.fixedAssets }),
           ...(body.isProfessionalServices !== undefined && { isProfessionalServices: body.isProfessionalServices }),
+          ...(body.taxProfileCompleted !== undefined && { taxProfileCompleted: body.taxProfileCompleted }),
         }
       });
     }

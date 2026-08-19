@@ -23,6 +23,7 @@ TAX CLASSIFICATION (Nigeria Tax Act 2025, effective 2026):
 - Mark basic food (rice, beans, yam, garri, maize), agricultural produce, medical drugs, educational materials, healthcare services, education services, and exports as VAT EXEMPT.
 - Treat all other goods and services as standard-rated at 7.5% VAT.
 - Flag personal/domestic expenses, capital withdrawals for personal use, fines and penalties, and non-business-related expenses as disallowable expenses.
+- Return vatStatus as EXEMPT for exempt items, otherwise TAGGED for taxable items; return isDisallowable=true for flagged expense types.
 
 VALIDATION: Your output transaction count MUST match the number of transaction rows in the input data. If the input has 500 transaction rows, you must return 500 transactions.
 `;
@@ -43,6 +44,7 @@ STRICT ACCURACY RULES:
 9. VALIDATION: Your transaction count must match the number of transaction rows in the source text. Do not merge or summarize.
 10. TAX CLASSIFICATION: Mark basic food (rice, beans, yam, garri, maize), agricultural produce, medical drugs, educational materials, healthcare services, education services, and exports as VAT EXEMPT. Treat everything else as standard-rated at 7.5% VAT.
 11. DISALLOWABLE EXPENSES: Flag personal/domestic expenses, capital withdrawals for personal use, fines and penalties, and non-business-related expenses as disallowable.
+12. Return vatStatus and isDisallowable for every transaction so these classifications are persisted with the import.
 `;
 
 export const AI_DETECT_PROMPT = (siroFields: readonly string[]) => `

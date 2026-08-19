@@ -85,6 +85,7 @@ model Business {
   annualTurnover         Decimal      @default(0) @db.Decimal(18, 2)
   fixedAssets            Decimal      @default(0) @db.Decimal(18, 2)
   isProfessionalServices Boolean      @default(false)
+  taxProfileCompleted    Boolean      @default(false)
   taxBracket             String?      @default("SMALL") // CITA bracket: SMALL (0%), MEDIUM (20%), LARGE (30%)
   lastSyncedAt           DateTime?
   createdAt              DateTime     @default(now())
@@ -118,13 +119,14 @@ model Transaction {
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  amount       Decimal           @db.Decimal(12, 2)
-  date         DateTime
-  description  String
-  source       TransactionSource @default(MANUAL)
-  type         TransactionType
-  vatStatus    VatStatus         @default(MISSING_VAT)
-  reviewStatus ReviewStatus      @default(AUTO_CATEGORIZED)
+  amount         Decimal           @db.Decimal(12, 2)
+  date           DateTime
+  description    String
+  source         TransactionSource @default(MANUAL)
+  type           TransactionType
+  vatStatus      VatStatus         @default(MISSING_VAT)
+  isDisallowable Boolean           @default(false)
+  reviewStatus   ReviewStatus      @default(AUTO_CATEGORIZED)
 
   externalId String? @unique
 

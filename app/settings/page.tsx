@@ -113,7 +113,7 @@ export default function Settings() {
       // Build payload based on which section is being saved
       const payload = section === "personal" 
         ? { owner: { firstName: formData.firstName, lastName: formData.lastName, phone: formData.phone } }
-        : { name: formData.businessName, industry: formData.industry, annualTurnover: Number(formData.annualTurnover || 0), fixedAssets: Number(formData.fixedAssets || 0), isProfessionalServices: formData.isProfessionalServices };
+        : { name: formData.businessName, industry: formData.industry, annualTurnover: Number(formData.annualTurnover || 0), fixedAssets: Number(formData.fixedAssets || 0), isProfessionalServices: formData.isProfessionalServices, taxProfileCompleted: true };
 
       const res = await fetch("/api/v1/business/me", {
         method: "PATCH", 

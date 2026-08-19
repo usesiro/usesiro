@@ -50,7 +50,7 @@ export default function Transactions() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalIncome: 0, totalExpense: 0, netBalance: 0 });
-  const [businessProfile, setBusinessProfile] = useState({ annualTurnover: 0, fixedAssets: 0, isProfessionalServices: false });
+  const [businessProfile, setBusinessProfile] = useState({ annualTurnover: 0, fixedAssets: 0, isProfessionalServices: false, taxProfileCompleted: false });
   const [isLoading, setIsLoading] = useState(true);
 
   // Bulk Categorization State
@@ -158,7 +158,7 @@ export default function Transactions() {
         if (bizRes.ok) {
           const biz = await bizRes.json();
           setUserEmail(biz.owner?.email || "");
-          setBusinessProfile({ annualTurnover: Number(biz.annualTurnover || 0), fixedAssets: Number(biz.fixedAssets || 0), isProfessionalServices: Boolean(biz.isProfessionalServices) });
+          setBusinessProfile({ annualTurnover: Number(biz.annualTurnover || 0), fixedAssets: Number(biz.fixedAssets || 0), isProfessionalServices: Boolean(biz.isProfessionalServices), taxProfileCompleted: Boolean(biz.taxProfileCompleted) });
         }
       } catch (err) { console.error(err); }
     }
@@ -383,6 +383,10 @@ export default function Transactions() {
   };
 
   const handleGenerateExport = () => {
+    if (!businessProfile.taxProfileCompleted) {
+      showNotification("Complete your tax profile in Settings before exporting a tax report.", "warning");
+      return;
+    }
     const dataToExport = transactions.filter(t => {
       const tDate = new Date(t.date).getTime();
       const sDate = exportParams.startDate ? new Date(exportParams.startDate).getTime() : null;

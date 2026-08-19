@@ -61,6 +61,7 @@ export async function POST(request: Request) {
         annualTurnover,
         fixedAssets,
         isProfessionalServices,
+        taxProfileCompleted: true,
       },
     });
 

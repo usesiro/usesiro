@@ -3,7 +3,9 @@
 export const TAX_CONFIG = {
   SMALL_COMPANY_TURNOVER_THRESHOLD: 50_000_000,
   SMALL_COMPANY_FIXED_ASSET_THRESHOLD: 250_000_000,
-  STANDARD_CIT_RATE: 0.30, // TODO: verify — one source cites 25% above threshold, confirm before production
+  // Current rate as of Aug 2026. The statutory framework allows a future reduction to 25%,
+  // but no operative reduction order was identified in the sources documented in docs/tax-research-2026.md.
+  STANDARD_CIT_RATE: 0.30,
   SMALL_COMPANY_CIT_RATE: 0,
   DEVELOPMENT_LEVY_RATE: 0.04,
   VAT_RATE: 0.075,
@@ -17,6 +19,7 @@ export type TaxTransaction = {
   description?: string | null;
   category?: { name?: string | null; slug?: string | null } | null;
   categoryName?: string | null;
+  isDisallowable?: boolean;
 };
 
 export type BusinessTaxProfile = {
@@ -52,7 +55,7 @@ export function calculateTaxMetrics(
   const expenseTransactions = transactions.filter((transaction) => transaction.type === "EXPENSE");
   const totalExpenses = expenseTransactions.reduce((total, transaction) => total + Number(transaction.amount), 0);
   const allowableExpenses = expenseTransactions
-    .filter((transaction) => !isDisallowableExpense(transaction))
+    .filter((transaction) => !transaction.isDisallowable && !isDisallowableExpense(transaction))
     .reduce((total, transaction) => total + Number(transaction.amount), 0);
   const exemptExpenses = expenseTransactions
     .filter((transaction) => transaction.vatStatus === "EXEMPT")

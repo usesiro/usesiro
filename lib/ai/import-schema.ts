@@ -7,6 +7,8 @@ export const TransactionSchema = z.object({
   type: z.enum(["INCOME", "EXPENSE"]),
   balance: z.number().nullable().optional(),
   reference: z.string().nullable().optional(),
+  vatStatus: z.enum(["TAGGED", "MISSING_VAT", "EXEMPT"]).optional(),
+  isDisallowable: z.boolean().optional(),
 });
 
 export const ResponseSchema = z.object({
