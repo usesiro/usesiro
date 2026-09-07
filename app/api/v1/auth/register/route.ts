@@ -15,6 +15,7 @@ const registerSchema = z.object({
   email: z.string().trim().email("Invalid email format").transform((value) => value.toLowerCase()),
   password: z.string().min(12, "Password must be at least 12 characters").max(128),
   firstName: z.string().trim().min(1, "First name is required").max(80),
+  lastName: z.string().trim().min(1, "Last name is required").max(80),
 }).strict();
 
 export async function POST(request: Request) {
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { email, password, firstName } = validation.data;
+    const { email, password, firstName, lastName } = validation.data;
     const emailLimit = await checkRateLimit(`register:email:${email}`, 5, 24 * 60 * 60 * 1000);
     if (!emailLimit.allowed) {
       return NextResponse.json(
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
         email,
         passwordHash,
         firstName, // Fixed: Added this line to save the first name
+        lastName,
         otpSecret: otpCode,
         otpExpiresAt,
         role: "USER",

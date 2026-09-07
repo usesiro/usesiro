@@ -7,6 +7,7 @@ import { z } from "zod";
 const businessUpdateSchema = z.object({
   name: z.string().min(2).optional(),
   industry: z.string().min(2).optional(),
+  tin: z.string().optional(),
   annualTurnover: z.coerce.number().min(0).optional(),
   fixedAssets: z.coerce.number().min(0).optional(),
   isProfessionalServices: z.boolean().optional(),
@@ -37,7 +38,12 @@ export async function GET(request: Request) {
     });
 
     if (!business) {
-      return NextResponse.json({ error: "Business not found" }, { status: 404 });
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, firstName: true, lastName: true, phone: true, marketingEmails: true, twoFactorEnabled: true },
+      });
+      if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ owner: user });
     }
 
     // Map the user to 'owner' so your frontend Settings page automatically reads it
@@ -72,12 +78,13 @@ export async function PATCH(request: Request) {
     const body = validation.data;
 
     // 1. Handle Business Info Updates
-    if (body.name !== undefined || body.industry !== undefined || body.annualTurnover !== undefined || body.fixedAssets !== undefined || body.isProfessionalServices !== undefined) {
+    if (body.name !== undefined || body.industry !== undefined || body.tin !== undefined || body.annualTurnover !== undefined || body.fixedAssets !== undefined || body.isProfessionalServices !== undefined) {
       await prisma.business.update({
         where: { userId },
         data: {
           ...(body.name && { name: body.name }),
           ...(body.industry && { industry: body.industry }),
+          ...(body.tin !== undefined && { tin: body.tin || null }),
           ...(body.annualTurnover !== undefined && { annualTurnover: body.annualTurnover }),
           ...(body.fixedAssets !== undefined && { fixedAssets: body.fixedAssets }),
           ...(body.isProfessionalServices !== undefined && { isProfessionalServices: body.isProfessionalServices }),

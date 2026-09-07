@@ -9,9 +9,9 @@ const businessSchema = z.object({
   type: z.enum(["SOLE_PROPRIETORSHIP", "PARTNERSHIP", "LIMITED_LIABILITY"]),
   industry: z.string().min(2, "Industry is required"),
   tin: z.string().optional(),
-  annualTurnover: z.coerce.number().min(0).default(0),
-  fixedAssets: z.coerce.number().min(0).default(0),
-  isProfessionalServices: z.boolean().default(false),
+  annualTurnover: z.coerce.number().min(0).optional(),
+  fixedAssets: z.coerce.number().min(0).optional(),
+  isProfessionalServices: z.boolean().optional(),
 });
 
 export async function POST(request: Request) {
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
         annualTurnover,
         fixedAssets,
         isProfessionalServices,
-        taxProfileCompleted: true,
+        taxProfileCompleted: annualTurnover !== undefined && fixedAssets !== undefined,
       },
     });
 

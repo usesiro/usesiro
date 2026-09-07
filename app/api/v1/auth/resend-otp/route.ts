@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { z } from "zod";
 import { recordAuditLog } from "@/lib/logger";
 import crypto from "crypto";
+import bcrypt from "bcryptjs";
 import { checkRateLimit, getClientIp } from "../_lib/rate-limit";
 import { readLimitedJsonBody } from "@/lib/public-form-security";
 
@@ -13,6 +14,8 @@ const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 // 1. Zod Schema: We only need the email for a resend
 const resendSchema = z.object({
   email: z.string().trim().email("Invalid email format").max(254).transform((value) => value.toLowerCase()),
+  newEmail: z.string().trim().email("Invalid email format").max(254).transform((value) => value.toLowerCase()).optional(),
+  password: z.string().min(1).max(128).optional(),
 });
 
 export async function POST(request: Request) {
@@ -41,7 +44,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { email } = validation.data;
+    const { email, newEmail, password } = validation.data;
     const emailLimit = await checkRateLimit(
       `resend-otp:email:${email.trim().toLowerCase()}`,
       3,
@@ -64,6 +67,18 @@ export async function POST(request: Request) {
       );
     }
 
+    let deliveryEmail = email;
+    if (newEmail && newEmail !== email) {
+      if (!password || !(await bcrypt.compare(password, user.passwordHash))) {
+        return NextResponse.json({ error: "Unable to update email address." }, { status: 400 });
+      }
+      const emailInUse = await prisma.user.findUnique({ where: { email: newEmail }, select: { id: true } });
+      if (emailInUse) {
+        return NextResponse.json({ error: "That email address is already in use." }, { status: 400 });
+      }
+      deliveryEmail = newEmail;
+    }
+
     // 4. Generate a NEW 6-digit OTP and set expiration (5 mins)
     const newOtpCode = crypto.randomInt(100000, 1000000).toString();
     const newOtpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
@@ -72,6 +87,7 @@ export async function POST(request: Request) {
     await prisma.user.update({
       where: { email },
       data: {
+        ...(deliveryEmail !== email && { email: deliveryEmail }),
         otpSecret: newOtpCode,
         otpExpiresAt: newOtpExpiresAt,
         otpAttempts: 0,
@@ -81,7 +97,7 @@ export async function POST(request: Request) {
     // 6. Send the NEW OTP via Resend
     await resend.emails.send({
       from: "Siro <no-reply@usesiro.com>", 
-      to: email, 
+      to: deliveryEmail,
       subject: "Your New Siro Verification Code",
       html: `
         <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
@@ -100,7 +116,7 @@ export async function POST(request: Request) {
       userId: user.id,
       action: "AUTH.RESEND_OTP",
       status: "SUCCESS",
-      details: { email: user.email }
+      details: { email: deliveryEmail }
     });
 
     return NextResponse.json(

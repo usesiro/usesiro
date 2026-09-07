@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthLayout from "@/components/AuthLayout";
 import { useNotification } from "@/context/NotificationContext";
 import { 
-  UserIcon, EnvelopeIcon, PhoneIcon, LockClosedIcon, EyeIcon, EyeSlashIcon 
+  UserIcon, EnvelopeIcon, LockClosedIcon, EyeIcon, EyeSlashIcon
 } from "@heroicons/react/24/outline";
 
 export default function Register() {
@@ -19,15 +19,22 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false); // NEW: Track resend state
   const [errorMsg, setErrorMsg] = useState("");
-  const [successMsg, setSuccessMsg] = useState(""); // NEW: For resend success feedback
+  const [successMsg, setSuccessMsg] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [emailDraft, setEmailDraft] = useState("");
   
   const [formData, setFormData] = useState({
-    firstName: "", lastName: "", phone: "", email: "", password: "", confirmPassword: "",
-    otp: "", 
-    businessName: "", businessType: "", industry: "", tin: "", annualTurnover: "", fixedAssets: "", isProfessionalServices: false
+    firstName: "", lastName: "", email: "", password: "", otp: ""
   });
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setInterval(() => setResendCooldown((value) => Math.max(0, value - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.type === "checkbox" ? (e.target as HTMLInputElement).checked : e.target.value });
@@ -51,9 +58,16 @@ export default function Register() {
     }
   };
 
-  const isStep1Valid = formData.firstName && formData.email && formData.password && formData.password === formData.confirmPassword;
+  const isStep1Valid = formData.firstName && formData.lastName && formData.email && formData.password;
   const isStep2Valid = formData.otp.length === 6;
-  const isStep3Valid = formData.businessName && formData.businessType && formData.industry;
+
+  const getOtpErrorMessage = (status: number, serverError?: string) => {
+    const normalized = serverError?.toLowerCase() || "";
+    if (normalized.includes("expired")) return "This verification code has expired. Please request a new code.";
+    if (normalized.includes("invalid code") || normalized.includes("failed attempt")) return "That verification code is incorrect. Please check it and try again.";
+    if (status === 429) return "Too many verification attempts. Please request a new code or try again later.";
+    return "We could not verify the code. Please try again.";
+  };
 
   // --- API CALLS ---
 
@@ -65,10 +79,11 @@ export default function Register() {
       const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.email, password: formData.password, firstName: formData.firstName }),
+        body: JSON.stringify({ email: formData.email, password: formData.password, firstName: formData.firstName, lastName: formData.lastName }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Registration failed");
+      setResendCooldown(60);
       setStep(2);
     } catch (err: any) {
       const msg = err.message === "Failed to fetch" || err.name === "TypeError"
@@ -83,6 +98,7 @@ export default function Register() {
 
   // NEW: Resend OTP Logic
   const handleResendOtp = async () => {
+    if (resendCooldown > 0 || isResending) return;
     setIsResending(true);
     setErrorMsg("");
     setSuccessMsg("");
@@ -95,16 +111,17 @@ export default function Register() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to resend OTP");
       
-      setSuccessMsg("A new code has been sent to your email.");
-      showNotification("OTP resent successfully", "success");
+      setSuccessMsg("A new verification code has been sent to your email.");
+      showNotification("A new verification code has been sent to your email.", "success");
+      setResendCooldown(60);
       
       // Clear current OTP input
       setFormData(prev => ({ ...prev, otp: "" }));
       inputRefs.current[0]?.focus();
     } catch (err: any) {
       const msg = err.message === "Failed to fetch" || err.name === "TypeError"
-        ? "Network error. Check your connection."
-        : err.message;
+        ? "We could not reach the server. Please check your connection and try again."
+        : "We could not resend the verification code. Please try again.";
       setErrorMsg(msg);
       showNotification(msg, "error");
     } finally {
@@ -114,6 +131,7 @@ export default function Register() {
 
   const handleStep2 = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading || isResending) return;
     setIsLoading(true);
     setErrorMsg("");
     try {
@@ -123,7 +141,7 @@ export default function Register() {
         body: JSON.stringify({ email: formData.email, otp: formData.otp }),
       });
       const verifyData = await verifyRes.json();
-      if (!verifyRes.ok) throw new Error(verifyData.error || "Invalid OTP");
+      if (!verifyRes.ok) throw new Error(getOtpErrorMessage(verifyRes.status, verifyData.error));
 
       const loginRes = await fetch("/api/v1/auth/login", {
         method: "POST",
@@ -133,42 +151,7 @@ export default function Register() {
       const loginData = await loginRes.json();
       if (!loginRes.ok) throw new Error("Auto-login failed. Please go to login page.");
 
-      setStep(3);
-    } catch (err: any) {
-      const msg = err.message === "Failed to fetch" || err.name === "TypeError"
-        ? "Your connection has been cut off. Please check your internet and try again later."
-        : err.message;
-      setErrorMsg(msg);
-      showNotification(msg, "error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleStep3 = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setErrorMsg("");
-    try {
-      const res = await fetch("/api/v1/business", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          name: formData.businessName,
-          type: formData.businessType,
-          industry: formData.industry,
-          tin: formData.tin || undefined,
-          annualTurnover: Number(formData.annualTurnover || 0),
-          fixedAssets: Number(formData.fixedAssets || 0),
-          isProfessionalServices: formData.isProfessionalServices,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create business");
-      
-      router.push("/pricing");
+      router.push("/dashboard");
     } catch (err: any) {
       const msg = err.message === "Failed to fetch" || err.name === "TypeError"
         ? "Your connection has been cut off. Please check your internet and try again later."
@@ -183,7 +166,7 @@ export default function Register() {
   return (
     <AuthLayout>
       <div className="w-full bg-gray-100 h-1 rounded-full mb-8 overflow-hidden">
-        <div className="bg-primary h-full transition-all duration-300" style={{ width: step === 1 ? "33%" : step === 2 ? "66%" : "100%" }}></div>
+        <div className="bg-primary h-full transition-all duration-300" style={{ width: step === 1 ? "50%" : "100%" }}></div>
       </div>
 
       {errorMsg && (
@@ -205,24 +188,13 @@ export default function Register() {
             <h1 className="text-2xl font-bold text-dark mb-2">Create A New Account</h1>
             <p className="text-gray-500 text-sm">Input your personal details</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-dark mb-1.5 ml-1">Annual Turnover (NGN)</label>
-              <input name="annualTurnover" min="0" type="number" value={formData.annualTurnover} onChange={handleChange} placeholder="0" className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-dark" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-dark mb-1.5 ml-1">Fixed Assets (NGN)</label>
-              <input name="fixedAssets" min="0" type="number" value={formData.fixedAssets} onChange={handleChange} placeholder="0" className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-dark" />
-            </div>
-          </div>
-          <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
-            <input name="isProfessionalServices" type="checkbox" checked={formData.isProfessionalServices} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-primary" />
-            This business provides professional services
-          </label>
-          
           <div className="relative">
             <UserIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input name="firstName" value={formData.firstName} onChange={handleChange} type="text" placeholder="First Name" className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary text-dark bg-white" />
+          </div>
+          <div className="relative">
+            <UserIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input name="lastName" value={formData.lastName} onChange={handleChange} type="text" placeholder="Last Name" className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary text-dark bg-white" />
           </div>
           <div className="relative">
             <EnvelopeIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -235,11 +207,6 @@ export default function Register() {
               {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
             </button>
           </div>
-          <div className="relative">
-            <LockClosedIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} type="password" placeholder="Confirm Password" className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary text-dark bg-white" />
-          </div>
-
           <button type="submit" disabled={!isStep1Valid || isLoading} className={`w-full py-3 rounded-lg font-semibold text-white transition mt-2 ${isStep1Valid && !isLoading ? "bg-primary hover:bg-blue-700 shadow-lg cursor-pointer" : "bg-primary opacity-50 cursor-not-allowed"}`}>
             {isLoading ? "Processing..." : "Continue"}
           </button>
@@ -256,6 +223,28 @@ export default function Register() {
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-dark mb-2">Verify Email</h1>
             <p className="text-gray-500 text-sm">Enter the 6-digit code sent to {formData.email}</p>
+            {isEditingEmail ? (
+              <div className="mt-3 flex gap-2">
+                <input value={emailDraft} onChange={(e) => setEmailDraft(e.target.value)} type="email" className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" aria-label="New email address" />
+                <button type="button" onClick={async () => {
+                  const newEmail = emailDraft.trim().toLowerCase();
+                  if (!newEmail || newEmail === formData.email) return;
+                  setIsResending(true); setErrorMsg("");
+                  try {
+                    const res = await fetch("/api/v1/auth/resend-otp", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: formData.email, newEmail, password: formData.password }) });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "Unable to change email");
+                    setFormData((prev) => ({ ...prev, email: newEmail, otp: "" }));
+                    setResendCooldown(60); setIsEditingEmail(false); setSuccessMsg("A new verification code has been sent to your email.");
+                    showNotification("A new verification code has been sent to your email.", "success");
+                  } catch { setErrorMsg("We could not change your email address. Please try again."); }
+                  finally { setIsResending(false); }
+                }} disabled={isResending || isLoading || !emailDraft.trim()} className="px-3 py-2 text-sm bg-primary text-white rounded-lg disabled:opacity-50">Update</button>
+                <button type="button" onClick={() => setIsEditingEmail(false)} disabled={isResending} className="px-2 py-2 text-sm text-gray-500 disabled:opacity-50">Cancel</button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => { setEmailDraft(formData.email); setIsEditingEmail(true); }} className="mt-2 text-primary text-sm font-semibold hover:underline">Change email</button>
+            )}
           </div>
 
           <div className="flex justify-between gap-2">
@@ -264,7 +253,7 @@ export default function Register() {
               ))}
           </div>
           
-          <button type="submit" disabled={!isStep2Valid || isLoading} className={`w-full py-3 rounded-lg font-semibold text-white transition ${isStep2Valid && !isLoading ? "bg-primary hover:bg-blue-700 shadow-lg cursor-pointer" : "bg-primary opacity-50 cursor-not-allowed"}`}>
+          <button type="submit" disabled={!isStep2Valid || isLoading || isResending} className={`w-full py-3 rounded-lg font-semibold text-white transition ${isStep2Valid && !isLoading && !isResending ? "bg-primary hover:bg-blue-700 shadow-lg cursor-pointer" : "bg-primary opacity-50 cursor-not-allowed"}`}>
             {isLoading ? "Verifying..." : "Verify"}
           </button>
 
@@ -274,93 +263,15 @@ export default function Register() {
             <button 
               type="button" 
               onClick={handleResendOtp}
-              disabled={isResending || isLoading}
+              disabled={isResending || isLoading || resendCooldown > 0}
               className="text-primary font-bold text-sm hover:underline disabled:opacity-50 disabled:no-underline"
             >
-              {isResending ? "Resending..." : "Resend OTP"}
+              {isResending ? "Resending..." : resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend Code"}
             </button>
           </div>
         </form>
       )}
 
-      {/* --- STEP 3 --- */}
-      {step === 3 && (
-        <form className="space-y-5" onSubmit={handleStep3}>
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-dark mb-2">Business Details</h1>
-            <p className="text-gray-500 text-sm">Set up your workspace</p>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-dark mb-1.5 ml-1">Business Name</label>
-            <input name="businessName" value={formData.businessName} onChange={handleChange} type="text" placeholder="Enter Business Name" className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-dark" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-dark mb-1.5 ml-1">Business Type</label>
-            <select name="businessType" value={formData.businessType} onChange={handleChange} className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-gray-500">
-              <option value="">Pick Business Type</option>
-              <option value="SOLE_PROPRIETORSHIP">Sole Proprietorship</option>
-              <option value="PARTNERSHIP">Partnership</option>
-              <option value="LIMITED_LIABILITY">Limited Liability</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-dark mb-1.5 ml-1">Industry</label>
-            <select name="industry" value={formData.industry} onChange={handleChange} className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-gray-500">
-              <option value="">Pick Industry</option>
-              <option value="Agriculture">Agriculture</option>
-              <option value="Automotive">Automotive</option>
-              <option value="Beauty & Personal Care">Beauty & Personal Care</option>
-              <option value="Construction">Construction</option>
-              <option value="Consulting">Consulting</option>
-              <option value="E-Commerce">E-Commerce</option>
-              <option value="Education">Education</option>
-              <option value="Energy & Power">Energy & Power</option>
-              <option value="Entertainment">Entertainment</option>
-              <option value="Fashion & Textiles">Fashion & Textiles</option>
-              <option value="Finance & Banking">Finance & Banking</option>
-              <option value="Food & Beverage">Food & Beverage</option>
-              <option value="Healthcare">Healthcare</option>
-              <option value="Hospitality & Tourism">Hospitality & Tourism</option>
-              <option value="Insurance">Insurance</option>
-              <option value="Legal Services">Legal Services</option>
-              <option value="Logistics & Supply Chain">Logistics & Supply Chain</option>
-              <option value="Manufacturing">Manufacturing</option>
-              <option value="Media & Advertising">Media & Advertising</option>
-              <option value="Mining & Quarrying">Mining & Quarrying</option>
-              <option value="Non-Profit & NGO">Non-Profit & NGO</option>
-              <option value="Oil & Gas">Oil & Gas</option>
-              <option value="Pharmaceuticals">Pharmaceuticals</option>
-              <option value="Professional Services">Professional Services</option>
-              <option value="Real Estate & Property">Real Estate & Property</option>
-              <option value="Retail">Retail</option>
-              <option value="Technology">Technology</option>
-              <option value="Telecommunications">Telecommunications</option>
-              <option value="Transportation">Transportation</option>
-              <option value="Waste Management">Waste Management</option>
-              <option value="Wholesale & Distribution">Wholesale & Distribution</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-dark mb-1.5 ml-1">Annual Turnover (NGN)</label>
-              <input name="annualTurnover" min="0" type="number" value={formData.annualTurnover} onChange={handleChange} placeholder="0" className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-dark" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-dark mb-1.5 ml-1">Fixed Assets (NGN)</label>
-              <input name="fixedAssets" min="0" type="number" value={formData.fixedAssets} onChange={handleChange} placeholder="0" className="w-full px-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary bg-white text-dark" />
-            </div>
-          </div>
-          <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
-            <input name="isProfessionalServices" type="checkbox" checked={formData.isProfessionalServices} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-primary" />
-            This business provides professional services
-          </label>
-          <button type="submit" disabled={!isStep3Valid || isLoading} className={`w-full py-3 rounded-lg font-semibold text-white transition mt-2 ${isStep3Valid && !isLoading ? "bg-primary hover:bg-blue-700 shadow-lg cursor-pointer" : "bg-primary opacity-50 cursor-not-allowed"}`}>
-             {isLoading ? "Finalizing..." : "Complete Setup"}
-          </button>
-        </form>
-      )}
     </AuthLayout>
   );
 }
