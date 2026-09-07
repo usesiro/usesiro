@@ -27,7 +27,9 @@ export default function Settings() {
     email: "",
     phone: "",
     businessName: "",
+    businessType: "",
     industry: "",
+    tin: "",
     annualTurnover: "",
     fixedAssets: "",
     isProfessionalServices: false,
@@ -64,7 +66,9 @@ export default function Settings() {
           email: fetchedData?.owner?.email || "",
           phone: fetchedData?.owner?.phone || "",
           businessName: fetchedData?.name || "",
+          businessType: fetchedData?.type || "",
           industry: fetchedData?.industry || "",
+          tin: fetchedData?.tin || "",
           annualTurnover: String(fetchedData?.annualTurnover || ""),
           fixedAssets: String(fetchedData?.fixedAssets || ""),
           isProfessionalServices: Boolean(fetchedData?.isProfessionalServices),
@@ -103,24 +107,42 @@ export default function Settings() {
   if (loading) return <SettingsSkeleton />;
 
   // --- HANDLERS ---
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.type === "checkbox" ? e.target.checked : e.target.value });
   };
 
   const handleUpdateSection = async (section: "personal" | "business") => {
+    if (section === "business" && !data?.id && (!formData.businessName.trim() || !formData.businessType || !formData.industry.trim())) {
+      showNotification("Business name, type, and industry are required to create your business profile.", "error");
+      return;
+    }
     setIsSaving(true);
     try {
       // Build payload based on which section is being saved
       const payload = section === "personal" 
         ? { owner: { firstName: formData.firstName, lastName: formData.lastName, phone: formData.phone } }
-        : { name: formData.businessName, industry: formData.industry, annualTurnover: Number(formData.annualTurnover || 0), fixedAssets: Number(formData.fixedAssets || 0), isProfessionalServices: formData.isProfessionalServices, taxProfileCompleted: true };
+        : {
+            name: formData.businessName,
+            industry: formData.industry,
+            tin: formData.tin,
+            annualTurnover: formData.annualTurnover === "" ? undefined : Number(formData.annualTurnover),
+            fixedAssets: formData.fixedAssets === "" ? undefined : Number(formData.fixedAssets),
+            isProfessionalServices: formData.isProfessionalServices,
+            taxProfileCompleted: formData.annualTurnover !== "" && formData.fixedAssets !== "",
+          };
 
-      const res = await fetch("/api/v1/business/me", {
-        method: "PATCH", 
+      const isCreatingBusiness = section === "business" && !data?.id;
+      const businessPayload = isCreatingBusiness ? {
+        ...payload,
+        type: formData.businessType,
+        tin: formData.tin || undefined,
+      } : payload;
+      const res = await fetch(isCreatingBusiness ? "/api/v1/business" : "/api/v1/business/me", {
+        method: isCreatingBusiness ? "POST" : "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(businessPayload)
       });
 
       if (res.ok) {
@@ -264,18 +286,32 @@ export default function Settings() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in-up">
                   <EditField label="Business Name" name="businessName" value={formData.businessName} onChange={handleInputChange} />
                   <EditField label="Industry" name="industry" value={formData.industry} onChange={handleInputChange} />
+                  <EditField label="Tax Identification Number" name="tin" value={formData.tin} onChange={handleInputChange} />
                   <EditField label="Annual Turnover (NGN)" name="annualTurnover" value={formData.annualTurnover} onChange={handleInputChange} type="number" />
                   <EditField label="Fixed Assets (NGN)" name="fixedAssets" value={formData.fixedAssets} onChange={handleInputChange} type="number" />
                   <label className="flex items-center gap-3 rounded-xl border border-gray-100 p-4 text-sm font-bold text-gray-700">
                     <input type="checkbox" name="isProfessionalServices" checked={formData.isProfessionalServices} onChange={handleInputChange} className="h-4 w-4 rounded border-gray-300 text-primary" />
                     Professional services business
                   </label>
-                  <EditField label="Business Type" name="type" value="Sole Business" disabled={true} note="Contact support to upgrade entity type" />
+                  {data?.id ? (
+                    <EditField label="Business Type" name="type" value={data?.type || "Sole Business"} disabled={true} note="Contact support to upgrade entity type" />
+                  ) : (
+                    <label className="block text-sm font-bold text-gray-700">
+                      Business Type
+                      <select name="businessType" value={formData.businessType} onChange={handleInputChange} required className="mt-2 w-full px-4 py-2.5 border border-gray-200 rounded-lg bg-white font-normal">
+                        <option value="">Select business type</option>
+                        <option value="SOLE_PROPRIETORSHIP">Sole Proprietorship</option>
+                        <option value="PARTNERSHIP">Partnership</option>
+                        <option value="LIMITED_LIABILITY">Limited Liability</option>
+                      </select>
+                    </label>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <Field label="Business Name" value={data?.name} />
                   <Field label="Industry" value={data?.industry} />
+                  <Field label="Tax Identification Number" value={data?.tin || "Not provided"} />
                   <Field label="Annual Turnover" value={`NGN ${Number(data?.annualTurnover || 0).toLocaleString('en-NG')}`} />
                   <Field label="Fixed Assets" value={`NGN ${Number(data?.fixedAssets || 0).toLocaleString('en-NG')}`} />
                   <Field label="Professional Services" value={data?.isProfessionalServices ? "Yes" : "No"} />
