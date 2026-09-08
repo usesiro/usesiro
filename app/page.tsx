@@ -14,13 +14,23 @@ export default function Home() {
   return (
     <main className="landing-page bg-[#f7f9ff] text-[#17233f] overflow-hidden">
       <style>{`@keyframes landing-reveal{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@keyframes landing-hero-enter{from{opacity:0;transform:translateY(28px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes landing-readiness-enter{from{opacity:0;transform:translateY(24px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes landing-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}.landing-reveal{opacity:0;animation:landing-reveal .7s cubic-bezier(.2,.7,.2,1) forwards}.landing-delay-1{animation-delay:.08s}.landing-delay-2{animation-delay:.18s}.landing-delay-3{animation-delay:.3s}.landing-delay-4{animation-delay:.42s}.landing-hero-enter{opacity:0;animation:landing-hero-enter .9s .56s cubic-bezier(.16,1,.3,1) forwards}.landing-readiness-enter{opacity:0;animation:landing-readiness-enter .7s 1.08s cubic-bezier(.16,1,.3,1) forwards}.landing-float{animation:landing-float 4s 1.78s ease-in-out infinite}.landing-eyebrow{color:#4a78ed;font-size:10px;font-weight:700;letter-spacing:.18em}@media (prefers-reduced-motion:reduce){.landing-reveal,.landing-hero-enter,.landing-readiness-enter{opacity:1;animation:none}.landing-float{animation:none}}`}</style>
-      <nav className="landing-nav fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-5xl rounded-full border border-[#e4e9f5] bg-white/90 px-4 py-2 shadow-sm backdrop-blur-md">
-        <div className="flex items-center justify-between gap-4">
-          <Link href="/" aria-label="Siro home"><Image src="/landing/logo.svg" alt="Siro" width={64} height={30} priority /></Link>
+      <nav className="landing-nav fixed left-1/2 top-3 z-50 w-[84%] max-w-[22rem] -translate-x-1/2 rounded-full border border-white/70 bg-white/80 px-3 py-2 shadow-[0_8px_30px_rgba(23,35,63,0.08)] backdrop-blur-xl md:top-4 md:w-[calc(100%-3rem)] md:max-w-3xl md:px-4">
+        <div className="flex items-center justify-between gap-3">
+          <Link href="/" aria-label="Siro home"><Image src="/landing/logo.svg" alt="Siro" width={64} height={30} className="h-auto w-14 sm:w-16" priority /></Link>
           <div className="hidden md:flex items-center gap-7 text-[11px] font-medium text-[#606b83]">
-            <Link href="/">Home</Link><a href="#features">Product</a><Link href="/pricing">Pricing</Link><Link href="/contact">Contact Us</Link>
+            <Link href="/">Home</Link><Link href="/#features">Product</Link><Link href="/pricing">Pricing</Link><Link href="/contact">Contact Us</Link>
           </div>
-          <Link href="/register" className="rounded-full border border-[#dfe6f4] px-4 py-2 text-[11px] font-semibold text-[#53617a] transition hover:border-[#2f6ef6] hover:text-[#2f6ef6]">Get Started <span aria-hidden>→</span></Link>
+          <div className="flex items-center gap-1.5">
+            <Link href="/register" className="rounded-full border border-[#dfe6f4] bg-white/70 px-3 py-2 text-[10px] font-semibold text-[#53617a] transition hover:border-[#2f6ef6] hover:text-[#2f6ef6] sm:px-4 sm:text-[11px]">Get Started <span aria-hidden>→</span></Link>
+            <details className="group relative md:hidden">
+              <summary className="flex h-9 w-9 cursor-pointer list-none items-center justify-center rounded-full text-[#53617a] transition hover:bg-[#edf3ff] [&::-webkit-details-marker]:hidden" aria-label="Open navigation menu">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+              </summary>
+              <div className="absolute right-0 top-12 flex w-44 flex-col gap-1 rounded-2xl border border-[#e4e9f5] bg-white/95 p-2 text-left text-xs font-medium text-[#606b83] shadow-lg backdrop-blur-xl">
+                <Link href="/" className="rounded-xl px-3 py-2 hover:bg-[#edf3ff]">Home</Link><Link href="/#features" className="rounded-xl px-3 py-2 hover:bg-[#edf3ff]">Product</Link><Link href="/pricing" className="rounded-xl px-3 py-2 hover:bg-[#edf3ff]">Pricing</Link><Link href="/contact" className="rounded-xl px-3 py-2 hover:bg-[#edf3ff]">Contact Us</Link>
+              </div>
+            </details>
+          </div>
         </div>
       </nav>
 
@@ -29,7 +39,12 @@ export default function Home() {
         <h1 className="landing-reveal landing-delay-2 mx-auto max-w-3xl font-fraunces text-5xl font-bold leading-[.98] tracking-tight text-[#15203a] md:text-7xl">Better <span className="text-[#2f6ef6]">Records.</span><br /><span className="text-[#2f6ef6]">Easier</span> Taxes.</h1>
         <p className="landing-reveal landing-delay-3 mx-auto mt-5 max-w-xl text-sm leading-relaxed text-[#77839a] md:text-base">Stop patching your finances with WhatsApp notes and Excel sheets. Every transaction organized, every VAT tagged, compliance handled automatically.</p>
         <div className="landing-reveal landing-delay-4 mt-7 flex flex-col justify-center gap-3 sm:flex-row"><Link href="/register" className="rounded-md bg-[#326bf2] px-6 py-3 text-xs font-semibold text-white shadow-lg shadow-blue-200 transition hover:-translate-y-0.5 hover:bg-[#245be0]">Create your account</Link><Link href="/contact" className="rounded-md border border-[#dce4f4] bg-white px-6 py-3 text-xs font-semibold text-[#326bf2] transition hover:-translate-y-0.5 hover:border-[#326bf2]">Book a Demo</Link></div>
-        <div className="landing-hero-mockup landing-hero-enter relative mx-auto mt-12 w-[94%] max-w-5xl sm:w-[90%]"><Image src="/landing/vector.png" alt="" aria-hidden width={2178} height={1434} className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-auto w-[105.94%] max-w-none -translate-x-1/2 -translate-y-1/2" /><Image src="/landing/hero-dashboard.png" alt="Siro transactions dashboard" width={2056} height={1312} className="relative z-10 h-auto w-full" priority /><div className="landing-readiness-enter absolute -bottom-7 right-0 z-20 w-40 md:-bottom-9 md:right-4 md:w-72"><Image src="/landing/readiness.png" alt="74 percent tax readiness" width={620} height={264} className="landing-float h-auto w-full" /></div></div>
+        <div className="landing-hero-stage landing-hero-enter relative mx-auto mt-12 w-[94%] max-w-5xl sm:w-[90%]">
+          <div className="landing-hero-visual relative z-10">
+            <Image src="/landing/hero-transactions.png" alt="Siro transactions dashboard" width={5120} height={3264} className="h-auto w-full" priority />
+            <div className="landing-readiness-enter absolute bottom-[14%] right-[4.1%] z-20 w-[24.2%]"><Image src="/landing/readiness.png" alt="74 percent tax readiness" width={620} height={264} className="landing-float h-auto w-full" /></div>
+          </div>
+        </div>
       </section>
 
       <section className="bg-white px-5 py-20 md:py-28"><div className="mx-auto max-w-6xl"><div className="mb-12 text-center" data-aos="fade-up"><p className="landing-eyebrow">HOW SIRO WORKS</p><h2 className="mt-3 font-fraunces text-3xl font-bold md:text-5xl">From scattered transactions to <span className="text-[#2f6ef6]">clean records.</span></h2><p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-[#8792a6]">A simple recordkeeping flow that keeps your business prepared throughout the year.</p></div><div className="grid gap-4 md:grid-cols-3">{steps.map(([num,title,desc], i)=><article key={num} data-aos="fade-up" data-aos-delay={i*120} className="rounded-xl border border-[#e7ebf3] bg-white p-6 transition hover:-translate-y-1 hover:border-[#cbd9ff]"><span className="mb-5 flex h-8 w-8 items-center justify-center rounded-full bg-[#3671f7] text-[10px] font-bold text-white">{num}</span><h3 className="font-bold text-sm">{title}</h3><p className="mt-2 text-xs leading-relaxed text-[#8490a6]">{desc}</p></article>)}</div></div></section>
