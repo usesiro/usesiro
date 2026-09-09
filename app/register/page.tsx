@@ -5,6 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthLayout from "@/components/AuthLayout";
 import { useNotification } from "@/context/NotificationContext";
+import {
+  getPasswordStrength,
+  SIGNUP_PASSWORD_MAX_LENGTH,
+  SIGNUP_PASSWORD_MIN_LENGTH,
+} from "@/lib/signup-password";
 import { 
   UserIcon, EnvelopeIcon, LockClosedIcon, EyeIcon, EyeSlashIcon
 } from "@heroicons/react/24/outline";
@@ -19,6 +24,7 @@ export default function Register() {
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false); // NEW: Track resend state
   const [errorMsg, setErrorMsg] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
@@ -38,6 +44,7 @@ export default function Register() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.type === "checkbox" ? (e.target as HTMLInputElement).checked : e.target.value });
+    if (e.target.name === "password") setPasswordError("");
     setErrorMsg("");
     setSuccessMsg("");
   };
@@ -58,7 +65,15 @@ export default function Register() {
     }
   };
 
-  const isStep1Valid = formData.firstName && formData.lastName && formData.email && formData.password;
+  const passwordMeetsMinimum = formData.password.length >= SIGNUP_PASSWORD_MIN_LENGTH;
+  const passwordStrength = getPasswordStrength(formData.password);
+  const isStep1Valid = Boolean(
+    formData.firstName &&
+    formData.lastName &&
+    formData.email &&
+    passwordMeetsMinimum &&
+    formData.password.length <= SIGNUP_PASSWORD_MAX_LENGTH
+  );
   const isStep2Valid = formData.otp.length === 6;
 
   const getOtpErrorMessage = (status: number, serverError?: string) => {
@@ -73,6 +88,10 @@ export default function Register() {
 
   const handleStep1 = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!passwordMeetsMinimum) {
+      setPasswordError("Password must be at least 8 characters.");
+      return;
+    }
     setIsLoading(true);
     setErrorMsg("");
     try {
@@ -82,6 +101,15 @@ export default function Register() {
         body: JSON.stringify({ email: formData.email, password: formData.password, firstName: formData.firstName, lastName: formData.lastName }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        const passwordIssue = Array.isArray(data.details)
+          ? data.details.find((issue: { path?: unknown[] }) => issue.path?.[0] === "password")
+          : undefined;
+        if (passwordIssue?.message) {
+          setPasswordError(passwordIssue.message);
+          return;
+        }
+      }
       if (!res.ok) throw new Error(data.error || "Registration failed");
       setResendCooldown(60);
       setStep(2);
@@ -200,12 +228,51 @@ export default function Register() {
             <EnvelopeIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input name="email" value={formData.email} onChange={handleChange} type="email" placeholder="Enter Email" className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary text-dark bg-white" />
           </div>
-          <div className="relative">
-            <LockClosedIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input name="password" value={formData.password} onChange={handleChange} type={showPassword ? "text" : "password"} placeholder="Enter Password" className="w-full pl-10 pr-12 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary text-dark bg-white" />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-              {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
-            </button>
+          <div>
+            <div className="relative">
+              <LockClosedIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter Password"
+                minLength={SIGNUP_PASSWORD_MIN_LENGTH}
+                maxLength={SIGNUP_PASSWORD_MAX_LENGTH}
+                aria-describedby="password-requirement password-strength"
+                aria-invalid={Boolean(passwordError)}
+                className={`w-full pl-10 pr-12 py-2.5 text-sm border rounded-lg focus:outline-none text-dark bg-white ${passwordError ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-primary"}`}
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+              </button>
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-3 text-xs">
+              <p id="password-requirement" className={passwordMeetsMinimum ? "font-medium text-green-600" : "text-gray-500"}>
+                <span aria-hidden="true">{passwordMeetsMinimum ? "✓ " : ""}</span>
+                Minimum 8 characters
+              </p>
+              {formData.password && (
+                <p id="password-strength" className={`font-semibold ${passwordStrength.textClassName}`} aria-live="polite">
+                  {passwordStrength.label}
+                </p>
+              )}
+            </div>
+            <div
+              className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-gray-100"
+              role="progressbar"
+              aria-label="Password strength"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={formData.password ? passwordStrength.percent : 0}
+              aria-valuetext={formData.password ? passwordStrength.label : "No password entered"}
+            >
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${formData.password ? passwordStrength.barClassName : "bg-transparent"}`}
+                style={{ width: formData.password ? `${passwordStrength.percent}%` : "0%" }}
+              />
+            </div>
+            {passwordError && <p className="mt-1.5 text-xs text-red-600" role="alert">{passwordError}</p>}
           </div>
           <button type="submit" disabled={!isStep1Valid || isLoading} className={`w-full py-3 rounded-lg font-semibold text-white transition mt-2 ${isStep1Valid && !isLoading ? "bg-primary hover:bg-blue-700 shadow-lg cursor-pointer" : "bg-primary opacity-50 cursor-not-allowed"}`}>
             {isLoading ? "Processing..." : "Continue"}
