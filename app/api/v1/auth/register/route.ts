@@ -6,6 +6,7 @@ import { z } from "zod";
 import { recordAuditLog } from "@/lib/logger";
 import crypto from "crypto";
 import { readLimitedJsonBody } from "@/lib/public-form-security";
+import { SIGNUP_PASSWORD_MAX_LENGTH, SIGNUP_PASSWORD_MIN_LENGTH } from "@/lib/signup-password";
 import { checkRateLimit, getClientIp } from "../_lib/rate-limit";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -13,7 +14,9 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // 1. Zod Schema: We strictly validate the incoming data
 const registerSchema = z.object({
   email: z.string().trim().email("Invalid email format").transform((value) => value.toLowerCase()),
-  password: z.string().min(12, "Password must be at least 12 characters").max(128),
+  password: z.string()
+    .min(SIGNUP_PASSWORD_MIN_LENGTH, "Password must be at least 8 characters")
+    .max(SIGNUP_PASSWORD_MAX_LENGTH, "Password must be no more than 128 characters"),
   firstName: z.string().trim().min(1, "First name is required").max(80),
   lastName: z.string().trim().min(1, "Last name is required").max(80),
 }).strict();
@@ -34,8 +37,12 @@ export async function POST(request: Request) {
     // 2. Validate Payload
     const validation = registerSchema.safeParse(body.data);
     if (!validation.success) {
+      const passwordIssue = validation.error.issues.find((issue) => issue.path[0] === "password");
       return NextResponse.json(
-        { error: "Validation Failed", details: validation.error.issues },
+        {
+          error: passwordIssue?.message || validation.error.issues[0]?.message || "Invalid registration details",
+          details: validation.error.issues,
+        },
         { status: 400 }
       );
     }
