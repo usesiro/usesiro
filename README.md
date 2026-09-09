@@ -1,159 +1,209 @@
+<div align="center">
+  <a href="https://usesiro.com">
+    <img src="public/landing/logo.svg" alt="Siro" width="150" />
+  </a>
 
-# ⚡️ Siro - Financial Management & Tax-Readiness Platform
+  <h1>Better records. Easier taxes.</h1>
 
-Siro is an automated financial management, reconciliation, and tax-readiness platform designed for businesses, creators, and public figures. It streamlines transaction tracking, calculates VAT obligations in real-time, and audits compliance by flagging missing receipts, uncategorized expenses, and untagged VAT transactions.
+  <p>
+    Siro helps Nigerian businesses organize transactions, review VAT treatment,
+    track tax readiness, and export clean financial reports from one workspace.
+  </p>
 
-## 🚀 Key Features
+  <p>
+    <a href="https://usesiro.com"><strong>Visit Siro</strong></a>
+    ·
+    <a href="https://usesiro.com/register">Create an account</a>
+    ·
+    <a href="https://usesiro.com/contact">Book a demo</a>
+  </p>
+</div>
 
-* **Automated Bank Syncing:** Secure read-only integration with Nigerian bank accounts via the Mono API.
-* **Dynamic VAT Engine:** Automatically calculates Output VAT (from income) and Input VAT (from expenses) to determine Net VAT Payable.
-* **Tax Readiness Score:** A proprietary algorithm that analyzes transaction compliance (categories, VAT tags, and receipt documentation) to generate a real-time readiness percentage.
-* **Compliance Checklist & Gap Analysis:** Instantly identifies unverified transactions and missing documentation to ensure audit-proof ledgers.
-* **Secure Document Vault:** Upload and attach digital receipts and invoices directly to transactions via Vercel Blob storage.
-* **Custom Reporting:** Client-side generation of professional PDF and CSV financial reports.
-* **Bank-Grade Security:** Custom JWT authentication using edge-compatible `jose`, encrypted passwords, and HttpOnly cookies strictly protected by Next.js Server Middleware.
+![Siro transactions dashboard](public/landing/hero-transactions.png)
 
----
+## About Siro
 
-## 🛠 Tech Stack
+Siro is a financial recordkeeping and tax-readiness platform built for Nigerian businesses. It replaces scattered spreadsheets and informal records with a structured workflow for importing transactions, reviewing classifications, tracking supporting documents, and preparing reports.
 
-Siro is built as a **Full-Stack Monorepo** utilizing modern web technologies for maximum type safety, performance, and scalability.
+The platform helps teams maintain cleaner records throughout the year, so tax preparation is a continuous process rather than a last-minute scramble.
 
-### Frontend
-* **Framework:** Next.js (App Router)
-* **Language:** TypeScript
-* **Styling:** Tailwind CSS
-* **Icons:** Heroicons
-* **Charts & Data Viz:** Recharts
-* **Exports:** jsPDF & jsPDF-AutoTable
+## Product capabilities
 
-### Backend & Database
-* **Architecture:** Next.js Serverless API Routes (`app/api/v1/*`)
-* **Database:** PostgreSQL
-* **ORM:** Prisma
-* **Authentication:** `jose` (JWT), `bcryptjs`, Next.js Middleware guard
+- **Flexible transaction capture** — import CSV, Excel, and digital PDF bank statements or add cash and informal transactions manually.
+- **AI-assisted statement processing** — detect statement structures, standardize transaction data, and review extracted records before import.
+- **Duplicate prevention** — identify previously imported transactions using deterministic fingerprints.
+- **Transaction categorization** — apply built-in patterns, remember business-specific decisions, and route uncertain records for human review.
+- **VAT review** — mark transactions as tagged, exempt, or missing and monitor input and output VAT.
+- **Tax-readiness tracking** — see how categorization, VAT review, and supporting documents affect record completeness.
+- **Reports and exports** — review income, expenses, and document coverage, then export PDF or CSV reports.
+- **Document management** — attach receipts and invoices to relevant transactions.
+- **Secure account access** — email/password registration, email OTP verification, password recovery, protected sessions, and role-based administration.
+- **Subscription billing** — Paystack-powered access for the Siro beta plan.
 
-### Integrations
-* **Mono:** Open-banking API for real-time transaction pulling.
-* **Resend:** Transactional email delivery (OTPs, password resets).
-* **Vercel Blob:** Secure, scalable cloud storage for document uploads.
+Direct bank synchronization through Mono is present behind a feature flag and is not currently part of the public product experience.
 
----
+## How it works
 
-## 📂 Project Architecture
+1. **Bring in your records.** Upload a supported bank statement or enter a transaction manually.
+2. **Review and organize.** Confirm extracted data, resolve uncategorized records, and review VAT treatment.
+3. **Track readiness.** Monitor incomplete categories, VAT tags, and supporting documents from the dashboard.
+4. **Export clean reports.** Generate organized records for your reporting and filing workflow.
 
-Because Siro is a monorepo, the frontend and backend share the same repository and Prisma types.
+## Technology
+
+| Area | Technology |
+| --- | --- |
+| Application | Next.js 16 App Router, React 19, TypeScript |
+| Styling | Tailwind CSS, Heroicons, AOS |
+| Data | PostgreSQL, Prisma ORM |
+| Authentication | JWT with `jose`, bcrypt password hashing, HTTP-only cookies |
+| AI processing | Google Generative AI SDK |
+| Payments | Paystack |
+| Email | Resend |
+| File storage | Vercel Blob |
+| Bank integration | Mono, feature-flagged |
+| Reporting | Recharts, jsPDF, CSV export |
+
+## Repository structure
 
 ```text
-siro/
+usesiro/
 ├── app/
-│   ├── api/v1/         # Backend Serverless API Routes (Auth, Transactions, Mono Sync)
-│   ├── dashboard/      # Frontend: Main overview and charts
-│   ├── transactions/   # Frontend: Transaction ledger and manual entry
-│   ├── tax-readiness/  # Frontend: VAT engine and compliance score
-│   ├── reconciliation/ # Frontend: Tax gap resolution and document upload
-│   └── settings/       # Frontend: User, business, and security preferences
-├── components/         # Reusable UI components (Layout, Modals, MonoButton)
-├── hooks/              # Custom React hooks (e.g., useVatCalculator)
-├── lib/                # Utility configurations (Prisma client instance)
-├── prisma/             # Database schema and migrations
-│   └── schema.prisma   # Source of truth for all DB models
-└── middleware.ts       # Route guard for protecting authenticated pages/APIs
-````
-
------
-
-## ⚙️ Local Development Setup
-
-Follow these steps to get Siro running on your local machine.
-
-### 1\. Prerequisites
-
-Ensure you have the following installed:
-
-  * [Node.js](https://nodejs.org/) (v18 or higher)
-  * A PostgreSQL database (Local or Cloud provider like Supabase/Neon)
-  * Git
-
-### 2\. Clone the Repository
-
-```bash
-git clone [https://github.com/usesiro/usesiro.git](https://github.com/usesiro/usesiro.git)
-cd siro
+│   ├── api/                 # Route handlers for auth, payments, and product APIs
+│   ├── dashboard/           # Financial overview and readiness actions
+│   ├── transactions/        # Ledger, imports, review, and manual entry
+│   ├── reconciliation/      # Record reconciliation workflow
+│   ├── reports/             # Reporting and exports
+│   ├── tax-readiness/       # VAT and tax-readiness views
+│   └── settings/            # Business, account, and security settings
+├── components/              # Shared UI and feature components
+├── context/                 # Application providers and shared client state
+├── hooks/                   # Reusable React hooks
+├── lib/                     # Auth, data, AI, import, tax, and security utilities
+├── prisma/                  # Database schema, migrations, and seed data
+├── public/                  # Static assets and PWA files
+├── tests/security/          # Security-focused automated tests
+└── proxy.ts                 # Request authentication and route protection
 ```
 
-### 3\. Install Dependencies
+## Getting started
+
+### Prerequisites
+
+- Node.js 22 or later
+- npm
+- PostgreSQL
+- Credentials for any integrations you intend to exercise locally
+
+### 1. Clone and install
 
 ```bash
+git clone https://github.com/usesiro/usesiro.git
+cd usesiro
 npm install
-# or
-yarn install
 ```
 
-### 4\. Environment Variables
+### 2. Configure the environment
 
-Create a `.env` file in the root of the project and add the necessary configuration keys. Ask the repository admin for the development keys.
+Create a `.env` file in the repository root. Never commit this file or real credentials.
 
-```env
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/siro_db"
+```dotenv
+# Core application
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE"
+JWT_SECRET="replace-with-a-long-random-secret"
 
-# Security
-JWT_SECRET="your_super_secret_jwt_key_here"
-ADMIN_BOOTSTRAP_SECRET="a-random-secret-of-at-least-24-characters"
+# AI-assisted imports
+GOOGLE_GENERATIVE_AI_API_KEY=""
 
-# Resend (Emails)
-RESEND_API_KEY="re_..."
+# Transactional email
+RESEND_API_KEY=""
 
-# Mono API (Bank Syncing)
-MONO_PUBLIC_KEY="test_pk_..."
-MONO_SECRET_KEY="test_sk_..."
+# Payments
+NEXT_PUBLIC_PAYSTACK_KEY=""
+PAYSTACK_SECRET_KEY=""
 
-# Vercel Blob (Document Storage)
-BLOB_READ_WRITE_TOKEN="vercel_blob_rw_..."
+# Document storage
+BLOB_READ_WRITE_TOKEN=""
+
+# Optional administrative bootstrap
+ADMIN_BOOTSTRAP_SECRET=""
+
+# Optional Mono integration
+NEXT_PUBLIC_ENABLE_MONO="false"
+NEXT_PUBLIC_MONO_PUBLIC_KEY=""
+MONO_SECRET_KEY=""
 ```
 
-### 5\. Database Setup (Prisma)
+Ask a project maintainer for approved development credentials. Values prefixed with `NEXT_PUBLIC_` are exposed to the browser and must never contain private secrets.
 
-Generate the Prisma client and push the schema to your database to create the required tables.
+### 3. Prepare the database
 
 ```bash
 npx prisma generate
-npx prisma db push
+npx prisma migrate dev
 ```
 
-*(Optional: If you want to view your database GUI locally, run `npx prisma studio`)*
+To load the project seed data when needed:
 
-### 6\. Run the Development Server
+```bash
+npx prisma db seed
+```
+
+### 4. Start the application
 
 ```bash
 npm run dev
-# or
-yarn dev
 ```
 
-Open [http://localhost:3000](https://www.google.com/search?q=http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000).
 
------
+## Available scripts
 
-## 🔒 Security & Authentication Flow
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the local Next.js development server |
+| `npm run build` | Generate Prisma Client and create a production build |
+| `npm start` | Run the production server after a successful build |
+| `npm run test:security` | Run the security regression suite |
+| `npx tsc --noEmit` | Run TypeScript validation without emitting files |
 
-1.  **Login:** Users authenticate via `/api/v1/auth/login`. Upon success, the server returns a JWT and sets an `HttpOnly`, `Secure`, `SameSite=Lax` cookie named `siro_auth_token`.
-2.  **Middleware Guard:** The `middleware.ts` file intercepts all requests to protected pages (like `/dashboard`) and API routes. If the `siro_auth_token` cookie is missing or invalid, the user is instantly redirected to `/login`.
-3.  **API Security:** All API requests originating from the client must include the standard `Authorization: Bearer <token>` header to perform database operations.
+## Authentication and security
 
------
+- Public registration validates input server-side, hashes passwords with bcrypt, and requires email OTP verification.
+- Successful login creates a signed JWT session stored in an HTTP-only cookie.
+- `proxy.ts` protects authenticated pages and API routes and applies role-aware access checks.
+- Public forms use bounded request parsing and rate limiting.
+- Sensitive actions, including password changes and administrative access, are validated again on the server.
+- Authentication events are written to the audit log where applicable.
 
-## 🤝 Contributing Guidelines
+Do not weaken server-side validation, expose secrets through `NEXT_PUBLIC_` variables, or rely on client checks for authorization.
 
-1.  **Branching Strategy:** \* `main` is the production-ready branch.
-      * Create feature branches off `main` (e.g., `feat/mono-webhook-sync` or `fix/vat-calculation`).
-2.  **Type Safety:** Ensure all frontend and API responses adhere to strict TypeScript interfaces. Avoid using `any`.
-3.  **Prisma Changes:** If you modify `schema.prisma`, ensure you run `npx prisma generate` and test migrations locally before opening a Pull Request.
+## Development workflow
 
------
+1. Create a focused branch from the team’s current integration branch.
+2. Keep changes scoped and include database migrations for Prisma schema updates.
+3. Before opening a pull request, run:
 
-*Developed by the Siro Engineering Team.*
+   ```bash
+   npx tsc --noEmit
+   npm run build
+   npm run test:security
+   git diff --check
+   ```
 
-```
-```
+4. Document new environment variables and operational requirements.
+5. Never commit `.env` files, access tokens, customer data, or production exports.
+
+## Deployment
+
+Siro is structured for deployment on Vercel with a managed PostgreSQL database. Production environments must provide all required secrets, run committed Prisma migrations, configure the Paystack webhook endpoint, and use a verified sending domain in Resend.
+
+The production application is available at [usesiro.com](https://usesiro.com).
+
+## Support and security reports
+
+For product support, partnership enquiries, or responsible disclosure of a security issue, use the [Siro contact page](https://usesiro.com/contact). Do not include credentials, personal financial records, or exploitable details in public issues.
+
+## Ownership
+
+Copyright © 2026 Siro Technologies. All rights reserved. This repository does not currently include an open-source license.
